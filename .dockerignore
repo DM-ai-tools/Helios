@@ -1,0 +1,49 @@
+# ============================================================
+# .dockerignore — files excluded from Docker build context
+# ============================================================
+
+# Environment secrets
+.env
+.env.local
+
+# Dev dependencies and local modules
+node_modules/
+
+# Generated files
+reports/
+*.pdf
+*.docx
+test.pdf
+install.log
+
+# Puppeteer cache (downloaded fresh in Dockerfile)
+.cache/
+
+# Windows-only Redis binaries
+redis-windows/
+Redis-x64.zip
+
+# Git history
+.git/
+
+# Temp / test files
+temp.js
+drop-db.mjs
+dump-crawled-data.mjs
+fetch-audit-result.mjs
+print-debug.mjs
+show-live-results.mjs
+show-redis.mjs
+show-results.mjs
+test-*.mjs
+test-*.cjs
+test-*.js
+clear-pdf-cache.js
+
+# Editor config
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

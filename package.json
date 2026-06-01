@@ -1,0 +1,35 @@
+{
+  "name": "clicktrends-audit",
+  "version": "1.0.0",
+  "description": "ClickTrends AI Audit Platform — automated AI business audit with Claude",
+  "type": "module",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node --watch backend/server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.0",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "docx": "^8.5.0",
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2",
+    "marked": "^18.0.4",
+    "node-fetch": "^3.3.2",
+    "nodemailer": "^6.9.14",
+    "openai": "^6.39.1",
+    "pdfkit": "^0.18.0",
+    "pg": "^8.12.0",
+    "puppeteer": "^22.11.0",
+    "redis": "^5.12.1",
+    "resend": "^3.4.0",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

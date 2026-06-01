@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Choose Your AI Audit Plugins · ClickTrends AI Audit</title>
+  <meta name="description" content="Select the AI analysis modules to include in your ClickTrends audit. Customise your report or run the full suite." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              orange: '#f97316',
+              'orange-light': '#fed7aa',
+              'orange-glow': 'rgba(249,115,22,0.15)',
+              navy: '#1a1a2e',
+              'navy-light': '#16213e',
+              cream: '#faf9f6',
+              'cream-dark': '#f5f3ee',
+            }
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          animation: {
+            'fade-up': 'fadeUp 0.5s ease forwards',
+            'scale-in': 'scaleIn 0.2s ease forwards',
+            'glow-pulse': 'glowPulse 2s ease-in-out infinite',
+            'check-pop': 'checkPop 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards',
+            'shimmer': 'shimmer 2s infinite',
+          },
+          keyframes: {
+            fadeUp: { from: { opacity: 0, transform: 'translateY(16px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+            scaleIn: { from: { transform: 'scale(0.95)', opacity: 0 }, to: { transform: 'scale(1)', opacity: 1 } },
+            glowPulse: { '0%,100%': { boxShadow: '0 0 20px rgba(249,115,22,0.3)' }, '50%': { boxShadow: '0 0 40px rgba(249,115,22,0.5)' } },
+            checkPop: { from: { transform: 'scale(0) rotate(-10deg)', opacity: 0 }, to: { transform: 'scale(1) rotate(0deg)', opacity: 1 } },
+            shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
+          },
+          boxShadow: {
+            'card': '0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)',
+            'card-hover': '0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)',
+            'selected': '0 0 0 2px #f97316, 0 8px 32px rgba(249,115,22,0.2)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #faf9f6; color: #1a1a2e; }
+
+    /* Plugin tile transition */
+    .plugin-tile {
+      transition: transform 0.25s cubic-bezier(0.34, 1.3, 0.64, 1),
+                  box-shadow 0.25s ease,
+                  border-color 0.2s ease,
+                  background 0.25s ease;
+      border: 2px solid #e5e7eb;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Shimmer overlay on hover */
+    .plugin-tile::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(249,115,22,0.05) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    .plugin-tile:hover {
+      transform: translateY(-4px) scale(1.015);
+      box-shadow: 0 16px 44px rgba(0,0,0,0.10);
+      border-color: #fcd9b6;
+    }
+    .plugin-tile:hover::before { opacity: 1; }
+
+    /* Ripple on click */
+    .plugin-tile .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(249,115,22,0.18);
+      transform: scale(0);
+      animation: rippleAnim 0.5s linear;
+      pointer-events: none;
+    }
+    @keyframes rippleAnim {
+      to { transform: scale(4); opacity: 0; }
+    }
+
+    /* Selected state — opacity: 1 is CRITICAL to prevent fadeUp fill reset */
+    .plugin-tile.selected {
+      border-color: #f97316;
+      background: linear-gradient(135deg, #fff7ed 0%, #ffffff 55%);
+      box-shadow: 0 0 0 2.5px #f97316, 0 10px 36px rgba(249,115,22,0.22);
+      transform: scale(1.015);
+      opacity: 1;
+    }
+    .plugin-tile.selected::before { opacity: 1; }
+
+    /* Deselect hover — subtle red tint hint */
+    .plugin-tile.selected:hover {
+      box-shadow: 0 0 0 2.5px #f97316, 0 14px 44px rgba(249,115,22,0.3);
+      transform: scale(1.018);
+    }
+
+    /* Checkmark badge — TOP LEFT corner */
+    .checkmark {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 24px;
+      height: 24px;
+      background: #f97316;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(0) rotate(-20deg);
+      transition: opacity 0.18s ease,
+                  transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 2px 8px rgba(249,115,22,0.45);
+      z-index: 10;
+    }
+    .plugin-tile.selected .checkmark {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
+    .checkmark svg { width: 12px; height: 12px; }
+
+    /* Pulse ring around checkmark after appearing */
+    .plugin-tile.selected .checkmark::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid rgba(249,115,22,0.35);
+      animation: checkRing 1.8s ease-out infinite;
+    }
+    @keyframes checkRing {
+      0% { transform: scale(1); opacity: 0.7; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+
+    /* Icon placeholder gradient */
+    .plugin-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+      transition: transform 0.3s ease;
+    }
+    .plugin-tile:hover .plugin-icon { transform: scale(1.1) rotate(-3deg); }
+    .plugin-tile.selected .plugin-icon { transform: scale(1.1); }
+
+    /* Badge */
+    .included-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      padding: 2px 8px;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* Runtime badge */
+    .runtime-badge {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .runtime-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #d1fae5;
+      border: 1.5px solid #6ee7b7;
+      animation: breathe 2s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.85); }
+    }
+
+    /* Selected counter pill */
+    .counter-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f97316;
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 99px;
+      transition: all 0.3s ease;
+    }
+    .counter-pill.hidden { opacity: 0; transform: scale(0.8); pointer-events: none; }
+
+    /* CTA buttons */
+    .btn-primary {
+      background: #f97316;
+      color: white;
+      border: none;
+      padding: 15px 32px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      letter-spacing: -0.01em;
+    }
+    .btn-primary:hover { background: #ea6c0a; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(249,115,22,0.4); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-secondary {
+      background: transparent;
+      color: #6b7280;
+      border: 1.5px solid #e5e7eb;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn-secondary:hover { background: #f9fafb; border-color: #d1d5db; color: #374151; transform: translateY(-1px); }
+
+    /* Header nav */
+    .nav-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
+    .nav-step .step { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; }
+    .nav-step .step.done { background: #d1fae5; color: #059669; }
+    .nav-step .step.active { background: #f97316; color: white; }
+    .nav-step .step.pending { background: #f3f4f6; color: #9ca3af; }
+    .nav-divider { width: 24px; height: 1.5px; background: #e5e7eb; }
+
+    /* Sticky mobile footer */
+    .sticky-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(0,0,0,0.08);
+      padding: 16px 20px;
+      display: none;
+      gap: 12px;
+      z-index: 50;
+    }
+    @media (max-width: 768px) {
+      .sticky-footer { display: flex; flex-direction: column; }
+      .desktop-cta { display: none !important; }
+      body { padding-bottom: 160px; }
+    }
+
+    /* Glassmorphism card */
+    .glass-card {
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.8);
+    }
+
+    /* Stagger animation — JS adds .appeared after animation to lock opacity:1 */
+    .plugin-tile { opacity: 0; }
+    .plugin-tile.animate-in { animation: fadeUp 0.4s ease forwards; }
+    .plugin-tile.appeared { opacity: 1; }
+    .plugin-tile:nth-child(1) { animation-delay: 0.05s; }
+    .plugin-tile:nth-child(2) { animation-delay: 0.1s; }
+    .plugin-tile:nth-child(3) { animation-delay: 0.15s; }
+    .plugin-tile:nth-child(4) { animation-delay: 0.2s; }
+    .plugin-tile:nth-child(5) { animation-delay: 0.25s; }
+    .plugin-tile:nth-child(6) { animation-delay: 0.3s; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Tooltip on "none selected" note */
+    .helper-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: #6b7280;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      padding: 6px 14px;
+      border-radius: 99px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── HEADER ──────────────────────────────────────────────── -->
+<header class="border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-40">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <!-- Logo -->
+    <a href="/" class="flex items-center gap-2 no-underline">
+      <span class="font-bold text-brand-navy text-lg tracking-tight">
+        Click<span class="text-brand-orange">Trends</span> <span class="font-light text-gray-400">AI Audit</span>
+      </span>
+    </a>
+
+    <div class="flex items-center">
+      <!-- Progress steps -->
+      <div class="hidden md:flex items-center nav-step">
+        <div class="step done">✓</div>
+        <span class="ml-2 text-gray-400 line-through text-xs">Your details</span>
+        <div class="nav-divider mx-2"></div>
+        <div class="step active">2</div>
+        <span class="ml-2 font-medium text-brand-navy text-xs">Choose modules</span>
+        <div class="nav-divider mx-2"></div>
+        <div class="step">3</div>
+        <span class="ml-2 text-gray-400 text-xs">Processing</span>
+        <div class="nav-divider mx-2"></div>
+        <div class="step">4</div>
+        <span class="ml-2 text-gray-400 text-xs">Your report</span>
+      </div>
+      
+      <!-- HELIOS Branding -->
+      <div class="navbar-powered" style="display: flex; align-items: center; border-left: 1px solid #d1d5db; padding-left: 12px; margin-left: 16px;">
+        <div style="display: flex; flex-direction: column; line-height: 1.1; font-family: 'Inter', sans-serif;">
+          <div style="display: flex; align-items: center; gap: 4px; font-weight: 900; color: #f97316; font-size: 0.95rem; letter-spacing: 0.05em;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            HELIOS
+          </div>
+          <div style="font-size: 0.75rem; color: #4b5563; font-weight: 500; margin-top: 2px;">
+            by <strong style="color: #111827;">Click Trends</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: website pill -->
+    <div class="hidden md:flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-full px-4 py-2">
+      <span class="text-xs text-gray-400">Auditing</span>
+      <span class="text-xs font-semibold text-brand-navy" id="website-pill">yourbusiness.com.au</span>
+    </div>
+  </div>
+</header>
+
+
+<!-- ─── HERO SECTION ─────────────────────────────────────────── -->
+<main class="max-w-6xl mx-auto px-6 pt-14 pb-10">
+
+
+  <!-- ─── PRE-SCORE BANNER (populated from initial audit) ───────── -->
+  <div id="pre-score-banner" class="hidden mb-10 opacity-0 animate-[fadeUp_0.5s_ease_0.2s_forwards]">
+    <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row items-center gap-6">
+      <!-- Score ring -->
+      <div class="flex items-center gap-4 flex-shrink-0">
+        <div class="relative">
+          <svg width="72" height="72" style="transform:rotate(-90deg)">
+            <circle cx="36" cy="36" r="30" fill="none" stroke="#f3f4f6" stroke-width="8"/>
+            <circle id="pre-score-ring" cx="36" cy="36" r="30" fill="none"
+              stroke="#f97316" stroke-width="8" stroke-linecap="round"
+              stroke-dasharray="188" stroke-dashoffset="188"
+              style="transition:stroke-dashoffset 1.4s cubic-bezier(0.4,0,0.2,1),stroke 0.5s"/>
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span id="pre-score-num" class="text-lg font-extrabold text-[#1a1a2e]">—</span>
+          </div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">Preliminary score</div>
+          <div id="pre-score-label" class="text-sm font-bold text-[#1a1a2e]">Analysing…</div>
+          <div class="text-xs text-gray-400">from <span id="pre-score-site" class="font-medium"></span></div>
+        </div>
+      </div>
+      <!-- Discoveries summary -->
+      <div class="flex-1 min-w-0">
+        <div class="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-2">Key findings from initial scan</div>
+        <div id="pre-discoveries" class="flex flex-col gap-1.5"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SELECTION STATE BAR ───────────────────────────────── -->
+  <div class="flex items-center justify-between mb-8 opacity-0 animate-[fadeUp_0.5s_ease_0.2s_forwards]">
+    <div class="flex items-center gap-3">
+      <span class="text-sm font-semibold text-brand-navy">AI Modules</span>
+      <span class="text-xs text-gray-400">6 available</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <span id="selected-count-text" class="text-sm text-gray-500 hidden">
+        <span id="selected-num" class="font-bold text-brand-orange">0</span> selected
+      </span>
+      <button
+        id="select-all-btn"
+        onclick="toggleSelectAll()"
+        class="text-xs font-semibold text-brand-orange hover:text-orange-600 transition-colors"
+      >Select all</button>
+    </div>
+  </div>
+
+  <!-- ─── PLUGIN GRID ───────────────────────────────────────── -->
+  <div id="plugin-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-14">
+
+    <!-- 1: SEO Audit -->
+    <div
+      class="plugin-tile glass-card rounded-2xl p-6 shadow-card"
+      data-plugin-id="seo-audit"
+      data-plugin-name="SEO Audit"
+      onclick="togglePlugin(this, event)"
+      role="checkbox"
+      aria-checked="false"
+      tabindex="0"
+      onkeydown="if(event.key==='Enter'||event.key===' '){togglePlugin(this)}"
+    >
+      <div class="checkmark">
+        <svg viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="2,7 5.5,11 12,3"/>
+        </svg>
+      </div>
+
+      <div class="flex items-start gap-4 mb-5">
+        <div class="plugin-icon" style="background:linear-gradient(135deg,#fff7ed,#fed7aa);">🔍</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <h3 class="font-bold text-brand-navy text-[1rem] leading-tight">SEO Audit</h3>
+          </div>
+          <div class="included-badge">✦ Included in full audit</div>
+        </div>
+      </div>
+
+      <p class="text-sm text-gray-500 leading-relaxed mb-5">
+        Keyword, on-page, technical, gap and competitor analysis — prioritised action plan.
+      </p>
+
+      <div class="flex items-center justify-between">
+        <div class="runtime-badge">
+          <div class="runtime-dot"></div>
+          ~45 seconds
+        </div>
+        <div class="flex gap-1.5">
+          <span class="text-xs bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-full">Technical</span>
+          <span class="text-xs bg-purple-50 text-purple-600 border border-purple-100 px-2 py-0.5 rounded-full">Rankings</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2: Competitive Brief -->
+    <div
+      class="plugin-tile glass-card rounded-2xl p-6 shadow-card"
+      data-plugin-id="competitive-brief"
+      data-plugin-name="Competitive Brief"
+      onclick="togglePlugin(this, event)"
+      role="checkbox"
+      aria-checked="false"
+      tabindex="0"
+      onkeydown="if(event.key==='Enter'||event.key===' '){togglePlugin(this)}"
+    >
+      <div class="checkmark">
+        <svg viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="2,7 5.5,11 12,3"/>
+        </svg>
+      </div>
+
+      <div class="flex items-start gap-4 mb-5">
+        <div class="plugin-icon" style="background:linear-gradient(135deg,#f0fdf4,#bbf7d0);">⚔️</div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-brand-navy text-[1rem] leading-tight mb-1">Competitive Brief</h3>
+          <div class="included-badge">✦ Included in full audit</div>
+        </div>
+      </div>
+
+      <p class="text-sm text-gray-500 leading-relaxed mb-5">
+        Positioning, messaging, content gaps. Powers pitch decks and battlecards.
+      </p>
+
+      <div class="flex items-center justify-between">
+        <div class="runtime-badge">
+          <div class="runtime-dot"></div>
+          ~35 seconds
+        </div>
+        <div class="flex gap-1.5">
+          <span class="text-xs bg-green-50 text-green-600 border border-green-100 px-2 py-0.5 rounded-full">Strategy</span>
+          <span class="text-xs bg-teal-50 text-teal-600 border border-teal-100 px-2 py-0.5 rounded-full">Positioning</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3: Campaign Plan -->
+    <div
+      class="plugin-tile glass-card rounded-2xl p-6 shadow-card"
+      data-plugin-id="campaign-plan"
+      data-plugin-name="Campaign Plan"
+      onclick="togglePlugin(this, event)"
+      role="checkbox"
+      aria-checked="false"
+      tabindex="0"
+      onkeydown="if(event.key==='Enter'||event.key===' '){togglePlugin(this)}"
+    >
+      <div class="checkmark">
+        <svg viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="2,7 5.5,11 12,3"/>
+        </svg>
+      </div>
+
+      <div class="flex items-start gap-4 mb-5">
+        <div class="plugin-icon" style="background:linear-gradient(135deg,#faf5ff,#e9d5ff);">📣</div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-brand-navy text-[1rem] leading-tight mb-1">Campaign Plan</h3>
+          <div class="included-badge">✦ Included in full audit</div>
+        </div>
+      </div>
+
+      <p class="text-sm text-gray-500 leading-relaxed mb-5">
+        Full brief with audience, channel mix, week-by-week calendar and metrics.
+      </p>
+
+      <div class="flex items-center justify-between">
+        <div class="runtime-badge">
+          <div class="runtime-dot"></div>
+          ~40 seconds
+        </div>
+        <div class="flex gap-1.5">
+          <span class="text-xs bg-purple-50 text-purple-600 border border-purple-100 px-2 py-0.5 rounded-full">Channels</span>
+          <span class="text-xs bg-pink-50 text-pink-600 border border-pink-100 px-2 py-0.5 rounded-full">Calendar</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4: Content & Copy -->
+    <div
+      class="plugin-tile glass-card rounded-2xl p-6 shadow-card"
+      data-plugin-id="content-copy"
+      data-plugin-name="Content & Copy"
+      onclick="togglePlugin(this, event)"
+      role="checkbox"
+      aria-checked="false"
+      tabindex="0"
+      onkeydown="if(event.key==='Enter'||event.key===' '){togglePlugin(this)}"
+    >
+      <div class="checkmark">
+        <svg viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="2,7 5.5,11 12,3"/>
+        </svg>
+      </div>
+
+      <div class="flex items-start gap-4 mb-5">
+        <div class="plugin-icon" style="background:linear-gradient(135deg,#fff1f2,#fecdd3);">✍️</div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-brand-navy text-[1rem] leading-tight mb-1">Content & Copy</h3>
+          <div class="included-badge">✦ Included in full audit</div>
+        </div>
+      </div>
+
+      <p class="text-sm text-gray-500 leading-relaxed mb-5">
+        Blog, social, ads, landing pages, case studies — channel-specific, on-brand.
+      </p>
+
+      <div class="flex items-center justify-between">
+        <div class="runtime-badge">
+          <div class="runtime-dot"></div>
+          ~50 seconds
+        </div>
+        <div class="flex gap-1.5">
+          <span class="text-xs bg-red-50 text-red-600 border border-red-100 px-2 py-0.5 rounded-full">Copy</span>
+          <span class="text-xs bg-orange-50 text-orange-600 border border-orange-100 px-2 py-0.5 rounded-full">Content</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5: Email Sequence -->
+    <div
+      class="plugin-tile glass-card rounded-2xl p-6 shadow-card"
+      data-plugin-id="email-sequence"
+      data-plugin-name="Email Sequence"
+      onclick="togglePlugin(this, event)"
+      role="checkbox"
+      aria-checked="false"
+      tabindex="0"
+      onkeydown="if(event.key==='Enter'||event.key===' '){togglePlugin(this)}"
+    >
+      <div class="checkmark">
+        <svg viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="2,7 5.5,11 12,3"/>
+        </svg>
+      </div>
+
+      <div class="flex items-start gap-4 mb-5">
+        <div class="plugin-icon" style="background:linear-gradient(135deg,#ecfdf5,#a7f3d0);">📧</div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-brand-navy text-[1rem] leading-tight mb-1">Email Sequence</h3>
+          <div class="included-badge">✦ Included in full audit</div>
+        </div>
+      </div>
+
+      <p class="text-sm text-gray-500 leading-relaxed mb-5">
+        Nurture, onboarding, win-back, launch flows — copy, timing and branching.
+      </p>
+
+      <div class="flex items-center justify-between">
+        <div class="runtime-badge">
+          <div class="runtime-dot"></div>
+          ~35 seconds
+        </div>
+        <div class="flex gap-1.5">
+          <span class="text-xs bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full">Automation</span>
+          <span class="text-xs bg-cyan-50 text-cyan-600 border border-cyan-100 px-2 py-0.5 rounded-full">Nurture</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6: Brand Review -->
+    <div
+      class="plugin-tile glass-card rounded-2xl p-6 shadow-card"
+      data-plugin-id="brand-review"
+      data-plugin-name="Brand Review"
+      onclick="togglePlugin(this, event)"
+      role="checkbox"
+      aria-checked="false"
+      tabindex="0"
+      onkeydown="if(event.key==='Enter'||event.key===' '){togglePlugin(this)}"
+    >
+      <div class="checkmark">
+        <svg viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="2,7 5.5,11 12,3"/>
+        </svg>
+      </div>
+
+      <div class="flex items-start gap-4 mb-5">
+        <div class="plugin-icon" style="background:linear-gradient(135deg,#fffbeb,#fde68a);">🛡️</div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-brand-navy text-[1rem] leading-tight mb-1">Brand Review</h3>
+          <div class="included-badge">✦ Included in full audit</div>
+        </div>
+      </div>
+
+      <p class="text-sm text-gray-500 leading-relaxed mb-5">
+        Checks voice, claims and legal flags before publish, with before/after fixes.
+      </p>
+
+      <div class="flex items-center justify-between">
+        <div class="runtime-badge">
+          <div class="runtime-dot"></div>
+          ~25 seconds
+        </div>
+        <div class="flex gap-1.5">
+          <span class="text-xs bg-yellow-50 text-yellow-600 border border-yellow-100 px-2 py-0.5 rounded-full">Legal</span>
+          <span class="text-xs bg-amber-50 text-amber-600 border border-amber-100 px-2 py-0.5 rounded-full">Brand</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /grid -->
+
+
+  <!-- ─── DESKTOP CTA SECTION ──────────────────────────────── -->
+  <div class="desktop-cta opacity-0 animate-[fadeUp_0.5s_ease_0.5s_forwards]">
+    <div class="glass-card rounded-2xl p-6 border border-gray-100 shadow-card">
+      <div class="flex flex-col md:flex-row items-center gap-6">
+
+        <!-- Left: note -->
+        <div class="flex-1">
+          <div class="flex items-center gap-3 mb-2">
+            <span id="desktop-counter-pill" class="counter-pill hidden">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span id="desktop-counter-num">0</span> modules selected
+            </span>
+            <span id="all-auto-note" class="helper-note">
+              <svg class="w-3.5 h-3.5 text-orange-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+              No selection = all 6 AI plugins enabled
+            </span>
+          </div>
+          <p class="text-xs text-gray-400">
+            Selected plugins run in parallel · Typical runtime: 60–120 seconds
+          </p>
+        </div>
+
+        <!-- Right: CTAs -->
+        <div class="flex items-center gap-3 flex-shrink-0">
+          <button id="skip-btn" class="btn-secondary" onclick="submitAudit(false)">
+            Skip &amp; Run Full Audit
+          </button>
+          <button id="run-btn" class="btn-primary" onclick="submitAudit(true)">
+            Run Selected AI Plugins →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+
+<!-- ─── MOBILE STICKY FOOTER ─────────────────────────────────── -->
+<div class="sticky-footer">
+  <div class="flex items-center justify-between mb-1">
+    <span class="text-xs text-gray-500 font-medium">
+      <span id="mobile-counter">No modules selected</span>
+    </span>
+    <span class="helper-note text-xs">All run if none selected</span>
+  </div>
+  <button class="btn-primary w-full text-center" onclick="submitAudit(true)">
+    Run Selected AI Plugins →
+  </button>
+  <button class="btn-secondary w-full text-center text-sm" onclick="submitAudit(false)">
+    Skip &amp; Run Full Audit
+  </button>
+</div>
+
+
+<!-- ─── SCRIPT ────────────────────────────────────────────────── -->
+<script>
+  // ── State ─────────────────────────────────────────────────────
+  const selectedPlugins = new Set();
+
+  // ── Session data from previous page ───────────────────────────
+  const sessionData = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
+  const { url = '', industry = '', email = '' } = sessionData;
+
+  // Display website in header pill
+  if (url) {
+    const pill = document.getElementById('website-pill');
+    if (pill) pill.textContent = url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+  }
+
+  // ── Ripple effect helper ───────────────────────────────────────
+  function spawnRipple(tile, event) {
+    const rect = tile.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height) * 1.4;
+    const x = (event.clientX - rect.left) - size / 2;
+    const y = (event.clientY - rect.top)  - size / 2;
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    ripple.style.cssText = `width:${size}px;height:${size}px;left:${x}px;top:${y}px;`;
+    tile.appendChild(ripple);
+    ripple.addEventListener('animationend', () => ripple.remove());
+  }
+
+  // ── Toggle Plugin ──────────────────────────────────────────────
+  function togglePlugin(tile, event) {
+    const id   = tile.dataset.pluginId;
+    spawnRipple(tile, event || { clientX: tile.getBoundingClientRect().left + tile.offsetWidth / 2, clientY: tile.getBoundingClientRect().top + tile.offsetHeight / 2 });
+
+    if (selectedPlugins.has(id)) {
+      selectedPlugins.delete(id);
+      tile.classList.remove('selected');
+      tile.setAttribute('aria-checked', 'false');
+    } else {
+      selectedPlugins.add(id);
+      tile.classList.add('selected');
+      tile.setAttribute('aria-checked', 'true');
+    }
+
+    updateUI();
+  }
+
+  // ── Select / Deselect All ─────────────────────────────────────
+  function toggleSelectAll() {
+    const tiles = document.querySelectorAll('.plugin-tile');
+    const allSelected = selectedPlugins.size === tiles.length;
+
+    tiles.forEach(tile => {
+      const id = tile.dataset.pluginId;
+      if (allSelected) {
+        selectedPlugins.delete(id);
+        tile.classList.remove('selected');
+        tile.setAttribute('aria-checked', 'false');
+      } else {
+        selectedPlugins.add(id);
+        tile.classList.add('selected');
+        tile.setAttribute('aria-checked', 'true');
+      }
+    });
+
+    updateUI();
+  }
+
+  // ── Update UI state ───────────────────────────────────────────
+  function updateUI() {
+    const count = selectedPlugins.size;
+    const tiles = document.querySelectorAll('.plugin-tile');
+
+    // Select all button text
+    const selectAllBtn = document.getElementById('select-all-btn');
+    if (selectAllBtn) {
+      selectAllBtn.textContent = count === tiles.length ? 'Deselect all' : 'Select all';
+    }
+
+    // Desktop counter pill
+    const pill = document.getElementById('desktop-counter-pill');
+    const pillNum = document.getElementById('desktop-counter-num');
+    const autoNote = document.getElementById('all-auto-note');
+
+    if (count > 0) {
+      pill?.classList.remove('hidden');
+      autoNote?.classList.add('hidden');
+      if (pillNum) pillNum.textContent = count;
+    } else {
+      pill?.classList.add('hidden');
+      autoNote?.classList.remove('hidden');
+    }
+
+    // Selected count text
+    const countText = document.getElementById('selected-count-text');
+    const numEl = document.getElementById('selected-num');
+    if (count > 0) {
+      countText?.classList.remove('hidden');
+      if (numEl) numEl.textContent = count;
+    } else {
+      countText?.classList.add('hidden');
+    }
+
+    // Mobile counter
+    const mobile = document.getElementById('mobile-counter');
+    if (mobile) {
+      mobile.textContent = count > 0
+        ? `${count} module${count > 1 ? 's' : ''} selected`
+        : 'No modules selected';
+    }
+
+    // Primary button label
+    const runBtn = document.getElementById('run-btn');
+    if (runBtn) {
+      if (count === 0) {
+        runBtn.textContent = 'Run All AI Plugins →';
+      } else if (count === 1) {
+        const name = [...selectedPlugins].map(id =>
+          document.querySelector(`[data-plugin-id="${id}"]`)?.dataset.pluginName || id
+        )[0];
+        runBtn.textContent = `Run ${name} →`;
+      } else {
+        runBtn.textContent = `Run ${count} AI Plugins →`;
+      }
+    }
+  }
+
+  // ── Submit Audit ──────────────────────────────────────────────
+  async function submitAudit(useSelected) {
+    const plugins = useSelected ? [...selectedPlugins] : [];
+
+    // Store in session for scanning page
+    sessionStorage.setItem('clicktrends_audit', JSON.stringify({
+      ...sessionData,
+      selectedPlugins: plugins,
+    }));
+
+    // Show loading state on button
+    const btn = event?.currentTarget || document.getElementById('run-btn');
+    if (btn) {
+      btn.textContent = 'Starting audit…';
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
+    }
+
+    const auditId = sessionData.auditId;
+
+    if (!auditId) {
+      // auditId was never created — user likely landed here without going through
+      // processing.html first (e.g. direct navigation, new tab, session cleared).
+      // Redirect back to processing.html to create a fresh audit.
+      console.warn('[plugin-select] No auditId in session — redirecting to processing to create one');
+      const currentSession = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
+      if (!currentSession.url) {
+        // No URL either — go all the way back to the start
+        window.location.href = '/';
+      } else {
+        // URL exists but no auditId — re-run init
+        window.location.href = 'plugin-scanning.html';
+
+      }
+      return;
+    }
+
+
+
+
+    // Fire analyze pipeline then go straight to report page
+    try {
+      const r = await fetch(`/api/audit/${auditId}/analyze`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: sessionData.email, selectedPlugins: plugins }),
+      });
+      const data = await r.json();
+      if (data.error) throw new Error(data.error);
+      console.log('[plugin-select] Analyze triggered:', data.message);
+    } catch (err) {
+      console.warn('[plugin-select] Analyze trigger failed:', err.message);
+    }
+
+    // Navigate to plugin scanning page; it shows a progress bar and
+    // only redirects to report.html when the audit is complete
+    window.location.href = `plugin-scanning.html?auditId=${auditId}`;
+
+  }
+
+  // ── Init ──────────────────────────────────────────────────────
+  updateUI();
+
+  // Populate pre-score banner from initial audit session data
+  const preScore = sessionData.preScore;
+  if (preScore) {
+    const banner  = document.getElementById('pre-score-banner');
+    const ring    = document.getElementById('pre-score-ring');
+    const numEl   = document.getElementById('pre-score-num');
+    const labelEl = document.getElementById('pre-score-label');
+    const siteEl  = document.getElementById('pre-score-site');
+    const discEl  = document.getElementById('pre-discoveries');
+
+    banner.classList.remove('hidden');
+
+    // Animate score ring
+    setTimeout(() => {
+      const circ   = 2 * Math.PI * 30;
+      const offset = circ - (preScore / 100) * circ;
+      ring.style.strokeDasharray  = circ;
+      ring.style.strokeDashoffset = offset;
+      ring.style.stroke = preScore >= 75 ? '#22c55e' : preScore >= 55 ? '#f59e0b' : '#ef4444';
+      numEl.textContent  = preScore;
+      labelEl.textContent = preScore >= 75 ? 'Solid foundation' : preScore >= 55 ? 'Several issues' : 'Needs attention';
+    }, 300);
+
+    if (siteEl && sessionData.url) {
+      siteEl.textContent = sessionData.url.replace(/^https?:\/\/(www\.)?/,'').split('/')[0];
+    }
+
+    // Show top 3 discoveries
+    const SEV_COLOR = { critical:'#fef2f2', warning:'#fffbeb', opportunity:'#f0fdf4' };
+    const SEV_TEXT  = { critical:'#dc2626', warning:'#d97706', opportunity:'#16a34a' };
+    const SEV_DOT   = { critical:'#ef4444', warning:'#f59e0b', opportunity:'#22c55e' };
+    const disc = (sessionData.discoveries || []).slice(0, 3);
+    disc.forEach(d => {
+      const row = document.createElement('div');
+      row.style.cssText = `display:flex;align-items:flex-start;gap:8px;padding:6px 10px;border-radius:8px;background:${SEV_COLOR[d.severity]||'#f9fafb'};`;
+      row.innerHTML = `
+        <span style="width:8px;height:8px;border-radius:50%;background:${SEV_DOT[d.severity]||'#9ca3af'};margin-top:4px;flex-shrink:0;"></span>
+        <div>
+          <span style="font-size:0.78rem;font-weight:600;color:${SEV_TEXT[d.severity]||'#374151'}">${d.title}</span>
+          ${d.detail ? `<span style="font-size:0.72rem;color:#9ca3af;margin-left:6px;">${d.detail}</span>` : ''}
+        </div>`;
+      discEl.appendChild(row);
+    });
+    if (disc.length === 0 && discEl) {
+      discEl.innerHTML = '<span style="font-size:0.78rem;color:#9ca3af;">No issues flagged in initial scan.</span>';
+    }
+  }
+
+  // Stagger fade-in: add .animate-in then .appeared to lock opacity so
+  // switching to another animation (glowPulse etc.) never resets opacity.
+  document.querySelectorAll('.plugin-tile').forEach((tile, i) => {
+    const delay = 50 + i * 55;
+    setTimeout(() => {
+      tile.classList.add('animate-in');
+      // Lock opacity after animation completes (~400ms + delay)
+      setTimeout(() => {
+        tile.classList.add('appeared');
+        tile.classList.remove('animate-in');
+      }, 450);
+    }, delay);
+  });
+</script>
+
+</body>
+</html>

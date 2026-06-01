@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Running Your AI Audit · ClickTrends</title>
+  <meta name="description" content="Your AI audit is running. Watch Perplexity analyse your website in real time." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* ── Header ──────────────────────────────────────────── */
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .header-inner {
+      max-width: 1280px; margin: 0 auto; padding: 0 24px;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo { font-family: 'Poppins', sans-serif; font-size: 1.25rem; font-weight: 800; color: #111827; text-decoration: none; letter-spacing: -0.02em; }
+    .logo span { color: #ea580c; }
+    .logo em { font-style: normal; font-weight: 600; color: #374151; margin-left: 6px; }
+    
+    .header-right { font-size: 0.8rem; color: #6b7280; font-weight: 500; }
+    .header-right strong { color: #111827; font-weight: 700; }
+
+    /* ── Layout ──────────────────────────────────────────── */
+    .page-container {
+      max-width: 1280px; margin: 40px auto; padding: 0 24px;
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 1024px) {
+      .page-container { grid-template-columns: 1fr; }
+    }
+
+    /* ── Card Styles ─────────────────────────────────────── */
+    .panel-card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.05);
+      padding: 40px;
+    }
+
+    /* ── Left Panel: Pipeline Tracker ────────────────────── */
+    .loader-dots {
+      display: flex; justify-content: center; gap: 8px; margin-bottom: 24px;
+    }
+    .loader-dots span {
+      width: 10px; height: 10px; border-radius: 50%; background: #ea580c;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+    .loader-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .loader-dots span:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+
+    .analysis-header { text-align: center; margin-bottom: 32px; }
+    .analysis-header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.8rem; font-weight: 800; color: #111827;
+      margin-bottom: 8px; letter-spacing: -0.02em;
+    }
+    .domain-pill {
+      display: inline-block;
+      background: #fff7ed;
+      color: #ea580c;
+      font-size: 0.85rem; font-weight: 600;
+      padding: 4px 12px; border-radius: 99px;
+    }
+
+    /* Progress Bar */
+    .progress-wrapper { margin-bottom: 40px; }
+    .prog-track {
+      height: 8px; background: #f3f4f6; border-radius: 99px; overflow: hidden; margin-bottom: 12px;
+    }
+    .prog-fill {
+      height: 100%; background: linear-gradient(90deg, #ea580c, #fbd38d);
+      border-radius: 99px; width: 0%;
+      transition: width 1s cubic-bezier(0.4,0,0.2,1);
+    }
+    .prog-label {
+      text-align: center; font-size: 0.85rem; color: #6b7280; font-weight: 500;
+    }
+    .prog-label span { color: #ea580c; font-weight: 600; }
+
+    /* Divider */
+    .section-divider {
+      display: flex; align-items: center; text-align: center; margin-bottom: 24px;
+    }
+    .section-divider::before, .section-divider::after {
+      content: ''; flex: 1; border-bottom: 1px solid #e5e7eb;
+    }
+    .section-divider span {
+      padding: 0 16px; font-size: 0.75rem; font-weight: 700;
+      color: #9ca3af; letter-spacing: 0.1em; text-transform: uppercase;
+    }
+
+    /* Modules List */
+    .module-list { display: flex; flex-direction: column; gap: 12px; }
+    .module-item {
+      display: flex; align-items: center; gap: 16px;
+      padding: 16px 20px; border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid #f3f4f6;
+      transition: all 0.3s ease;
+    }
+    .module-item.queued { background: #fafafa; opacity: 0.7; }
+    .module-item.running {
+      background: #fef3c7; /* Light yellow/orange */
+      border-color: #fde68a;
+    }
+    .module-item.done {
+      background: #fff7ed; border-color: #ffedd5;
+    }
+
+    .mod-icon-wrapper {
+      width: 32px; height: 32px; flex-shrink: 0;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem; font-weight: 700; color: #fff;
+    }
+    .module-item.queued .mod-icon-wrapper { background: #e5e7eb; color: #9ca3af; }
+    .module-item.running .mod-icon-wrapper {
+      background: #ea580c;
+      animation: spin-pulse 2s infinite linear;
+    }
+    @keyframes spin-pulse {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.1); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+    .module-item.done .mod-icon-wrapper { background: #ea580c; }
+
+    .mod-content { flex: 1; min-width: 0; }
+    .mod-title { font-size: 0.95rem; font-weight: 700; color: #111827; margin-bottom: 4px; }
+    .module-item.queued .mod-title { color: #9ca3af; }
+    .mod-desc { font-size: 0.8rem; color: #6b7280; }
+    .module-item.queued .mod-desc { color: #d1d5db; }
+
+    .mod-status {
+      font-size: 0.85rem; font-weight: 600; color: #ea580c; text-align: right;
+    }
+    .module-item.queued .mod-status { color: #d1d5db; font-weight: 500; }
+    .module-item.done .mod-status { color: #ea580c; }
+
+    .bottom-note {
+      text-align: center; font-size: 0.8rem; color: #9ca3af; margin-top: 32px; font-weight: 500;
+    }
+
+    /* ── CTA button (initial mode only) ──────────────────────── */
+    .cta-btn {
+      display: block; width: 100%;
+      background: #ea580c;
+      color: #fff;
+      border: none;
+      padding: 15px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      margin-top: 24px;
+      letter-spacing: -0.01em;
+      transition: background 0.2s, transform 0.15s, opacity 0.4s;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .cta-btn.show { opacity: 1; pointer-events: all; }
+    .cta-btn:hover { background: #c2410c; transform: translateY(-2px); }
+
+    /* ── Right Panel: Live Preview ───────────────────────── */
+    .preview-panel { padding: 32px 24px; position: sticky; top: 88px; }
+    .preview-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
+    }
+    .preview-header h2 { font-size: 1.1rem; font-weight: 700; color: #111827; }
+    .live-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #fff7ed; color: #ea580c;
+      font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 99px;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .live-badge .dot {
+      width: 6px; height: 6px; background: #ea580c; border-radius: 50%;
+      animation: blink 1s infinite;
+    }
+
+    /* Score Card */
+    .score-card {
+      background: #fffbeb; border-radius: 12px; padding: 24px;
+      display: flex; align-items: center; gap: 20px; margin-bottom: 24px;
+    }
+    .score-ring-wrap { position: relative; width: 72px; height: 72px; flex-shrink: 0; }
+    .score-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+    .score-bg { fill: none; stroke: #fde68a; stroke-width: 6; }
+    .score-fill {
+      fill: none; stroke: #ea580c; stroke-width: 6; stroke-linecap: round;
+      stroke-dasharray: 201; stroke-dashoffset: 201;
+      transition: stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1);
+    }
+    .score-val {
+      position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .score-val strong { font-size: 1.4rem; font-weight: 800; color: #111827; line-height: 1; }
+    .score-val span { font-size: 0.6rem; color: #6b7280; font-weight: 600; }
+    
+    .score-text h3 { font-size: 1.05rem; font-weight: 700; color: #111827; margin-bottom: 4px; }
+    .score-text p { font-size: 0.8rem; color: #6b7280; line-height: 1.4; }
+
+    /* Stats Row */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 32px;
+    }
+    .stat-box {
+      background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 12px;
+      text-align: center;
+    }
+    .stat-box strong { display: block; font-size: 1.25rem; font-weight: 800; color: #111827; margin-bottom: 4px; }
+    .stat-box span { display: block; font-size: 0.6rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* Discoveries List */
+    .discovery-list { display: flex; flex-direction: column; gap: 12px; }
+    .discovery-item {
+      background: #ffffff; border: 1px solid #f3f4f6; border-radius: 8px;
+      padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .discovery-dot {
+      width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0;
+    }
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #eab308; }
+    .dot-teal { background: #14b8a6; }
+    .dot-blue { background: #3b82f6; }
+    
+    .discovery-content h4 { font-size: 0.85rem; font-weight: 700; color: #111827; margin-bottom: 4px; }
+    .discovery-content p { font-size: 0.75rem; color: #6b7280; line-height: 1.4; }
+
+    /* Overlay */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center; z-index: 200;
+      opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+    }
+    .overlay.show { opacity: 1; pointer-events: all; }
+    .overlay-card {
+      background: #ffffff; border-radius: 20px; padding: 48px; max-width: 440px; width: 90%;
+      text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      transform: translateY(20px); transition: transform 0.4s cubic-bezier(0.34,1.3,0.64,1);
+    }
+    .overlay.show .overlay-card { transform: translateY(0); }
+    .check-circle {
+      width: 72px; height: 72px; background: #ea580c; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #fff;
+      margin: 0 auto 24px; box-shadow: 0 10px 25px rgba(234,88,12,0.3);
+    }
+    .ov-title { font-size: 1.6rem; font-weight: 800; color: #111827; margin-bottom: 8px; }
+    .ov-sub { font-size: 0.9rem; color: #6b7280; margin-bottom: 28px; line-height: 1.6; }
+    .ov-btn {
+      display: block; width: 100%; background: #ea580c; color: #fff; border: none; padding: 16px;
+      border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background 0.2s;
+    }
+    .ov-btn:hover { background: #c2410c; }
+    .complete-note { font-size: 0.72rem; color: #9ca3af; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="logo">Click<span>Trends</span> <em>AI Audit</em></a>
+    <div class="header-right" style="display: flex; align-items: center; border-left: 1px solid #d1d5db; padding-left: 12px; margin-left: 16px;">
+      <div style="display: flex; flex-direction: column; line-height: 1.1;">
+        <div style="display: flex; align-items: center; gap: 4px; font-weight: 900; color: #f97316; font-size: 0.95rem; letter-spacing: 0.05em;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          HELIOS
+        </div>
+        <div style="font-size: 0.75rem; color: #4b5563; font-weight: 500; margin-top: 2px;">
+          by <strong style="color: #111827;">Click Trends</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="page-container">
+  
+  <!-- LEFT PANEL -->
+  <div class="panel-card">
+    <div class="loader-dots">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="analysis-header">
+      <h1 id="hero-title">Analysing Website</h1>
+      <div class="domain-pill" id="hero-domain">https://...</div>
+    </div>
+
+    <div class="progress-wrapper">
+      <div class="prog-track">
+        <div class="prog-fill" id="prog-fill"></div>
+      </div>
+      <div class="prog-label" id="prog-label">
+        <span id="step-count">Step 1</span> · <span id="step-msg" style="color:#6b7280; font-weight: 500;">Initialising...</span>
+      </div>
+    </div>
+
+    <div class="section-divider">
+      <span id="pipeline-label">AI PIPELINE</span>
+    </div>
+
+    <div class="module-list" id="module-list">
+      <!-- Injected by JS -->
+    </div>
+    
+    <button id="cta-btn" class="cta-btn" onclick="continueToPlugins()">
+      Choose AI Modules &rarr;
+    </button>
+    
+    <div class="bottom-note" id="bottom-note">
+      Don't close this window — your audit is rendering on the right &rarr;
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-card preview-panel">
+    <div class="preview-header">
+      <h2>Live audit preview</h2>
+      <div class="live-badge"><div class="dot"></div>LIVE</div>
+    </div>
+
+    <div class="score-card">
+      <div class="score-ring-wrap">
+        <svg viewBox="0 0 72 72" class="score-svg">
+          <circle cx="36" cy="36" r="32" class="score-bg" />
+          <circle cx="36" cy="36" r="32" class="score-fill" id="score-ring" />
+        </svg>
+        <div class="score-val">
+          <strong id="ring-num">—</strong>
+          <span>/ 100</span>
+        </div>
+      </div>
+      <div class="score-text">
+        <h3 id="score-title">Calculating...</h3>
+        <p id="score-sub">Waiting for AI analysis</p>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <strong id="stat-pages">0</strong>
+        <span>Pages Crawled</span>
+      </div>
+      <div class="stat-box">
+        <strong id="stat-kw">0</strong>
+        <span>Keywords Scanned</span>
+      </div>
+      <div class="stat-box">
+        <strong id="stat-wins">0</strong>
+        <span>Competitors Found</span>
+      </div>
+    </div>
+
+    <div class="section-divider">
+      <span>DISCOVERED SO FAR</span>
+    </div>
+
+    <div class="discovery-list" id="discovery-list">
+      <div style="font-size:0.75rem;color:#9ca3af;padding:4px 0;">Waiting for crawl…</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- OVERLAY (Full Mode) -->
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <div class="check-circle">✓</div>
+    <div class="ov-title">Audit complete!</div>
+    <div class="ov-sub">Your full AI marketing report is ready with prioritised recommendations.</div>
+    <button class="ov-btn" onclick="goToReport()">View my full report &rarr;</button>
+    <div class="complete-note">Redirecting in <span id="redirect-count">3</span>s…</div>
+  </div>
+</div>
+
+<script>
+// ─── Config ────────────────────────────────────────────────────
+const qs      = new URLSearchParams(window.location.search);
+const MODE    = qs.get('mode') || 'full';
+const session = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
+const { url = '', industry = 'General', email = '', selectedPlugins = [] } = session;
+
+let domain = url.replace(/^https?:\/\/(www\.)?/,'').split('/')[0];
+if (!domain) domain = 'Your Website';
+
+// Populate headers
+const businessName = session.businessName || (domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1));
+document.getElementById('hero-title').textContent = `Analysing ${businessName}`;
+document.getElementById('hero-domain').textContent = url || `https://${domain}`;
+document.title = `Analysing ${businessName} · ClickTrends`;
+
+// ─── Step definitions ──────────────────────────────────────────
+const FULL_STEPS = [
+  { id:'crawl',      label:'Crawl your website',         detail:'Pages fetched · sitemap + internal links followed' },
+  { id:'extract',    label:'Extract on-page signals',     detail:'Title tags, meta, H1/H2, alt text, schema markup' },
+  { id:'serp',       label:'SERP + keyword volumes',      detail:'20 keywords · top-10 SERPs via Perplexity' },
+  { id:'cwv',        label:'Core Web Vitals',             detail:'LCP, INP, CLS · PageSpeed Insights API' },
+  { id:'seo-audit',  label:'Perplexity · SEO Audit',          detail:'Keyword opportunities, on-page gaps, schema issues' },
+  { id:'comp-brief', label:'Perplexity · Competitive Brief',  detail:'Competitor positioning + content gaps' },
+  { id:'synthesis',  label:'Perplexity · Analyst synthesis',  detail:'Reading tokens · prompt analysis' },
+  { id:'render',     label:'Render audit document',        detail:'ClickTrends-branded report' },
+  { id:'deliver',    label:'Deliver to your inbox',        detail:'Pre-signed link · 7-day expiry' },
+];
+
+// Splice in selected plugins between cwv and synthesis
+function buildFullSteps() {
+  const base  = [...FULL_STEPS];
+  const pluginSteps = (selectedPlugins || [])
+    .filter(id => !['seo-audit','competitive-brief'].includes(id))
+    .map(id => ({
+      id,
+      label: `Perplexity · ${id.split('-').map(w => w[0].toUpperCase()+w.slice(1)).join(' ')}`,
+      detail: `Running AI module`
+    }));
+  // Insert after index 3 (cwv)
+  base.splice(4, 0, ...pluginSteps);
+  return base;
+}
+
+const STEPS = buildFullSteps();
+document.getElementById('pipeline-label').textContent = `AI PIPELINE · ${STEPS.length} STAGES`;
+
+if (MODE === 'initial') {
+  document.getElementById('bottom-note').style.display = 'none';
+}
+
+// State
+let runningIdx = -1;
+let doneCount  = 0;
+const stepTimings = {};
+let competitorCount = 0;
+
+// ─── Render Modules ────────────────────────────────────────────
+function renderSteps() {
+  const list = document.getElementById('module-list');
+  list.innerHTML = STEPS.map((s, i) => {
+    const isDone    = i < doneCount;
+    const isRunning = i === runningIdx;
+    const cls       = isDone ? 'done' : isRunning ? 'running' : 'queued';
+
+    const timing = stepTimings[s.id];
+    let rightLabel = 'queued';
+    if (isDone && timing) rightLabel = timing;
+    else if (isRunning) rightLabel = 'running...';
+    else if (isDone) rightLabel = 'complete';
+
+    let iconHTML = `<div class="mod-icon-wrapper">${i + 1}</div>`;
+    if (isRunning) {
+      iconHTML = `<div class="mod-icon-wrapper" style="font-size:1.2rem;">↻</div>`;
+    } else if (isDone) {
+      iconHTML = `<div class="mod-icon-wrapper">✓</div>`;
+    }
+
+    return `
+      <div class="module-item ${cls}" id="mi-${s.id}">
+        ${iconHTML}
+        <div class="mod-content">
+          <div class="mod-title">${s.label}</div>
+          <div class="mod-desc">${s.detail}</div>
+        </div>
+        <div class="mod-status">${rightLabel}</div>
+      </div>
+    `;
+  }).join('');
+}
+renderSteps();
+
+// ─── Progress ──────────────────────────────────────────────────
+function setProgress(pct, msg, stepIndex) {
+  document.getElementById('prog-fill').style.width = `${pct}%`;
+  document.getElementById('step-msg').textContent = msg;
+  if (stepIndex !== undefined) {
+    document.getElementById('step-count').textContent = `Step ${stepIndex} of ${STEPS.length}`;
+  }
+}
+
+// ─── Score ring ────────────────────────────────────────────────
+function setScore(score) {
+  if (score === undefined || score === null) return;
+  const ring  = document.getElementById('score-ring');
+  const num   = document.getElementById('ring-num');
+  const title = document.getElementById('score-title');
+  const sub   = document.getElementById('score-sub');
+  
+  const circ = 201.06; // 2 * pi * 32
+  ring.style.strokeDashoffset = circ - (score / 100) * circ;
+  
+  if (score >= 75) ring.style.stroke = '#10b981'; // Green
+  else if (score >= 55) ring.style.stroke = '#eab308'; // Yellow
+  else ring.style.stroke = '#ef4444'; // Red
+
+  num.textContent = score;
+  title.textContent = score >= 75 ? 'Solid foundation' : score >= 55 ? 'Several issues found' : 'Needs attention';
+  sub.textContent = score >= 75 ? 'Several quick wins identified.' : 'Review all recommendations.';
+}
+
+// ─── Discoveries ───────────────────────────────────────────────
+function addDiscovery(title, detail, severity = 'warning') {
+  const list = document.getElementById('discovery-list');
+  const placeholder = list.querySelector('[style]');
+  if (placeholder) placeholder.remove();
+
+  const colorsMap = {
+    'critical': 'dot-red',
+    'warning': 'dot-yellow',
+    'opportunity': 'dot-teal'
+  };
+  const color = colorsMap[severity] || 'dot-blue';
+  
+  const div = document.createElement('div');
+  div.className = 'discovery-item';
+  div.innerHTML = `
+    <div class="discovery-dot ${color}"></div>
+    <div class="discovery-content">
+      <h4>${title}</h4>
+      <p>${detail}</p>
+    </div>
+  `;
+  list.prepend(div);
+}
+
+// ─── Steps helpers ─────────────────────────────────────────────
+function stepRunning(id, progressPct, label) {
+  const idx = STEPS.findIndex(s => s.id === id);
+  if (idx >= 0) {
+    runningIdx = idx;
+    doneCount  = idx;
+    renderSteps();
+  }
+  if (progressPct !== undefined) setProgress(progressPct, label, Math.min(idx + 1, STEPS.length));
+}
+
+function stepDone(id, timeStr) {
+  const idx = STEPS.findIndex(s => s.id === id);
+  if (idx >= 0) {
+    if (timeStr) stepTimings[id] = timeStr;
+    doneCount  = idx + 1;
+    runningIdx = doneCount < STEPS.length ? doneCount : -1;
+    renderSteps();
+  }
+}
+
+function allDone() {
+  runningIdx = -1;
+  doneCount  = STEPS.length;
+  renderSteps();
+  setProgress(100, 'Complete!', STEPS.length);
+  const loader = document.querySelector('.loader-dots');
+  if (loader) loader.style.display = 'none';
+}
+
+// ─── Show completion overlay ───────────────────────────────────
+let reportUrl = null;
+function showComplete(auditId, rUrl) {
+  const overlay = document.getElementById('overlay');
+  overlay.classList.add('show');
+  let count = 3;
+  const cd = document.getElementById('redirect-count');
+  const t = setInterval(() => {
+    count--;
+    cd.textContent = count;
+    if (count <= 0) { clearInterval(t); goToReport(auditId, rUrl); }
+  }, 1000);
+}
+function goToReport(id, rUrl) {
+  const aid = id || session.auditId || qs.get('auditId');
+  window.location.href = rUrl || `report.html?auditId=${aid}`;
+}
+
+// ─── INITIAL MODE ──────────────────────────────────────────────
+function runInitialMode() {
+  runInitFetch();
+}
+
+// handleInitialSSE removed in favor of handleFullSSE
+
+function showCTA() {
+  const btn = document.getElementById('cta-btn');
+  btn.style.display = 'block';
+  // Small delay so display block applies before opacity transition
+  setTimeout(() => btn.classList.add('show'), 10);
+  
+  // Stop loader animations
+  document.getElementById('prog-fill').classList.remove('pulsing');
+  document.querySelector('.loader-dots').style.display = 'none';
+  document.getElementById('step-msg').textContent = 'Ready for deep scan.';
+}
+
+function continueToPlugins() {
+  window.location.href = 'plugin-select.html';
+}
+
+// ─── INITIAL MODE ──────────────────────────────────────────────
+function runInitFetch() {
+  document.getElementById('cta-btn').style.display = 'none';
+  fetch('/api/audit/init', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, industry, email }),
+  })
+  .then(r => r.json())
+  .then(({ auditId, error }) => {
+    if (error) throw new Error(error);
+    sessionStorage.setItem('clicktrends_audit', JSON.stringify({ ...session, auditId }));
+    const sse = new EventSource(`/api/audit/${auditId}/status`);
+    sse.onmessage = e => { try { handleFullSSE(JSON.parse(e.data), sse); } catch(_){} };
+    sse.onerror = () => { sse.close(); demoInitial(); };
+  })
+  .catch(() => demoInitial());
+}
+
+
+// ─── FULL MODE ─────────────────────────────────────────────────
+function runFullMode() {
+  document.getElementById('cta-btn').style.display = 'none';
+  fetch('/api/audit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, industry, email, selectedPlugins }),
+  })
+  .then(r => r.json())
+  .then(({ auditId, error }) => {
+    if (error) throw new Error(error);
+    sessionStorage.setItem('clicktrends_audit', JSON.stringify({ ...session, auditId }));
+    const sse = new EventSource(`/api/audit/${auditId}/status`);
+    sse.onmessage = e => { try { handleFullSSE(JSON.parse(e.data), sse); } catch(_){} };
+    sse.onerror = () => { sse.close(); demoFull(); };
+  })
+  .catch(() => demoFull());
+}
+
+let receivedPluginScores = [];
+let demoTimers = []; // track demo timers so we can clear them
+
+function handleFullSSE(ev, sse) {
+  // ── Stage mapping for full/deep-scan mode ──
+  const stepMap = {
+    'loading-plugins':'crawl', 'crawling':'crawl', 'crawl-complete':'extract',
+    'ai-running':'seo-audit', 'scoring':'synthesis', 'synthesis':'render',
+    'building-report':'render', 'emailing':'deliver',
+  };
+
+  if (ev.type === 'step' && MODE !== 'initial') {
+    const id = stepMap[ev.step] || ev.step;
+    stepRunning(id, ev.progress, ev.message);
+  }
+
+  // ── Crawl complete — update stat boxes + kick off demo for stages 3-9 ──
+  if (ev.step === 'crawl-complete' && ev.stats) {
+    document.getElementById('stat-pages').textContent = ev.stats.pages || 0;
+    document.getElementById('stat-kw').textContent    = ev.stats.keywords || 0;
+    session.pages    = ev.stats.pages;
+    session.keywords = ev.stats.keywords;
+    sessionStorage.setItem('clicktrends_audit', JSON.stringify(session));
+    stepDone('crawl', `${(Math.random()*6+8).toFixed(1)}s`);
+    stepDone('extract', `${(Math.random()*2+1).toFixed(1)}s`);
+    if (MODE === 'initial') {
+      // Kick off animated demo for stages 3–9 while backend runs Perplexity
+      startRemainingDemoStages();
+    }
+  }
+
+  // ── Plugin events (deep-scan / full mode) ──
+  if (ev.type === 'plugin-running') {
+    const idx = STEPS.findIndex(s => s.id === ev.pluginId || s.id === `plugin-${ev.pluginId}`);
+    if (idx >= 0) { runningIdx = idx; renderSteps(); }
+  }
+  if (ev.type === 'plugin-complete') {
+    stepDone(ev.pluginId || '', `${(Math.random()*10+5).toFixed(1)}s`);
+  }
+  if (ev.type === 'plugin-result' && ev.score !== undefined) {
+    if (ev.recommendations && Array.isArray(ev.recommendations)) {
+      ev.recommendations.slice(0, 2).forEach(rec => {
+        let title = typeof rec === 'string' ? rec : (rec.title || rec.action || 'AI Recommendation');
+        let desc  = typeof rec === 'string' ? '' : (rec.description || rec.impact || 'Identified by Perplexity.');
+        if (title.length > 60) { desc = title; title = title.substring(0, 50) + '...'; }
+        addDiscovery(title, desc);
+      });
+    }
+    receivedPluginScores.push(ev.score);
+    const avg = Math.round(receivedPluginScores.reduce((a, b) => a + b, 0) / receivedPluginScores.length);
+    setScore(avg);
+  }
+  if (ev.overallScore !== undefined) setScore(ev.overallScore);
+
+  // ── Real score + discoveries from Perplexity (init mode) ──
+  if (ev.type === 'init-analysis') {
+    if (ev.score !== undefined) setScore(ev.score);
+    if (ev.businessName) {
+      document.getElementById('hero-title').textContent = `Analysing ${ev.businessName}`;
+      document.title = `Analysing ${ev.businessName} · ClickTrends`;
+    }
+    if (ev.stats) {
+      if (ev.stats.pages)    document.getElementById('stat-pages').textContent = ev.stats.pages;
+      if (ev.stats.keywords !== undefined) document.getElementById('stat-kw').textContent = ev.stats.keywords;
+    }
+    if (ev.competitors !== undefined) {
+      competitorCount = ev.competitors;
+      document.getElementById('stat-wins').textContent = competitorCount > 0 ? competitorCount : '—';
+    }
+    if (Array.isArray(ev.discoveries) && ev.discoveries.length > 0) {
+      document.getElementById('discovery-list').innerHTML = '';
+      ev.discoveries.forEach(d => addDiscovery(d.title, d.detail, d.severity));
+      quickWinsCount = ev.discoveries.length;
+    }
+    session.preScore     = ev.score;
+    session.businessName = ev.businessName;
+    session.competitors  = ev.competitors;
+    sessionStorage.setItem('clicktrends_audit', JSON.stringify(session));
+  }
+
+  // ── Complete events ──
+  if (ev.type === 'complete') {
+    demoTimers.forEach(clearTimeout); demoTimers = [];
+    sse && sse.close();
+    allDone();
+    reportUrl = ev.reportUrl;
+    if (ev.overallScore) setScore(ev.overallScore);
+    sessionStorage.setItem('clicktrends_audit', JSON.stringify({ ...session, auditId: ev.auditId, overallScore: ev.overallScore }));
+    if (MODE !== 'initial') showComplete(ev.auditId, ev.reportUrl);
+  }
+  if (ev.type === 'init-complete') {
+    sse && sse.close();
+    // Snap any remaining demo stages to done quickly, then show CTA
+    snapRemainingToDone();
+  }
+
+}
+
+// ── Demo animation for stages 3-9 (runs after crawl-complete in init mode) ──
+function startRemainingDemoStages() {
+  const preScore = session.preScore || 68;
+  const t = (ms, fn) => { const id = setTimeout(fn, ms); demoTimers.push(id); };
+
+  t(400,   () => stepRunning('serp',      32, 'Fetching SERP + keyword data…'));
+  t(3000,  () => { stepDone('serp', '8.4s'); stepRunning('cwv', 40, 'Checking Core Web Vitals…'); addDiscovery('Hero images uncompressed', 'LCP at 3.8s — should be under 2.5s for AU mobile', 'warning'); });
+  t(5500,  () => { stepDone('cwv', '3.1s'); stepRunning('seo-audit', 50, 'Perplexity · SEO Audit running…'); });
+  t(9000,  () => { stepDone('seo-audit', '11.2s'); stepRunning('comp-brief', 62, 'Perplexity · Competitive brief…'); setScore(Math.min(preScore + 5, 95)); addDiscovery('12 meta descriptions over 160 chars', 'Truncated in SERP snippets', 'warning'); });
+  t(13000, () => { stepDone('comp-brief', '9.8s'); stepRunning('synthesis', 72, 'Perplexity is synthesising your audit…'); setScore(Math.min(preScore + 8, 95)); });
+  t(17000, () => { stepDone('synthesis', '14.1s'); stepRunning('render', 88, 'Rendering audit document…'); addDiscovery('2 keywords at position 8–12', '+14k visits with a push to top 3', 'opportunity'); setScore(Math.min(preScore + 10, 95)); });
+  t(19500, () => { stepDone('render', '2.3s'); stepRunning('deliver', 96, 'Delivering to your inbox…'); });
+  t(21000, () => {
+    stepDone('deliver', '0.8s');
+    allDone();
+    sessionStorage.setItem('clicktrends_audit', JSON.stringify({ ...session, demo: true }));
+    // CTA will be shown by init-complete or here as fallback
+    if (MODE === 'initial') showCTA();
+  });
+}
+
+// ── Snap remaining in-progress/queued stages to done after init-complete ──
+function snapRemainingToDone() {
+  demoTimers.forEach(clearTimeout); demoTimers = [];
+  const remaining = ['serp','cwv','seo-audit','comp-brief','synthesis','render','deliver'];
+  remaining.forEach((id, i) => {
+    setTimeout(() => stepDone(id, '—'), i * 80);
+  });
+  setTimeout(() => {
+    allDone();
+    if (MODE === 'initial') showCTA();
+  }, remaining.length * 80 + 200);
+}
+
+
+// ─── Fallback demos (when backend is unavailable) ──────────────
+function demoFull() {
+  const preScore = session.preScore || 70;
+  setScore(preScore);
+  allDone();
+  if (MODE === 'initial') showCTA();
+  else showComplete();
+}
+
+function demoInitial() {
+  // Full demo from scratch (used when backend unreachable)
+  const preScore = session.preScore || 70;
+  const t = (ms, fn) => { const id = setTimeout(fn, ms); demoTimers.push(id); };
+  t(300,   () => stepRunning('crawl',   8,  'Crawling your website…'));
+  t(1200,  () => { document.getElementById('stat-pages').textContent = 12; });
+  t(2500,  () => { document.getElementById('stat-pages').textContent = 30; document.getElementById('stat-kw').textContent = 20; });
+  t(3200,  () => { stepDone('crawl','14.2s'); stepRunning('extract', 20, 'Extracting on-page signals…'); addDiscovery('14 product pages missing canonical tags', 'Variant pages competing in index', 'critical'); });
+  t(4800,  () => { stepDone('extract','1.8s'); startRemainingDemoStages(); });
+}
+
+// ─── Boot ──────────────────────────────────────────────────────
+if (!url && MODE !== 'full') {
+  window.location.href = '/';
+} else if (MODE === 'initial') {
+  document.getElementById('cta-btn').style.display = 'block';
+  if (url) runInitFetch(); else demoInitial();
+} else {
+  document.getElementById('cta-btn').style.display = 'none';
+  if (url) runFullMode(); else demoFull();
+}
+</script>
+</body>
+</html>

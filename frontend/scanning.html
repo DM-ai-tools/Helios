@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generating Your Report · ClickTrends AI Audit</title>
+  <meta name="description" content="Your AI audit is being generated. Please wait." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #faf9f6;
+      color: #1a1a2e;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ──────────────────────────────────────────── */
+    header {
+      background: rgba(255,255,255,0.92);
+      border-bottom: 1px solid rgba(0,0,0,0.07);
+      backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto; padding: 0 28px;
+      height: 64px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo {
+      font-size: 1.15rem; font-weight: 800; color: #1a1a2e;
+      text-decoration: none; letter-spacing: -0.03em;
+    }
+    .logo .accent { color: #f97316; }
+    .logo .light  { font-weight: 400; color: #9ca3af; margin-left: 4px; font-size: 0.88rem; }
+
+    .status-pill {
+      display: flex; align-items: center; gap: 8px;
+      background: #fff7ed; border: 1px solid #fed7aa;
+      color: #ea580c; padding: 5px 14px 5px 10px;
+      border-radius: 99px; font-size: 0.76rem; font-weight: 600;
+    }
+    .live-dot {
+      width: 7px; height: 7px; background: #f97316; border-radius: 50%;
+      animation: blink 1.2s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+    /* ── Main centred content ────────────────────────────── */
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 52px 52px 44px;
+      max-width: 540px;
+      width: 100%;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04);
+      text-align: center;
+    }
+
+    /* Spinner icon */
+    .spinner-wrap {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 28px;
+      animation: pulse-ring 2s ease-in-out infinite;
+    }
+    @keyframes pulse-ring {
+      0%,100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.3); }
+      50%      { box-shadow: 0 0 0 14px rgba(249,115,22,0); }
+    }
+    .spinner-icon {
+      width: 36px; height: 36px;
+      border: 3.5px solid #fed7aa;
+      border-top-color: #f97316;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .card-eyebrow {
+      font-size: 0.7rem; font-weight: 700; color: #f97316;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 1.75rem; font-weight: 800; color: #1a1a2e;
+      letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 8px;
+    }
+    .card-title span { color: #f97316; }
+
+    .card-sub {
+      font-size: 0.88rem; color: #9ca3af; line-height: 1.6;
+      margin-bottom: 36px;
+    }
+
+    /* ── Progress bar ────────────────────────────────────── */
+    .prog-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .prog-label {
+      font-size: 0.78rem; font-weight: 600; color: #6b7280;
+      text-align: left;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 80%;
+    }
+    .prog-pct {
+      font-size: 0.78rem; font-weight: 700; color: #f97316;
+      flex-shrink: 0;
+    }
+    .prog-track {
+      height: 10px; background: #f3f4f6; border-radius: 99px; overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .prog-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #f97316 0%, #fb923c 60%, #fdba74 100%);
+      border-radius: 99px; width: 0%;
+      transition: width 1s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: 0 0 12px rgba(249,115,22,0.4);
+    }
+    .prog-fill.done {
+      background: linear-gradient(90deg, #22c55e, #4ade80);
+      box-shadow: 0 0 12px rgba(34,197,94,0.4);
+    }
+
+    .bottom-note {
+      margin-top: 28px;
+      font-size: 0.75rem; color: #d1d5db; font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ───────────────────────────────────────────── -->
+<header>
+  <div class="header-inner">
+    <a href="/" class="logo">Click<span class="accent">Trends</span><span class="light">AI Audit</span></a>
+    <div class="status-pill">
+      <div class="live-dot"></div>
+      <span id="header-status">Generating report…</span>
+    </div>
+  </div>
+</header>
+
+<!-- ── MAIN ─────────────────────────────────────────────── -->
+<div class="main">
+  <div class="card">
+
+    <div class="spinner-wrap">
+      <div class="spinner-icon" id="spinner-icon"></div>
+    </div>
+
+    <div class="card-eyebrow">AI Report Generation</div>
+    <h1 class="card-title">Analysing <span id="site-name">your website</span></h1>
+    <p class="card-sub" id="card-sub">
+      Claude AI is generating your personalised audit report.<br>
+      This usually takes 60 – 90 seconds.
+    </p>
+
+    <div class="prog-header">
+      <span class="prog-label" id="prog-label">Initialising pipeline…</span>
+      <span class="prog-pct" id="prog-pct">0%</span>
+    </div>
+    <div class="prog-track">
+      <div class="prog-fill" id="prog-fill"></div>
+    </div>
+
+    <p class="bottom-note">Don't close this tab — your report is being generated</p>
+
+  </div>
+</div>
+
+<script>
+// ── Session & URL params ───────────────────────────────────
+const urlParams = new URLSearchParams(window.location.search);
+const session   = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
+
+// auditId: prefer URL param (set by plugin-select.html), then session
+let auditId = urlParams.get('auditId') || session.auditId;
+if (auditId && auditId !== 'undefined') {
+  session.auditId = auditId;
+  sessionStorage.setItem('clicktrends_audit', JSON.stringify(session));
+}
+
+// No auditId at all → back to start
+if (!auditId || auditId === 'undefined') {
+  window.location.replace('/');
+}
+
+// Personalise with domain name
+const url = session.url || '';
+const domain = url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] || 'your website';
+const siteName = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
+document.getElementById('site-name').textContent = siteName;
+document.title = `Generating Report for ${siteName} · ClickTrends`;
+document.getElementById('header-status').textContent = `Scanning ${domain}…`;
+
+// ── Progress helpers ───────────────────────────────────────
+function setProgress(pct, msg) {
+  const p = Math.min(Math.round(pct), 100);
+  document.getElementById('prog-fill').style.width = p + '%';
+  document.getElementById('prog-pct').textContent  = p + '%';
+  if (msg) document.getElementById('prog-label').textContent = msg;
+}
+
+// ── Simulated crawl progress while SSE hasn't sent any ────
+// Slowly advances from 5% to 45% over ~40s so the bar always moves
+let simPct   = 5;
+let simTimer = null;
+function startSimProgress() {
+  simTimer = setInterval(() => {
+    if (simPct < 45) {
+      simPct += 0.5;
+      setProgress(simPct, document.getElementById('prog-label').textContent);
+    }
+  }, 500);
+}
+function stopSimProgress() {
+  if (simTimer) { clearInterval(simTimer); simTimer = null; }
+}
+
+// ── Completion ────────────────────────────────────────────
+function onComplete(dest) {
+  stopSimProgress();
+  setProgress(100, '✓ Report ready — opening now…');
+  document.getElementById('prog-fill').classList.add('done');
+  document.getElementById('spinner-icon').style.animation = 'none';
+  document.getElementById('spinner-icon').style.borderColor = '#bbf7d0';
+  document.getElementById('spinner-icon').style.borderTopColor = '#22c55e';
+  document.getElementById('card-sub').textContent = 'Your AI audit report is complete and ready to view.';
+  document.getElementById('header-status').textContent = 'Report ready!';
+  setTimeout(() => {
+    window.location.href = dest || ('report.html?auditId=' + auditId);
+  }, 1800);
+}
+
+// ── SSE listener ─────────────────────────────────────────
+function listenSSE() {
+  const sse = new EventSource('/api/audit/' + auditId + '/status');
+
+  sse.onmessage = function(e) {
+    try {
+      const ev = JSON.parse(e.data);
+
+      // Progress from SSE overrides simulated progress
+      if (ev.progress !== undefined && ev.progress > simPct) {
+        stopSimProgress();
+        setProgress(ev.progress, ev.message || null);
+      } else if (ev.message) {
+        document.getElementById('prog-label').textContent = ev.message;
+      }
+
+      // Plugin running → named step message
+      if (ev.type === 'plugin-running' && ev.pluginId) {
+        stopSimProgress();
+        const name = ev.pluginId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        document.getElementById('prog-label').textContent = 'Running ' + name + '…';
+      }
+
+      // Done
+      if (ev.type === 'complete') {
+        sse.close();
+        onComplete(ev.reportUrl || ('report.html?auditId=' + (ev.auditId || auditId)));
+      }
+    } catch(_) {}
+  };
+
+  sse.onerror = function() {
+    sse.close();
+    // Reconnect after 5s
+    setTimeout(listenSSE, 5000);
+  };
+}
+
+// ── Boot ─────────────────────────────────────────────────
+// Check if audit is already complete (e.g. page refresh after done)
+fetch('/api/audit/' + auditId)
+  .then(r => r.ok ? r.json() : Promise.reject('not-found'))
+  .then(data => {
+    if (data.status === 'complete') {
+      // Already done — go straight to report
+      window.location.replace('report.html?auditId=' + auditId);
+    } else {
+      // Still running — show progress bar and listen
+      setProgress(8, 'AI modules are running…');
+      startSimProgress();
+      listenSSE();
+    }
+  })
+  .catch(() => {
+    // Audit not found or network error — still try to listen
+    setProgress(5, 'Connecting to audit pipeline…');
+    startSimProgress();
+    listenSSE();
+  });
+
+
+
+</script>
+</body>
+</html>

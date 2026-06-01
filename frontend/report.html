@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Marketing Audit Report &middot; ClickTrends</title>
+  <meta name="description" content="Your complete AI marketing audit report with scores, recommendations, and 90-day action plan." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #faf9f6; color: #1a1a2e; }
+
+    /* Score ring */
+    .score-ring-svg { transform: rotate(-90deg); }
+    .score-ring-bg { fill: none; stroke: #f3f4f6; stroke-width: 10; }
+    .score-ring-fill {
+      fill: none;
+      stroke-width: 10;
+      stroke-linecap: round;
+      stroke-dasharray: 377;
+      transition: stroke-dashoffset 2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Score bar */
+    .score-bar {
+      height: 5px;
+      background: #f3f4f6;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Plugin card */
+    .plugin-score-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px 24px;
+      border: 1px solid #f3f4f6;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    /* Priority table */
+    .priority-table { border-collapse: collapse; width: 100%; }
+    .priority-table th { background: #f9fafb; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #9ca3af; padding: 10px 16px; text-align: left; }
+    .priority-table td { padding: 14px 16px; border-top: 1px solid #f9fafb; font-size: 0.875rem; vertical-align: top; }
+    .priority-table tr:hover td { background: #fffbf5; }
+
+    /* Effort badge */
+    .effort-badge { padding: 2px 10px; border-radius: 99px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+    .effort-small { background: #dcfce7; color: #15803d; }
+    .effort-med { background: #fef3c7; color: #92400e; }
+    .effort-large { background: #fce7f3; color: #9d174d; }
+
+    /* Priority number */
+    .p-p0 { color: #dc2626; font-weight: 800; }
+    .p-p1 { color: #f97316; font-weight: 800; }
+    .p-p2 { color: #3b82f6; font-weight: 800; }
+
+    /* CTA block */
+    .cta-gradient {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f172a 100%);
+    }
+
+    /* Opportunity card */
+    .opp-card {
+      background: white;
+      border: 1px solid #f3f4f6;
+      border-radius: 14px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .opp-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .opp-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      background: #f97316;
+    }
+
+    /* Fade in on scroll (simple) */
+    .fade-section { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .fade-section.visible { opacity: 1; transform: translateY(0); }
+
+    /* â”€â”€ Brand Review â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    .sev-badge {
+      display: inline-flex; align-items: center;
+      font-size: 0.62rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 2px 8px; border-radius: 99px;
+    }
+    .sev-critical { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .sev-high     { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+    .sev-medium   { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .sev-low      { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+
+    .legal-flag-card {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+    }
+    .legal-flag-card.medium { background: #fffbeb; border-color: #fde68a; }
+    .legal-flag-card.low    { background: #f0fdf4; border-color: #bbf7d0; }
+
+    .findings-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .findings-table th { background: #f9fafb; padding: 10px 14px; text-align: left; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: #9ca3af; font-weight: 700; border-bottom: 1px solid #f3f4f6; }
+    .findings-table td { padding: 12px 14px; border-bottom: 1px solid #f9fafb; vertical-align: top; color: #374151; }
+    .findings-table tr:last-child td { border-bottom: none; }
+    .findings-table tr:hover td { background: #fffbf5; }
+    .finding-quote { font-size: 0.73rem; font-style: italic; color: #9ca3af; margin-top: 3px; }
+
+    .before-after-card {
+      background: white;
+      border: 1px solid #f3f4f6;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .ba-before { background: #fef2f2; padding: 12px 16px; border-bottom: 1px solid #fecaca; }
+    .ba-after  { background: #f0fdf4; padding: 12px 16px; border-bottom: 1px solid #bbf7d0; }
+    .ba-reason { padding: 10px 16px; background: #f9fafb; }
+    .ba-label  { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .ba-text   { font-size: 0.8rem; line-height: 1.5; }
+    .ba-before .ba-label { color: #dc2626; }
+    .ba-after  .ba-label { color: #16a34a; }
+    .ba-reason .ba-label { color: #6b7280; }
+
+    /* Loading overlay */
+    .loading-overlay {
+      position: fixed; inset: 0; background: rgba(250,249,246,0.97);
+      z-index: 9999; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 24px;
+    }
+    .loading-overlay.hidden { display: none; }
+    .loading-spinner {
+      width: 56px; height: 56px;
+      border: 4px solid #f3f4f6;
+      border-top-color: #e85d04;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-title { font-size: 1.3rem; font-weight: 700; color: #1a1a2e; }
+    .loading-sub { font-size: 0.9rem; color: #6b7280; max-width: 320px; text-align: center; line-height: 1.6; }
+    .loading-dots span { animation: blink 1.4s infinite; opacity: 0; }
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink { 0%,80%,100%{opacity:0} 40%{opacity:1} }
+    .loading-progress-bar { width: 260px; height: 6px; background: #f3f4f6; border-radius: 99px; overflow: hidden; }
+    .loading-progress-fill { height: 100%; background: linear-gradient(90deg,#e85d04,#f97316); border-radius: 99px; width: 0%; transition: width 5s ease; }
+    
+    /* Print Styles for Puppeteer PDF */
+    @media print {
+      header, #toast-container, .cta-gradient { display: none !important; }
+      body { background: #faf9f6 !important; }
+      .fade-section { opacity: 1 !important; transform: none !important; transition: none !important; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .plugin-score-card, .opp-card, .findings-table tr, .before-after-card { page-break-inside: avoid; break-inside: avoid; }
+    }
+
+    /* Toast Notification */
+    #toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 12px; z-index: 9999; }
+    .toast { min-width: 280px; background: white; border: 1px solid #f3f4f6; border-radius: 12px; padding: 16px 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; transform: translateY(100%); opacity: 0; animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+    .toast.hide { animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+    .toast.success .toast-icon { color: #16a34a; background: #dcfce7; }
+    .toast.error .toast-icon { color: #dc2626; background: #fef2f2; }
+    .toast-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; }
+    .toast-message { font-size: 0.875rem; font-weight: 500; color: #1a1a2e; }
+    @keyframes slideUp { to { transform: translateY(0); opacity: 1; } }
+    @keyframes slideDown { to { transform: translateY(100%); opacity: 0; } }
+  </style>
+</head>
+<body>
+
+
+<!-- â”€â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<header class="border-b border-gray-100 bg-white/90 backdrop-blur-sm sticky top-0 z-40">
+  <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+    <span class="font-bold text-[#1a1a2e] text-base tracking-tight flex-shrink-0">
+      Click<span class="text-[#f97316]">Trends</span> <span class="font-light text-gray-400 text-sm">AI Audit</span>
+    </span>
+    <div class="flex items-center gap-3 flex-wrap justify-end">
+      <button
+        onclick="navigator.clipboard.writeText(window.location.href); this.textContent='&#10003; Copied!';"
+        class="flex items-center gap-1.5 text-sm text-gray-500 border border-gray-200 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+      >
+        &#128279; Copy share link
+      </button>
+      <button
+        id="dl-pdf-btn"
+        onclick="downloadPDF()"
+        class="flex items-center gap-2 text-sm font-semibold text-white bg-gradient-to-r from-[#f97316] to-[#e85d04] px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-orange-500/30 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+      >
+        <span id="dl-pdf-icon">↓</span>
+        <span id="dl-pdf-label">Download PDF Report</span>
+      </button>
+
+      <!-- HELIOS Branding -->
+      <div class="navbar-powered" style="display: flex; align-items: center; border-left: 1px solid #d1d5db; padding-left: 12px; margin-left: 4px;">
+        <div style="display: flex; flex-direction: column; line-height: 1.1; font-family: 'Inter', sans-serif;">
+          <div style="display: flex; align-items: center; gap: 4px; font-weight: 900; color: #f97316; font-size: 0.95rem; letter-spacing: 0.05em;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            HELIOS
+          </div>
+          <div style="font-size: 0.75rem; color: #4b5563; font-weight: 500; margin-top: 2px;">
+            by <strong style="color: #111827;">Click Trends</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-6 py-10">
+
+  <!-- --- REPORT TITLE ---------------------------------------------------- -->
+  <div class="mb-10 fade-section">
+    <h1 class="text-3xl font-extrabold text-[#1a1a2e] tracking-tight mb-3" id="report-title">
+      AI Marketing Audit &middot; <span id="report-business">Your Business</span>
+    </h1>
+    <div class="flex flex-wrap items-center gap-4 text-xs text-gray-400">
+      <span class="flex items-center gap-1.5">&#127760; <span id="report-url">&mdash;</span></span>
+      <span class="flex items-center gap-1.5">&#128197; <span id="report-date">&mdash;</span></span>
+      <span class="flex items-center gap-1.5">&#127981; <span id="report-industry">&mdash;</span></span>
+      <span class="flex items-center gap-1.5">&#9889; Generated in <span id="report-duration">~90</span>s</span>
+    </div>
+  </div>
+
+  <!-- --- OVERVIEW ----------------------------------------------------------- -->
+  <div class="grid md:grid-cols-[200px_1fr] gap-6 bg-white rounded-2xl p-8 border border-gray-100 shadow-sm mb-10 fade-section">
+
+    <!-- Score circle -->
+    <div class="flex flex-col items-center justify-center">
+      <div class="relative mb-3">
+        <svg width="120" height="120" class="score-ring-svg">
+          <circle class="score-ring-bg" cx="60" cy="60" r="50" />
+          <circle id="big-score-ring" class="score-ring-fill" cx="60" cy="60" r="50" stroke="#f97316"
+                  style="stroke-dashoffset:377;" />
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span id="big-score" class="text-3xl font-extrabold text-[#1a1a2e]">--</span>
+          <span class="text-xs text-gray-400">/100</span>
+        </div>
+      </div>
+      <div class="text-sm font-semibold text-[#1a1a2e] text-center" id="big-score-label">Solid foundation</div>
+      <div class="text-xs text-gray-400 text-center mt-1" id="big-score-sublabel">Several quick wins identified</div>
+    </div>
+
+    <!-- Executive summary -->
+    <div>
+      <h2 class="text-base font-bold text-[#1a1a2e] mb-3">Executive summary</h2>
+      <p id="executive-summary" class="text-sm text-gray-600 leading-relaxed mb-4">
+        Your site is in solid shape overall. SEO fundamentals are well-handled. Three quick wins would lift visibility meaningfully. Compressing hero images, fixing truncated meta descriptions, and pushing 2 high-volume keywords from position 8–12 to the top 3 with targeted content will create the biggest gains over the next 6–8 weeks.
+      </p>
+      <div class="flex flex-wrap gap-6 pt-4 border-t border-gray-50">
+        <div class="text-center">
+          <div class="text-xl font-bold text-[#1a1a2e]" id="stat-pages-report">--</div>
+          <div class="text-[10px] text-gray-400 uppercase tracking-wide mt-0.5">Pages Audited</div>
+        </div>
+        <div class="text-center">
+          <div class="text-xl font-bold text-[#1a1a2e]" id="stat-kw-report">--</div>
+          <div class="text-[10px] text-gray-400 uppercase tracking-wide mt-0.5">Keywords Scanned</div>
+        </div>
+        <div class="text-center">
+          <div class="text-xl font-bold text-[#1a1a2e]" id="stat-wins-report">--</div>
+          <div class="text-[10px] text-gray-400 uppercase tracking-wide mt-0.5">Quick Wins</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- --- SCORE BY PILLAR ------------------------------------------------ -->
+  <div class="mb-10 fade-section">
+    <h2 class="text-xl font-bold text-[#1a1a2e] mb-5">Score by pillar</h2>
+    <div id="plugin-scores-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- --- TOP OPPORTUNITIES ----------------------------------------------- -->
+  <div class="mb-10 fade-section">
+    <div class="flex items-center gap-2 mb-5">
+      <span class="text-xl">&#127919;</span>
+      <h2 class="text-xl font-bold text-[#1a1a2e]">Top opportunities</h2>
+    </div>
+    <div id="opportunities-list" class="space-y-4">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- --- BRAND REVIEW SECTION (shown when brand-review plugin ran) --- -->
+  <div id="brand-review-section" class="mb-10 hidden">
+
+    <!-- Risk level banner -->
+    <div id="brand-risk-banner" class="rounded-xl p-4 mb-6 flex items-center gap-3 hidden">
+      <span id="brand-risk-icon" class="text-xl"></span>
+      <div>
+        <div id="brand-risk-label" class="font-bold text-sm"></div>
+        <div id="brand-risk-sub" class="text-xs mt-0.5"></div>
+      </div>
+    </div>
+
+    <!-- Legal / compliance flags -->
+    <div id="legal-flags-wrap" class="mb-8 hidden fade-section">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-xl">&#9888;</span>
+        <h2 class="text-xl font-bold text-[#1a1a2e]">Legal &amp; compliance flags</h2>
+        <span id="legal-flag-count" class="text-xs bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full"></span>
+      </div>
+      <p class="text-xs text-gray-400 mb-4">Issues flagged against Australian Consumer Law (ACL) and ACCC advertising guidelines.</p>
+      <div id="legal-flags-list"></div>
+    </div>
+
+    <!-- Detailed findings table -->
+    <div id="findings-wrap" class="mb-8 hidden fade-section">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-xl">&#128196;</span>
+        <h2 class="text-xl font-bold text-[#1a1a2e]">Detailed findings</h2>
+      </div>
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <table class="findings-table">
+          <thead>
+            <tr>
+              <th>Issue</th>
+              <th>Category</th>
+              <th>Location</th>
+              <th>Severity</th>
+              <th>Suggestion</th>
+            </tr>
+          </thead>
+          <tbody id="findings-rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Before / After rewrites -->
+    <div id="before-after-wrap" class="mb-8 hidden fade-section">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-xl">&#9999;</span>
+        <h2 class="text-xl font-bold text-[#1a1a2e]">Suggested rewrites</h2>
+      </div>
+      <p class="text-xs text-gray-400 mb-4">Before/after for the highest-severity findings.</p>
+      <div id="before-after-list"></div>
+    </div>
+
+    <!-- Voice summary -->
+    <div id="voice-summary-wrap" class="mb-8 hidden fade-section">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-xl">&#127917;</span>
+        <h2 class="text-xl font-bold text-[#1a1a2e]">Detected brand voice</h2>
+      </div>
+      <div id="voice-summary-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6"></div>
+    </div>
+
+  </div>
+
+  <!-- --- COMPETITIVE BRIEF SECTION (Perplexity) --- -->
+  <div id="competitive-brief-section" class="mb-10 hidden fade-section">
+    <div class="flex items-center gap-2 mb-5">
+      <span class="text-xl">&#9874;</span>
+      <h2 class="text-xl font-bold text-[#1a1a2e]">Competitive Intelligence</h2>
+    </div>
+    <div id="comp-summary" class="text-sm text-gray-600 mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm"></div>
+    <div class="grid md:grid-cols-2 gap-6" id="comp-profiles-grid"></div>
+  </div>
+
+  <!-- --- CAMPAIGN PLAN SECTION --- -->
+  <div id="campaign-plan-section" class="mb-10 hidden fade-section">
+    <div class="flex items-center gap-2 mb-5">
+      <span class="text-xl">&#128200;</span>
+      <h2 class="text-xl font-bold text-[#1a1a2e]">90-Day Campaign Plan</h2>
+    </div>
+    <!-- Campaign overview card -->
+    <div id="campaign-overview-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6"></div>
+    <!-- Audience + Messages grid -->
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      <div id="campaign-audience-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hidden"></div>
+      <div id="campaign-messages-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hidden"></div>
+    </div>
+    <!-- Channel strategy -->
+    <div id="campaign-channels-wrap" class="mb-6 hidden">
+      <h3 class="text-base font-bold text-[#1a1a2e] mb-3">Channel Strategy</h3>
+      <div id="campaign-channels-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+    <!-- Content calendar -->
+    <div id="campaign-calendar-wrap" class="mb-6 hidden">
+      <h3 class="text-base font-bold text-[#1a1a2e] mb-3">12-Week Content Calendar</h3>
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <table class="priority-table w-full">
+          <thead><tr><th>Week</th><th>Content Piece</th><th>Channel</th><th>Notes</th></tr></thead>
+          <tbody id="campaign-calendar-rows"></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- KPIs -->
+    <div id="campaign-kpis-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hidden"></div>
+  </div>
+
+  <!-- --- EMAIL SEQUENCE SECTION --- -->
+  <div id="email-sequence-section" class="mb-10 hidden fade-section">
+    <div class="flex items-center gap-2 mb-5">
+      <span class="text-xl">&#128140;</span>
+      <h2 class="text-xl font-bold text-[#1a1a2e]">Email Sequence Plan</h2>
+    </div>
+    <!-- Capture audit -->
+    <div id="email-capture-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 hidden"></div>
+    <!-- Sequences -->
+    <div id="email-sequences-list"></div>
+    <!-- A/B Tests -->
+    <div id="email-abtests-wrap" class="mb-6 hidden">
+      <h3 class="text-base font-bold text-[#1a1a2e] mb-3">A/B Test Recommendations</h3>
+      <div id="email-abtests-list" class="space-y-3"></div>
+    </div>
+  </div>
+
+
+  <!-- --- SEO AUDIT SECTION --- -->
+  <div id="seo-audit-section" class="mb-10 hidden fade-section">
+    <div class="flex items-center gap-2 mb-5">
+      <span class="text-xl">&#128269;</span>
+      <h2 class="text-xl font-bold text-[#1a1a2e]">SEO Audit</h2>
+    </div>
+    <div id="seo-summary-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 hidden"></div>
+    <!-- Tech checklist + On-page issues -->
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      <div id="seo-tech-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hidden"></div>
+      <div id="seo-onpage-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hidden"></div>
+    </div>
+    <!-- Keyword opportunities -->
+    <div id="seo-keywords-wrap" class="mb-6 hidden">
+      <h3 class="text-base font-bold text-[#1a1a2e] mb-3">Keyword Opportunities</h3>
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <table class="priority-table w-full">
+          <thead><tr><th>Keyword</th><th>Difficulty</th><th>Intent</th><th>Opportunity</th><th>Recommended Content</th></tr></thead>
+          <tbody id="seo-keywords-rows"></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Content gaps -->
+    <div id="seo-gaps-wrap" class="mb-6 hidden">
+      <h3 class="text-base font-bold text-[#1a1a2e] mb-3">Content Gaps</h3>
+      <div id="seo-gaps-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+    <!-- Competitor comparison -->
+    <div id="seo-comp-wrap" class="mb-6 hidden">
+      <h3 class="text-base font-bold text-[#1a1a2e] mb-3">Competitor Comparison</h3>
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <table class="priority-table w-full">
+          <thead><tr><th>Dimension</th><th>Your Site</th><th>Competitor A</th><th>Competitor B</th><th>Winner</th></tr></thead>
+          <tbody id="seo-comp-rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- --- CONTENT & COPY SECTION --- -->
+  <div id="content-copy-section" class="mb-10 hidden fade-section">
+    <div class="flex items-center gap-2 mb-5">
+      <span class="text-xl">&#9997;</span>
+      <h2 class="text-xl font-bold text-[#1a1a2e]">Content &amp; Copy</h2>
+    </div>
+    <div id="cc-summary-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 hidden"></div>
+    <!-- Voice + Blog post -->
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      <div id="cc-voice-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hidden"></div>
+      <div id="cc-blog-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hidden"></div>
+    </div>
+    <!-- Social + Email newsletter -->
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      <div id="cc-social-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hidden"></div>
+      <div id="cc-email-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hidden"></div>
+    </div>
+    <!-- Landing page + Case study -->
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      <div id="cc-lp-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hidden"></div>
+      <div id="cc-casestudy-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hidden"></div>
+    </div>
+  </div>
+
+
+  <!-- --- CTA BLOCK --- -->
+  <div class="cta-gradient rounded-2xl p-8 text-center mb-10 fade-section">
+    <h3 class="text-2xl font-bold text-white mb-2">Want help executing this audit?</h3>
+    <p class="text-gray-300 text-sm mb-6 max-w-md mx-auto">
+      Click Trends can deliver the full action plan in 6 weeks.<br>
+      Book a 20-min strategy call to see if we're a fit.
+    </p>
+    <button onclick="window.open('https://clicktrends.com.au/', '_blank')" class="bg-[#f97316] hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl text-base transition-all hover:shadow-lg hover:shadow-orange-900/30 hover:-translate-y-0.5">
+      Book a free strategy call &rarr;
+    </button>
+    <p class="text-gray-500 text-xs mt-4">No obligation &middot; Australian agency &middot; No sales pitch</p>
+  </div>
+
+  <!-- --- 90-DAY ACTION PLAN -------------------------------------------- -->
+  <div class="mb-10 fade-section">
+    <h2 class="text-xl font-bold text-[#1a1a2e] mb-2">90-day action plan</h2>
+    <p class="text-xs text-gray-400 mb-5">Prioritised by impact and effort. All actions reviewed by Claude's brand-review for claim safety.</p>
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <table class="priority-table w-full">
+        <thead>
+          <tr>
+            <th>Priority</th>
+            <th>Action</th>
+            <th>Expected Impact</th>
+            <th>Effort</th>
+          </tr>
+        </thead>
+        <tbody id="action-plan-rows">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- â”€â”€â”€ FOOTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<footer class="border-t border-gray-100 py-8 text-center text-xs text-gray-400">
+  Generated by <span class="text-[#f97316] font-semibold">HELIOS by Click Trends</span> &middot; clicktrends.com.au<br>
+  This audit is illustrative. Specific recommendations should be validated by a senior strategist before implementation.
+</footer>
+
+
+<script>
+var PLUGIN_META = {
+  'seo-audit':         { icon: '[SEO]', name: 'SEO Audit' },
+  'competitive-brief': { icon: '[Comp]', name: 'Competitive Intelligence' },
+  'campaign-plan':     { icon: '[Camp]', name: 'Campaign Plan' },
+  'content-copy':      { icon: '[Copy]', name: 'Content & Copy' },
+  'email-sequence':    { icon: '[Email]', name: 'Email Sequence' },
+  'brand-review':      { icon: '[Brand]', name: 'Brand Review' },
+};
+
+var session = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
+var params  = new URLSearchParams(window.location.search);
+var auditId = params.get('auditId') || session.auditId;
+var isDemo  = params.get('demo') === 'true' || !auditId || auditId.startsWith('demo-');
+
+// ── Toast Notifications ──────────────────────────────────────────
+function showToast(message, type = 'success') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <div class="toast-icon">${type === 'success' ? '✓' : '!'}</div>
+    <div class="toast-message">${message}</div>
+  `;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('hide');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+// ── PDF Download (Puppeteer) ────────────────────────────────────
+async function downloadPDF() {
+  if (!auditId || isDemo) {
+    showToast('PDF download is only available for completed audits.', 'error');
+    return;
+  }
+
+  const btn   = document.getElementById('dl-pdf-btn');
+  const icon  = document.getElementById('dl-pdf-icon');
+  const label = document.getElementById('dl-pdf-label');
+
+  // Loading state
+  btn.disabled = true;
+  const originalIcon = icon.innerHTML;
+  icon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="animation:pdf-spin 0.8s linear infinite;display:inline-block;vertical-align:middle;">
+    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+  </svg>`;
+  label.textContent = 'Generating PDF...';
+
+  if (!document.getElementById('pdf-spin-style')) {
+    const s = document.createElement('style');
+    s.id = 'pdf-spin-style';
+    s.textContent = '@keyframes pdf-spin { to { transform: rotate(360deg); } }';
+    document.head.appendChild(s);
+  }
+
+  try {
+    const response = await fetch(`/api/audits/${auditId}/download-pdf`);
+
+    if (!response.ok) {
+      throw new Error(`Server error ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `clicktrends-audit-${auditId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('Report downloaded successfully', 'success');
+  } catch (err) {
+    console.error('[PDF] Download failed:', err);
+    showToast('Unable to generate report. Please try again.', 'error');
+  } finally {
+    btn.disabled = false;
+    icon.innerHTML = originalIcon;
+    label.textContent = 'Download PDF Report';
+  }
+}
+
+
+function animateRing(ringEl, score) {
+  var c = 2 * Math.PI * 50;
+  ringEl.style.transition = 'none';
+  ringEl.style.strokeDashoffset = c;
+  ringEl.style.stroke = score >= 75 ? '#22c55e' : score >= 55 ? '#f59e0b' : '#ef4444';
+  requestAnimationFrame(function() { requestAnimationFrame(function() {
+    ringEl.style.transition = 'stroke-dashoffset 1.8s cubic-bezier(0.4,0,0.2,1),stroke 0.5s';
+    ringEl.style.strokeDashoffset = c - (score / 100) * c;
+  }); });
+}
+function animateBar(el, pct) {
+  el.style.transition = 'none'; el.style.width = '0%';
+  requestAnimationFrame(function() { requestAnimationFrame(function() {
+    el.style.transition = 'width 1.4s cubic-bezier(0.4,0,0.2,1)';
+    el.style.width = pct + '%';
+  }); });
+}
+
+function buildOpportunities(synthesis, pluginOutputs) {
+  var opps = [];
+  var topPris = (synthesis && synthesis.topPriorities) ? synthesis.topPriorities : [];
+  topPris.slice(0, 5).forEach(function(tp, i) {
+    var isQuick = /week|day|hour/i.test(tp.timeframe || '');
+    opps.push({ num: i+1, title: tp.action || ('Priority '+(i+1)),
+      tag: tp.timeframe || 'Action', description: tp.impact || tp.expectedImpact || '',
+      impact: ((tp.impact||tp.expectedImpact||'').toLowerCase().startsWith('high')) ? 'HIGH IMPACT' : 'GOOD IMPACT',
+      effort: isQuick ? 'LOW EFFORT' : 'MED EFFORT' });
+  });
+  if (opps.length < 3 && pluginOutputs) {
+    Object.entries(pluginOutputs).forEach(function(entry) {
+      var pid = entry[0], out = entry[1];
+      (out.recommendations || [])
+        .filter(function(r){ return (r.effort||'').toLowerCase().includes('quick') && (r.expectedImpact||'').toLowerCase()==='high'; })
+        .slice(0, 2).forEach(function(r) {
+          opps.push({ num: opps.length+1, title: r.action||'',
+            tag: (PLUGIN_META[pid]||{}).name||pid, description: r.expectedImpact||'',
+            impact: 'HIGH IMPACT', effort: 'LOW EFFORT' });
+        });
+    });
+  }
+  var quickWins = (synthesis && synthesis.quickWins) ? synthesis.quickWins : [];
+  quickWins.slice(0, Math.max(0, 3-opps.length)).forEach(function(qw) {
+    opps.push({ num: opps.length+1, title: typeof qw==='string'?qw:(qw.action||''),
+      tag: 'Quick Win', description: '', impact: 'GOOD IMPACT', effort: 'LOW EFFORT' });
+  });
+  return opps.slice(0, 5);
+}
+
+function buildActionPlan(synthesis, pluginOutputs) {
+  var rows = [];
+  var topPris = (synthesis && synthesis.topPriorities) ? synthesis.topPriorities : [];
+  topPris.forEach(function(tp, i) {
+    var isQuick = /week|day|hour/i.test(tp.timeframe||'');
+    rows.push({ priority: i===0?'P0':i<=2?'P1':'P2',
+      action: tp.action||'', impact: tp.impact||tp.timeframe||'', effort: isQuick?'SMALL':'MED' });
+  });
+  var quickWins = (synthesis && synthesis.quickWins) ? synthesis.quickWins : [];
+  quickWins.filter(function(qw){ return typeof qw==='string'; }).forEach(function(qw) {
+    if (!rows.some(function(r){ return r.action===qw; }))
+      rows.push({ priority:'P1', action:qw, impact:'Quick win', effort:'SMALL' });
+  });
+  if (pluginOutputs) {
+    Object.entries(pluginOutputs).forEach(function(entry) {
+      var out = entry[1];
+      (out.recommendations||[]).filter(function(r){ return r.effort==='Strategic Investment'; }).slice(0,2).forEach(function(r) {
+        if (!rows.some(function(row){ return row.action===r.action; }))
+          rows.push({ priority:'P2', action:r.action||'', impact:r.expectedImpact||'', effort:'ONGOING' });
+      });
+    });
+  }
+  return rows.slice(0, 15);
+}
+
+function populateReport(data) {
+  var url      = data.url      || session.url      || '---';
+  var industry = data.industry || session.industry || '---';
+  var domain   = url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+  var bizName  = domain.split('.')[0].replace(/\b\w/g, function(l){ return l.toUpperCase(); }) || 'Your Business';
+  var synthesis = data.synthesis || {};
+  var pluginOutputs = data.pluginOutputs || {};
+
+  document.getElementById('report-business').textContent = bizName;
+  document.getElementById('report-url').textContent      = url;
+  document.getElementById('report-date').textContent     = new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('report-industry').textContent = industry;
+  document.getElementById('report-duration').textContent = data.duration || '~90';
+  document.title = 'AI Audit - ' + bizName + ' - ClickTrends';
+
+  var execRaw = (synthesis.executiveSummary || data.executiveSummary || '');
+  document.getElementById('executive-summary').textContent =
+    execRaw.split('\n\n').slice(0,2).join('\n\n') || 'Complete the audit to see your executive summary.';
+
+  document.getElementById('stat-pages-report').textContent = data.pagesAudited || session.pages || '---';
+  document.getElementById('stat-kw-report').textContent    = (data.stats && data.stats.keywords) || session.keywords || '---';
+  document.getElementById('stat-wins-report').textContent  = (synthesis.quickWins||[]).length || '---';
+
+  // Use nullish coalescing logic — 0 is a valid score, not a fallback trigger
+  var score = (data.overallScore != null) ? data.overallScore
+             : (session.overallScore != null) ? session.overallScore
+             : (session.preScore != null) ? session.preScore : 0;
+  document.getElementById('big-score').textContent          = score;
+  document.getElementById('big-score-label').textContent    = score>=75?'Solid foundation':score>=55?'Needs improvement':'Critical issues';
+  document.getElementById('big-score-sublabel').textContent = synthesis.overallInsight || (score>=75?'Several quick wins identified':'Review recommendations carefully');
+  animateRing(document.getElementById('big-score-ring'), score);
+
+  var plugins = data.plugins || [];
+  var grid = document.getElementById('plugin-scores-grid');
+  if (plugins.length > 0) {
+    grid.innerHTML = plugins.map(function(p) {
+      var meta   = PLUGIN_META[p.id] || { icon: '[AI]', name: p.name || p.id };
+      var colour = p.score>=70?'#22c55e':p.score>=50?'#f59e0b':'#ef4444';
+      var rawSummary = p.summary || ((pluginOutputs[p.id]||{}).summary) || '';
+      // Don't display raw API errors — show a clean message instead
+      var isError = rawSummary.indexOf('Analysis failed') === 0 || rawSummary.indexOf('{"type":"error"') !== -1;
+      var summary = isError ? 'Analysis unavailable for this plugin.' : rawSummary;
+      return '<div class="plugin-score-card">' +
+        '<div class="flex items-center gap-2 mb-3">' +
+          '<span class="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">' + meta.icon + '</span>' +
+          '<div class="flex-1">' +
+            '<div class="text-sm font-bold text-gray-900">' + meta.name + '</div>' +
+            '<div class="text-xl font-extrabold" style="color:' + colour + '">' + (p.score || 0) + '<span class="text-xs text-gray-400 font-normal">/100</span></div>' +
+          '</div></div>' +
+        '<div class="score-bar mb-3"><div class="score-bar-fill" id="bar-' + p.id + '" style="width:0%;background:' + colour + '"></div></div>' +
+        '<p class="text-xs text-gray-500 leading-relaxed">' + summary + '</p>' +
+      '</div>';
+    }).join('');
+    requestAnimationFrame(function() { requestAnimationFrame(function() {
+      plugins.forEach(function(p) { var b = document.getElementById('bar-'+p.id); if(b) animateBar(b, p.score); });
+    }); });
+  } else {
+    grid.innerHTML = '<p class="text-sm text-gray-400 col-span-3 p-4">No plugin scores yet. Complete the full audit to see results.</p>';
+  }
+
+  var opps    = buildOpportunities(synthesis, pluginOutputs);
+  var oppList = document.getElementById('opportunities-list');
+  oppList.innerHTML = opps.length > 0 ? opps.map(function(opp) {
+    return '<div class="opp-card">' +
+      '<div class="flex items-start gap-3">' +
+        '<div style="width:28px;height:28px;background:#fff7ed;border:1px solid #fed7aa;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:700;color:#f97316">' + opp.num + '</div>' +
+        '<div style="flex:1">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">' +
+            '<span style="font-weight:700;color:#1a1a2e;font-size:14px">' + opp.title + '</span>' +
+            '<span style="font-size:11px;color:#9ca3af;background:#f3f4f6;padding:2px 8px;border-radius:99px">' + opp.tag + '</span>' +
+          '</div>' +
+          '<p style="font-size:12px;color:#6b7280;margin-bottom:8px">' + opp.description + '</p>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+            '<span style="font-size:10px;font-weight:700;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;padding:2px 8px;border-radius:99px">+ ' + opp.impact + '</span>' +
+            '<span style="font-size:10px;font-weight:700;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;padding:2px 8px;border-radius:99px">' + opp.effort + '</span>' +
+          '</div></div></div></div>';
+  }).join('') : '<p style="color:#9ca3af;font-size:14px;padding:16px">Opportunities will appear once the audit completes.</p>';
+
+  var plan      = buildActionPlan(synthesis, pluginOutputs);
+  var effortMap = { SMALL:'effort-small', MED:'effort-med', LARGE:'effort-large', ONGOING:'effort-med' };
+  var priMap    = { P0:'p-p0', P1:'p-p1', P2:'p-p2' };
+  document.getElementById('action-plan-rows').innerHTML = plan.length > 0
+    ? plan.map(function(row) {
+        return '<tr>' +
+          '<td class="' + (priMap[row.priority]||'') + '">' + row.priority + '</td>' +
+          '<td>' + row.action + '</td>' +
+          '<td style="color:#6b7280">' + row.impact + '</td>' +
+          '<td><span class="effort-badge ' + (effortMap[row.effort]||'') + '">' + row.effort + '</span></td>' +
+        '</tr>';
+      }).join('')
+    : '<tr><td colspan="4" style="color:#9ca3af;padding:16px;font-size:14px">Action plan will appear once the audit completes.</td></tr>';
+
+  if (pluginOutputs['brand-review'])      renderBrandReview(pluginOutputs['brand-review']);
+  if (pluginOutputs['competitive-brief']) renderCompetitiveBrief(pluginOutputs['competitive-brief']);
+  if (pluginOutputs['campaign-plan'])     renderCampaignPlan(pluginOutputs['campaign-plan']);
+  if (pluginOutputs['email-sequence'])    renderEmailSequence(pluginOutputs['email-sequence']);
+  if (pluginOutputs['seo-audit'])         renderSeoAudit(pluginOutputs['seo-audit']);
+  if (pluginOutputs['content-copy'])      renderContentCopy(pluginOutputs['content-copy']);
+
+  document.querySelectorAll('.fade-section').forEach(function(el) { observer.observe(el); });
+}
+
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.08 });
+
+function sevClass(sev) {
+  var s = (sev||'').toLowerCase();
+  return s==='critical'?'sev-critical':s==='high'?'sev-high':s==='medium'?'sev-medium':'sev-low';
+}
+
+function statusBadge(status) {
+  var s = (status||'').toLowerCase();
+  var cfg = s==='pass'   ? { bg:'#f0fdf4', border:'#86efac', color:'#166534', icon:'\u2713' }
+           : s==='fail'  ? { bg:'#fef2f2', border:'#fecaca', color:'#dc2626', icon:'\u2717' }
+           :               { bg:'#fffbeb', border:'#fde68a', color:'#92400e', icon:'!' };
+  return '<span style="display:inline-flex;align-items:center;gap:3px;background:'+cfg.bg+';border:1px solid '+cfg.border+';color:'+cfg.color+';font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;">'+cfg.icon+' '+clean(status)+'</span>';
+}
+
+function diffBadge(d) {
+  var s = (d||'').toLowerCase();
+  var c = s==='easy'?'#166534':s==='moderate'?'#92400e':'#991b1b';
+  var bg = s==='easy'?'#f0fdf4':s==='moderate'?'#fffbeb':'#fef2f2';
+  return '<span style="font-size:10px;font-weight:700;color:'+c+';background:'+bg+';padding:2px 7px;border-radius:99px;">'+clean(d)+'</span>';
+}
+
+function oppBadge(o) {
+  var s = (o||'').toLowerCase();
+  var c = s==='high'?'#1d4ed8':s==='medium'?'#7c3aed':'#374151';
+  var bg = s==='high'?'#eff6ff':s==='medium'?'#f5f3ff':'#f3f4f6';
+  return '<span style="font-size:10px;font-weight:700;color:'+c+';background:'+bg+';padding:2px 7px;border-radius:99px;">'+clean(o)+'</span>';
+}
+
+function priorityBadge(p) {
+  var s = (p||'').toLowerCase();
+  var c = s==='high'?'#dc2626':s==='medium'?'#d97706':'#6b7280';
+  return '<span style="font-size:10px;font-weight:600;color:'+c+'">'+clean(p)+'</span>';
+}
+
+// ─── SEO Audit Render ────────────────────────────────────────
+function renderSeoAudit(sa) {
+  var section = document.getElementById('seo-audit-section');
+  if (!section || !sa) return;
+  section.classList.remove('hidden');
+
+  // Summary
+  var sumCard = document.getElementById('seo-summary-card');
+  if (sumCard && sa.summary) {
+    sumCard.classList.remove('hidden');
+    sumCard.innerHTML = '<div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-2">Executive Summary</div>'+
+      '<p class="text-sm text-gray-700 leading-relaxed">' + clean(sa.summary) + '</p>';
+  }
+
+  // Technical checklist
+  var tc = sa.technicalChecklist || [];
+  var techCard = document.getElementById('seo-tech-card');
+  if (techCard && tc.length) {
+    techCard.classList.remove('hidden');
+    var pass = tc.filter(function(c){return (c.status||'').toLowerCase()==='pass';}).length;
+    techCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-1">Technical SEO Checklist</div>'+
+      '<div class="text-xs text-gray-400 mb-4">'+pass+' / '+tc.length+' checks passed</div>'+
+      '<div class="space-y-2">'+tc.map(function(c){
+        return '<div class="flex items-start gap-3">'+
+          '<div class="mt-0.5">'+statusBadge(c.status)+'</div>'+
+          '<div><div class="text-xs font-semibold text-gray-800">'+clean(c.check)+'</div>'+
+          (c.details ? '<div class="text-xs text-gray-400 mt-0.5">'+clean(c.details)+'</div>' : '')+
+          '</div></div>';
+      }).join('')+'</div>';
+  }
+
+  // On-page issues
+  var op = sa.onPageIssues || [];
+  var opCard = document.getElementById('seo-onpage-card');
+  if (opCard && op.length) {
+    opCard.classList.remove('hidden');
+    opCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-4">On-Page Issues <span class="text-xs font-normal text-gray-400">('+op.length+' found)</span></div>'+
+      '<div class="space-y-3">'+op.map(function(o){
+        return '<div class="border border-gray-100 rounded-xl p-3">'+
+          '<div class="flex items-center justify-between mb-1">'+
+            '<span class="text-xs font-semibold text-gray-700">'+clean(o.pageUrl)+'</span>'+
+            '<span class="'+sevClass(o.severity)+' text-[10px] px-2 py-0.5 rounded-full font-bold">'+clean(o.severity)+'</span>'+
+          '</div>'+
+          '<div class="text-xs text-gray-500 mb-2">'+clean(o.issue)+'</div>'+
+          (o.recommendedFix ? '<div class="text-xs text-[#1a1a2e] font-semibold bg-orange-50 border border-orange-100 rounded px-2 py-1">&rarr; '+clean(o.recommendedFix)+'</div>' : '')+
+        '</div>';
+      }).join('')+'</div>';
+  }
+
+  // Keyword opportunities
+  var kw = sa.keywordOpportunities || [];
+  if (kw.length) {
+    var kwWrap = document.getElementById('seo-keywords-wrap');
+    var kwRows = document.getElementById('seo-keywords-rows');
+    if (kwWrap) kwWrap.classList.remove('hidden');
+    if (kwRows) kwRows.innerHTML = kw.map(function(k){
+      return '<tr>'+
+        '<td class="font-semibold text-[#1a1a2e]">'+clean(k.keyword)+'</td>'+
+        '<td>'+diffBadge(k.estimatedDifficulty)+'</td>'+
+        '<td style="font-size:11px;color:#6b7280;">'+clean(k.intent)+'</td>'+
+        '<td>'+oppBadge(k.opportunityScore)+'</td>'+
+        '<td style="font-size:11px;color:#374151;">'+clean(k.recommendedContentType)+'</td>'+
+      '</tr>';
+    }).join('');
+  }
+
+  // Content gaps
+  var gaps = sa.contentGaps || [];
+  if (gaps.length) {
+    var gWrap = document.getElementById('seo-gaps-wrap');
+    var gGrid = document.getElementById('seo-gaps-grid');
+    if (gWrap) gWrap.classList.remove('hidden');
+    if (gGrid) gGrid.innerHTML = gaps.map(function(g){
+      return '<div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">'+
+        '<div class="flex items-center justify-between mb-2">'+
+          '<span class="text-sm font-bold text-[#1a1a2e]">'+clean(g.topic)+'</span>'+
+          priorityBadge(g.priority)+
+        '</div>'+
+        '<p class="text-xs text-gray-500 mb-2">'+clean(g.whyItMatters)+'</p>'+
+        '<div class="flex items-center gap-2">'+
+          '<span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">'+clean(g.recommendedFormat)+'</span>'+
+          '<span class="text-[10px] text-gray-400">'+clean(g.estimatedEffort)+'</span>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  }
+
+  // Competitor comparison
+  var comp = sa.competitorComparison || [];
+  if (comp.length) {
+    var cWrap = document.getElementById('seo-comp-wrap');
+    var cRows = document.getElementById('seo-comp-rows');
+    if (cWrap) cWrap.classList.remove('hidden');
+    if (cRows) cRows.innerHTML = comp.map(function(r){
+      return '<tr>'+
+        '<td class="font-semibold text-xs">'+clean(r.dimension)+'</td>'+
+        '<td style="font-size:11px">'+clean(r.yourSite)+'</td>'+
+        '<td style="font-size:11px;color:#6b7280">'+clean(r.competitorA)+'</td>'+
+        '<td style="font-size:11px;color:#6b7280">'+clean(r.competitorB)+'</td>'+
+        '<td style="font-size:11px;font-weight:700;color:#f97316">'+clean(r.winner)+'</td>'+
+      '</tr>';
+    }).join('');
+  }
+}
+
+// ─── Content & Copy Render ───────────────────────────────────
+function renderContentCopy(cc) {
+  var section = document.getElementById('content-copy-section');
+  if (!section || !cc) return;
+  section.classList.remove('hidden');
+
+  var drafts = cc.contentDrafts || {};
+
+  // Summary
+  var sumCard = document.getElementById('cc-summary-card');
+  if (sumCard && cc.summary) {
+    sumCard.classList.remove('hidden');
+    sumCard.innerHTML = '<div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-2">Executive Summary</div>'+
+      '<p class="text-sm text-gray-700 leading-relaxed">'+clean(cc.summary)+'</p>';
+  }
+
+  // Voice & Tone
+  var vt = cc.voiceAndTone || {};
+  var voiceCard = document.getElementById('cc-voice-card');
+  if (voiceCard && (vt.current || vt.recommended)) {
+    voiceCard.classList.remove('hidden');
+    voiceCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Voice &amp; Tone</div>'+
+      (vt.current ? '<div class="mb-2"><div class="text-xs text-gray-400 mb-0.5">Current</div><div class="text-sm text-gray-700">'+clean(vt.current)+'</div></div>' : '')+
+      (vt.recommended ? '<div class="mb-3"><div class="text-xs text-gray-400 mb-0.5">Recommended</div><div class="text-sm font-semibold text-[#1a1a2e] bg-orange-50 border-l-4 border-orange-400 pl-3 py-1">'+clean(vt.recommended)+'</div></div>' : '')+
+      ((vt.adjectives||[]).length ? '<div class="flex flex-wrap gap-1">'+vt.adjectives.map(function(a){return '<span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">'+clean(a)+'</span>';}).join('')+'</div>' : '');
+  }
+
+  // Blog post
+  var blog = drafts.blogPost || {};
+  var blogCard = document.getElementById('cc-blog-card');
+  if (blogCard && blog.headline) {
+    blogCard.classList.remove('hidden');
+    blogCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Blog Post Draft</div>'+
+      '<div class="text-base font-bold text-[#1a1a2e] mb-1">'+clean(blog.headline)+'</div>'+
+      (blog.primaryKeyword ? '<div class="text-[10px] bg-orange-50 border border-orange-100 text-orange-700 px-2 py-0.5 rounded-full inline-block mb-2">&#128269; '+clean(blog.primaryKeyword)+'</div>' : '')+
+      (blog.metaDescription ? '<div class="text-xs text-gray-500 italic mb-3">'+clean(blog.metaDescription)+'</div>' : '')+
+      (blog.fullDraft ? '<div class="text-xs text-gray-700 leading-relaxed whitespace-pre-line bg-gray-50 rounded-xl p-4 border border-gray-100 max-h-64 overflow-y-auto">'+clean(blog.fullDraft)+'</div>' : '');
+  }
+
+  // Social media posts
+  var social = drafts.socialMediaPosts || [];
+  var socCard = document.getElementById('cc-social-card');
+  if (socCard && social.length) {
+    socCard.classList.remove('hidden');
+    socCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Social Media Posts</div>'+
+      '<div class="space-y-3">'+social.map(function(s){
+        var pColor = {LinkedIn:'#0077b5',X:'#1a1a2e',Instagram:'#e1306c',Facebook:'#1877f2'};
+        var c = pColor[s.platform] || '#374151';
+        return '<div class="border border-gray-100 rounded-xl p-3">'+
+          '<div class="text-[10px] font-bold mb-2" style="color:'+c+'">'+clean(s.platform)+'</div>'+
+          '<div class="text-xs font-semibold text-[#1a1a2e] mb-1">'+clean(s.hook)+'</div>'+
+          '<div class="text-xs text-gray-600 mb-2">'+clean(s.body)+'</div>'+
+          '<div class="text-xs text-[#f97316] font-bold mb-1">'+clean(s.cta)+'</div>'+
+          ((s.hashtags||[]).length ? '<div class="flex flex-wrap gap-1">'+s.hashtags.map(function(h){return '<span class="text-[10px] text-blue-600">#'+clean(h).replace(/^#/,'')+'</span>';}).join('')+'</div>' : '')+
+        '</div>';
+      }).join('')+'</div>';
+  }
+
+  // Email newsletter
+  var enl = drafts.emailNewsletter || {};
+  var enlCard = document.getElementById('cc-email-card');
+  if (enlCard && enl.subjectLine) {
+    enlCard.classList.remove('hidden');
+    enlCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Email Newsletter</div>'+
+      '<div class="bg-orange-50 border border-orange-100 rounded-xl p-3 mb-3">'+
+        '<div class="text-xs text-gray-400 mb-0.5">Subject</div>'+
+        '<div class="text-sm font-bold text-[#1a1a2e]">'+clean(enl.subjectLine)+'</div>'+
+        (enl.previewText ? '<div class="text-xs text-gray-500 italic mt-1">'+clean(enl.previewText)+'</div>' : '')+
+      '</div>'+
+      (enl.heroStatement ? '<div class="text-sm font-semibold text-[#1a1a2e] mb-3 border-l-4 border-[#f97316] pl-3">'+clean(enl.heroStatement)+'</div>' : '')+
+      ((enl.bodyBlocks||[]).length ? '<div class="space-y-2 mb-3">'+enl.bodyBlocks.map(function(b){return '<div class="text-xs text-gray-600 bg-gray-50 rounded-lg p-3">'+clean(b)+'</div>';}).join('')+'</div>' : '')+
+      (enl.primaryCTA ? '<span class="inline-flex items-center bg-[#f97316] text-white text-xs font-bold px-4 py-2 rounded-lg">'+clean(enl.primaryCTA)+'</span>' : '');
+  }
+
+  // Landing page
+  var lp = drafts.landingPage || {};
+  var lpCard = document.getElementById('cc-lp-card');
+  if (lpCard && lp.headline) {
+    lpCard.classList.remove('hidden');
+    lpCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Landing Page Copy</div>'+
+      '<div class="text-xl font-black text-[#1a1a2e] mb-1">'+clean(lp.headline)+'</div>'+
+      (lp.subheadline ? '<div class="text-sm text-gray-500 mb-4">'+clean(lp.subheadline)+'</div>' : '')+
+      ((lp.valuePropositions||[]).length ? '<div class="space-y-2 mb-4">'+lp.valuePropositions.map(function(v){return '<div class="flex gap-2 text-xs text-gray-700"><span class="text-[#f97316] font-bold">&#10003;</span>'+clean(v)+'</div>';}).join('')+'</div>' : '')+
+      (lp.socialProofRecommendation ? '<div class="text-xs text-gray-400 italic mb-3">'+clean(lp.socialProofRecommendation)+'</div>' : '')+
+      (lp.primaryCTA ? '<span class="inline-flex items-center bg-[#1a1a2e] text-white text-xs font-bold px-4 py-2 rounded-lg">'+clean(lp.primaryCTA)+'</span>' : '');
+  }
+
+  // Case study
+  var cs = drafts.caseStudy || {};
+  var csCard = document.getElementById('cc-casestudy-card');
+  if (csCard && cs.title) {
+    csCard.classList.remove('hidden');
+    csCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Case Study Framework</div>'+
+      '<div class="text-base font-bold text-[#1a1a2e] mb-1">'+clean(cs.title)+'</div>'+
+      (cs.snapshot ? '<div class="bg-orange-50 border border-orange-100 rounded-xl p-3 mb-3 text-xs font-semibold text-orange-900">'+clean(cs.snapshot)+'</div>' : '')+
+      '<div class="space-y-2">'+
+        (cs.challenge ? '<div class="text-xs"><span class="font-bold text-gray-600">Challenge: </span><span class="text-gray-600">'+clean(cs.challenge)+'</span></div>' : '')+
+        (cs.solution ? '<div class="text-xs"><span class="font-bold text-gray-600">Solution: </span><span class="text-gray-600">'+clean(cs.solution)+'</span></div>' : '')+
+        (cs.results ? '<div class="text-xs"><span class="font-bold text-[#f97316]">Results: </span><span class="text-gray-700 font-semibold">'+clean(cs.results)+'</span></div>' : '')+
+        (cs.quoteIdea ? '<div class="text-xs italic border-l-4 border-gray-200 pl-3 text-gray-500">'+clean(cs.quoteIdea)+'</div>' : '')+
+      '</div>'+
+      (cs.cta ? '<div class="mt-3"><span class="inline-flex bg-[#f97316] text-white text-xs font-bold px-4 py-2 rounded-lg">'+clean(cs.cta)+'</span></div>' : '');
+  }
+}
+
+// clean() — sanitizes Claude output strings before injecting into the DOM.
+// Converts literal \n → real newlines, strips escaped quotes, trims whitespace.
+function clean(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/\\n/g, '\n')   // literal \n  → newline
+    .replace(/\\t/g, '  ')   // literal \t  → spaces
+    .replace(/\\'/g, "'")   // literal \'  → '
+    .replace(/\\"/g, '"')   // literal \"  → "
+    .replace(/\\r/g, '')     // strip \r
+    .trim();
+}
+
+function renderBrandReview(br) {
+  var section = document.getElementById('brand-review-section');
+  if (!section || !br) return;
+  section.classList.remove('hidden');
+  var riskLevel = br.score>=75?'LOW':br.score>=55?'MEDIUM':br.score>=35?'HIGH':'CRITICAL';
+  var bannerEl  = document.getElementById('brand-risk-banner');
+  if (bannerEl) {
+    bannerEl.classList.remove('hidden');
+    var cfgMap = {
+      CRITICAL: { bg:'#fef2f2', border:'#fecaca', icon:'[!]', label:'CRITICAL brand risk', sub:'Immediate legal review recommended.' },
+      HIGH:     { bg:'#fff7ed', border:'#fed7aa', icon:'[!]', label:'HIGH risk detected',  sub:'Several compliance issues need attention.' },
+      MEDIUM:   { bg:'#fffbeb', border:'#fde68a', icon:'[~]', label:'MEDIUM risk',          sub:'Address priority findings before the next campaign.' },
+      LOW:      { bg:'#f0fdf4', border:'#bbf7d0', icon:'[ok]',label:'LOW risk - brand-safe', sub:'Minor style improvements only.' },
+    };
+    var cfg = cfgMap[riskLevel];
+    bannerEl.style.cssText = 'background:'+cfg.bg+';border:1px solid '+cfg.border+';border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;';
+    document.getElementById('brand-risk-icon').textContent  = cfg.icon;
+    document.getElementById('brand-risk-label').textContent = cfg.label;
+    document.getElementById('brand-risk-sub').textContent   = cfg.sub;
+  }
+  var flags = br.legalAndComplianceFlags || [];
+  if (flags.length > 0) {
+    var wrap = document.getElementById('legal-flags-wrap'), ct = document.getElementById('legal-flag-count'), list = document.getElementById('legal-flags-list');
+    if (wrap) wrap.classList.remove('hidden');
+    if (ct)   ct.textContent = flags.length + ' flag' + (flags.length!==1?'s':'');
+    if (list) list.innerHTML = flags.map(function(f) {
+      return '<div class="legal-flag-card">' +
+        '<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:4px">' + (f.issue||'') + '</div>' +
+        (f.quote ? '<blockquote style="font-size:11px;font-style:italic;color:#9ca3af;border-left:2px solid #e5e7eb;padding-left:8px;margin-bottom:4px">"' + f.quote + '"</blockquote>' : '') +
+        '<div style="font-size:11px;color:#6b7280"><strong>Location:</strong> ' + (f.location||'---') + '</div>' +
+        (f.recommendedAction ? '<div style="font-size:11px;color:#374151;margin-top:4px"><strong>Fix:</strong> ' + f.recommendedAction + '</div>' : '') +
+      '</div>';
+    }).join('');
+  }
+  var findings = br.detailedFindings || [];
+  if (findings.length > 0) {
+    var wrap2 = document.getElementById('findings-wrap'), rows = document.getElementById('findings-rows');
+    if (wrap2) wrap2.classList.remove('hidden');
+    if (rows) rows.innerHTML = findings.map(function(f) {
+      return '<tr>' +
+        '<td><div style="font-weight:600;font-size:12px;color:#1a1a2e">' + (f.issue||'') + '</div>' +
+             (f.quote ? '<div class="finding-quote">"' + (f.quote||'').slice(0,80) + (f.quote.length>80?'...':'') + '"</div>' : '') + '</td>' +
+        '<td style="font-size:11px;color:#9ca3af">' + (f.location||'').replace(/^https?:\/\/(www\.)?/,'').split('/').slice(0,2).join('/') + '</td>' +
+        '<td><span class="sev-badge ' + sevClass(f.severity) + '">' + (f.severity||'') + '</span></td>' +
+        '<td style="font-size:12px;color:#374151">' + (f.suggestion||'') + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+  var revised = (br.revisedSections||[]).filter(function(s){ return s.originalText&&s.suggestedRevision; });
+  if (revised.length > 0) {
+    var wrap3 = document.getElementById('before-after-wrap'), list3 = document.getElementById('before-after-list');
+    if (wrap3) wrap3.classList.remove('hidden');
+    if (list3) list3.innerHTML = revised.slice(0,6).map(function(s) {
+      return '<div class="before-after-card">' +
+        '<div class="ba-before"><div class="ba-label">Before - ' + (s.severity||'') + '</div><div class="ba-text">' + s.originalText + '</div></div>' +
+        '<div class="ba-after"><div class="ba-label">After</div><div class="ba-text">' + s.suggestedRevision + '</div></div>' +
+        (s.reason ? '<div class="ba-reason"><div class="ba-label">Why</div><div class="ba-text">' + s.reason + '</div></div>' : '') +
+      '</div>';
+    }).join('');
+  }
+  var voice = br.voiceAndToneProfile;
+  if (voice) {
+    var wrap4 = document.getElementById('voice-summary-wrap'), card = document.getElementById('voice-summary-card');
+    if (wrap4) wrap4.classList.remove('hidden');
+    if (card) {
+      var attrs = (voice.attributes||[]).map(function(a){ return '<span style="display:inline-block;background:#fff7ed;color:#c2410c;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;border:1px solid #fed7aa;margin:2px">' + a + '</span>'; }).join('');
+      card.innerHTML =
+        (voice.personality ? '<p style="font-size:13px;color:#6b7280;font-style:italic;margin-bottom:12px;border-left:3px solid #fed7aa;padding-left:12px">"' + voice.personality + '"</p>' : '') +
+        (attrs ? '<div style="margin-bottom:12px">' + attrs + '</div>' : '') +
+        ((voice.toneAdaptations||[]).length ? '<ul style="font-size:11px;color:#6b7280;list-style:disc;padding-left:16px">' + voice.toneAdaptations.map(function(t){ return '<li style="margin-bottom:4px">'+t+'</li>'; }).join('') + '</ul>' : '');
+    }
+  }
+}
+
+function renderCompetitiveBrief(cb) {
+  var section = document.getElementById('competitive-brief-section');
+  if (!section || !cb) return;
+  section.classList.remove('hidden');
+  var sumEl = document.getElementById('comp-summary');
+  if (sumEl) sumEl.textContent = cb.summary || cb.marketSummary || '';
+  var profiles = cb.competitorProfiles || cb.competitors || [];
+  var grid = document.getElementById('comp-profiles-grid');
+  if (grid && profiles.length > 0) {
+    grid.innerHTML = profiles.map(function(p) {
+      return '<div style="background:white;border-radius:16px;border:1px solid #f3f4f6;box-shadow:0 1px 3px rgba(0,0,0,0.06);padding:24px">' +
+        '<h3 style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:4px">' + (p.companyName||p.name||'Competitor') + '</h3>' +
+        '<p style="font-size:11px;color:#9ca3af;margin-bottom:16px">' + (p.overview||p.positioning||'') + '</p>' +
+        ((p.strengths||[]).length||( p.weaknesses||[]).length ?
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+            ((p.strengths||[]).length ? '<div><div style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Strengths</div><ul style="font-size:11px;color:#374151;list-style:disc;padding-left:14px">' + p.strengths.map(function(s){ return '<li>'+s+'</li>'; }).join('') + '</ul></div>' : '') +
+            ((p.weaknesses||[]).length ? '<div><div style="font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Weaknesses</div><ul style="font-size:11px;color:#374151;list-style:disc;padding-left:14px">' + p.weaknesses.map(function(w){ return '<li>'+w+'</li>'; }).join('') + '</ul></div>' : '') +
+          '</div>' : '') +
+      '</div>';
+    }).join('');
+  }
+}
+
+function renderCampaignPlan(cp) {
+  var section = document.getElementById('campaign-plan-section');
+  if (!section || !cp) return;
+  section.classList.remove('hidden');
+
+  // Overview card
+  var ov = cp.campaignOverview || {};
+  var ovCard = document.getElementById('campaign-overview-card');
+  if (ovCard) {
+    ovCard.innerHTML =
+      '<div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-1">Campaign</div>' +
+      '<div class="text-xl font-bold text-[#1a1a2e] mb-2">' + clean(ov.campaignName || 'Campaign Plan') + '</div>' +
+      '<p class="text-sm text-gray-600 mb-4">' + clean(ov.summary || cp.summary || '') + '</p>' +
+      (ov.primaryObjective ? '<div class="inline-flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2 text-xs font-semibold text-orange-700">&#127919; ' + clean(ov.primaryObjective) + '</div>' : '');
+  }
+
+  // Audience card
+  var ta = cp.targetAudience || {};
+  var audCard = document.getElementById('campaign-audience-card');
+  if (audCard && (ta.primarySegment || (ta.painPoints||[]).length)) {
+    audCard.classList.remove('hidden');
+    audCard.innerHTML =
+      '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Target Audience</div>' +
+      (ta.primarySegment ? '<div class="text-xs text-gray-500 mb-1"><strong>Primary:</strong> ' + clean(ta.primarySegment) + '</div>' : '') +
+      (ta.secondarySegment ? '<div class="text-xs text-gray-500 mb-3"><strong>Secondary:</strong> ' + clean(ta.secondarySegment) + '</div>' : '') +
+      ((ta.painPoints||[]).length ? '<div class="text-xs font-semibold text-gray-700 mb-1">Pain Points</div><ul class="text-xs text-gray-500 list-disc pl-4 space-y-1">' + ta.painPoints.map(function(p){return '<li>'+clean(p)+'</li>';}).join('') + '</ul>' : '');
+  }
+
+  // Key messages card
+  var km = cp.keyMessages || {};
+  var msgCard = document.getElementById('campaign-messages-card');
+  if (msgCard && km.coreMessage) {
+    msgCard.classList.remove('hidden');
+    msgCard.innerHTML =
+      '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Key Messages</div>' +
+      '<div class="bg-orange-50 border-l-4 border-orange-400 pl-3 py-2 mb-3 text-sm font-semibold text-[#1a1a2e]">' + clean(km.coreMessage) + '</div>' +
+      ((km.supportingMessages||[]).length ? '<ul class="text-xs text-gray-600 list-disc pl-4 space-y-1">' + km.supportingMessages.map(function(m){return '<li>'+clean(m)+'</li>';}).join('') + '</ul>' : '');
+  }
+
+  // Channel strategy
+  var channels = cp.channelStrategy || [];
+  if (channels.length) {
+    var chWrap = document.getElementById('campaign-channels-wrap');
+    var chGrid = document.getElementById('campaign-channels-grid');
+    if (chWrap) chWrap.classList.remove('hidden');
+    if (chGrid) chGrid.innerHTML = channels.map(function(ch) {
+      var effort = (ch.effortLevel||'').toLowerCase();
+      var effortColor = effort==='high'?'#dc2626':effort==='medium'?'#f59e0b':'#16a34a';
+      return '<div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">' +
+        '<div class="flex items-center justify-between mb-2">' +
+          '<span class="font-bold text-sm text-[#1a1a2e]">' + clean(ch.channel) + '</span>' +
+          '<span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:#f3f4f6;color:' + effortColor + '">' + clean(ch.effortLevel) + '</span>' +
+        '</div>' +
+        '<p class="text-xs text-gray-500 mb-2">' + clean(ch.rationale) + '</p>' +
+        ((ch.contentFormats||[]).length ? '<div class="flex flex-wrap gap-1">' + ch.contentFormats.map(function(f){return '<span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">'+clean(f)+'</span>';}).join('') + '</div>' : '') +
+      '</div>';
+    }).join('');
+  }
+
+  // Content calendar
+  var cal = cp.contentCalendar || [];
+  if (cal.length) {
+    var calWrap = document.getElementById('campaign-calendar-wrap');
+    var calRows = document.getElementById('campaign-calendar-rows');
+    if (calWrap) calWrap.classList.remove('hidden');
+    if (calRows) calRows.innerHTML = cal.map(function(row) {
+      return '<tr>' +
+        '<td class="font-bold text-[#f97316]">W' + (row.week||'') + '</td>' +
+        '<td>' + clean(row.contentPiece) + '</td>' +
+        '<td style="color:#6b7280;font-size:11px">' + clean(row.channel) + '</td>' +
+        '<td style="color:#9ca3af;font-size:11px">' + clean(row.ownerOrNotes) + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  // KPIs
+  var sm = cp.successMetrics || {};
+  var kpiCard = document.getElementById('campaign-kpis-card');
+  if (kpiCard && sm.primaryKPI) {
+    kpiCard.classList.remove('hidden');
+    kpiCard.innerHTML =
+      '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Success Metrics</div>' +
+      '<div class="flex items-center gap-2 mb-3"><span class="text-xs font-bold text-white bg-[#f97316] px-2 py-1 rounded">Primary KPI</span><span class="text-sm text-[#1a1a2e] font-semibold">' + clean(sm.primaryKPI) + '</span></div>' +
+      ((sm.secondaryKPIs||[]).length ? '<ul class="text-xs text-gray-600 list-disc pl-4 space-y-1">' + sm.secondaryKPIs.map(function(k){return '<li>'+clean(k)+'</li>';}).join('') + '</ul>' : '');
+  }
+}
+
+// ─── SVG Email Sequence Flowchart ────────────────────────────
+function buildEmailFlowchart(seq) {
+  var emails = seq.emails || [];
+  if (!emails.length) return '';
+
+  function escX(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function trunc(s, n) { s = clean(s||''); return s.length > n ? s.slice(0,n) + '\u2026' : s; }
+
+  // Layout
+  var W = 600, cx = 240;
+  var NW = 300, NH = 78;
+  var DW = 120, DH = 58;
+  var GAP = 28;
+  var BW = 130, BH = 30;
+  var y = 20;
+  var items = [];
+
+  function arrowLine(x1,y1,x2,y2,col) {
+    var dx=x2-x1, dy=y2-y1, len=Math.sqrt(dx*dx+dy*dy);
+    if (len < 1) return '';
+    var ux=dx/len, uy=dy/len;
+    var ax=x2-ux*10, ay=y2-uy*10;
+    var px=-uy*5.5, py=ux*5.5;
+    return '<line x1="'+x1+'" y1="'+y1+'" x2="'+ax+'" y2="'+ay+'" stroke="'+col+'" stroke-width="2"/>'+
+           '<polygon points="'+x2+','+y2+' '+(ax+px)+','+(ay+py)+' '+(ax-px)+','+(ay-py)+'" fill="'+col+'"/>';
+  }
+
+  // TRIGGER pill
+  var TW=150, TH=40;
+  items.push('<rect x="'+(cx-TW/2)+'" y="'+y+'" width="'+TW+'" height="'+TH+'" rx="20" fill="#1a1a2e" filter="url(#fcs)"/>');
+  items.push('<text x="'+cx+'" y="'+(y+26)+'" text-anchor="middle" fill="white" font-size="12" font-weight="700" letter-spacing="1">TRIGGER</text>');
+  y += TH;
+
+  emails.forEach(function(em, i) {
+    var isLast = i === emails.length - 1;
+    var subj = trunc((em.subjectLineOptions||[''])[0] || em.purpose || '', 40);
+    var timing = trunc(em.timing||'', 18);
+    var num = em.emailNumber || (i+1);
+
+    // Connector
+    items.push(arrowLine(cx, y, cx, y+GAP, '#c4c4c4'));
+    y += GAP;
+
+    // Email node
+    var nx = cx - NW/2;
+    items.push('<rect x="'+nx+'" y="'+y+'" width="'+NW+'" height="'+NH+'" rx="12" fill="white" stroke="#e5e7eb" stroke-width="1.5" filter="url(#fcs)"/>');
+    items.push('<rect x="'+nx+'" y="'+y+'" width="4" height="'+NH+'" rx="2" fill="#f97316"/>');
+    items.push('<rect x="'+(nx+4)+'" y="'+y+'" width="'+(NW-4)+'" height="30" rx="0" fill="#fff7ed"/>');
+    items.push('<rect x="'+nx+'" y="'+y+'" width="'+NW+'" height="30" rx="12" fill="#fff7ed"/>');
+    items.push('<rect x="'+nx+'" y="'+(y+18)+'" width="'+NW+'" height="12" fill="#fff7ed"/>');
+    items.push('<text x="'+(nx+16)+'" y="'+(y+20)+'" fill="#f97316" font-size="10" font-weight="700" letter-spacing="0.8">EMAIL '+num+'</text>');
+    if (timing) items.push('<text x="'+(nx+NW-12)+'" y="'+(y+20)+'" text-anchor="end" fill="#9ca3af" font-size="10">'+escX(timing)+'</text>');
+    if (subj) items.push('<text x="'+(nx+16)+'" y="'+(y+54)+'" fill="#1a1a2e" font-size="12" font-weight="600">'+escX(subj)+'</text>');
+    y += NH;
+
+    // Connector
+    items.push(arrowLine(cx, y, cx, y+GAP, '#c4c4c4'));
+    y += GAP;
+
+    // Decision diamond
+    var dlabel = isLast ? 'Clicked CTA?' : 'Opened?';
+    var dpts = cx+','+y+' '+(cx+DW/2)+','+(y+DH/2)+' '+cx+','+(y+DH)+' '+(cx-DW/2)+','+(y+DH/2);
+    items.push('<polygon points="'+dpts+'" fill="#fffbeb" stroke="#fbbf24" stroke-width="1.5" filter="url(#fcs)"/>');
+    items.push('<text x="'+cx+'" y="'+(y+DH/2+5)+'" text-anchor="middle" fill="#92400e" font-size="11" font-weight="700">'+escX(dlabel)+'</text>');
+
+    // YES arrow (straight down)
+    items.push(arrowLine(cx, y+DH, cx, y+DH+GAP, '#16a34a'));
+    items.push('<text x="'+(cx+6)+'" y="'+(y+DH+GAP/2+4)+'" fill="#16a34a" font-size="10" font-weight="700">Yes</text>');
+
+    // NO branch (right side)
+    var midY = y + DH/2;
+    var brX = cx + NW/2 + 18;
+    items.push('<line x1="'+(cx+DW/2)+'" y1="'+midY+'" x2="'+brX+'" y2="'+midY+'" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,3"/>');
+    items.push('<text x="'+(cx+DW/2+6)+'" y="'+(midY-4)+'" fill="#ef4444" font-size="10" font-weight="700">No</text>');
+    var bLabel = isLast ? 'Sequence complete' : 'Re-engage';
+    var bBg = isLast ? '#f3f4f6' : '#fef2f2';
+    var bBorder = isLast ? '#d1d5db' : '#fecaca';
+    var bColor = isLast ? '#374151' : '#dc2626';
+    items.push('<rect x="'+brX+'" y="'+(midY+6)+'" width="'+BW+'" height="'+BH+'" rx="8" fill="'+bBg+'" stroke="'+bBorder+'" stroke-width="1"/>');
+    items.push('<text x="'+(brX+BW/2)+'" y="'+(midY+6+BH/2+4)+'" text-anchor="middle" fill="'+bColor+'" font-size="10" font-weight="600">'+escX(bLabel)+'</text>');
+
+    y += DH + GAP;
+
+    if (isLast) {
+      // Exit node
+      var exitLabel = trunc(seq.exitCondition || 'Converted', 28);
+      var PW=200, PH=38;
+      items.push('<rect x="'+(cx-PW/2)+'" y="'+y+'" width="'+PW+'" height="'+PH+'" rx="19" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5" filter="url(#fcs)"/>');
+      items.push('<text x="'+cx+'" y="'+(y+PH/2+5)+'" text-anchor="middle" fill="#166534" font-size="12" font-weight="700">\u2713 EXIT: '+escX(exitLabel)+'</text>');
+      y += PH;
+    }
+  });
+
+  y += 20;
+
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+y+'" width="100%" style="max-width:'+W+'px;display:block;margin:0 auto;">'+
+    '<defs><filter id="fcs" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#00000018"/></filter></defs>'+
+    items.join('')+
+  '</svg>';
+
+  return '<div style="background:white;border-radius:16px;border:1px solid #f3f4f6;padding:24px 16px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">'+
+    '<div style="font-size:11px;font-weight:700;color:#9ca3af;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:20px;">Sequence Flow</div>'+
+    svg+'</div>';
+}
+
+function renderEmailSequence(es) {
+  var section = document.getElementById('email-sequence-section');
+  if (!section || !es) return;
+  section.classList.remove('hidden');
+
+  // Capture audit
+  var ca = es.captureAudit || {};
+  var capCard = document.getElementById('email-capture-card');
+  if (capCard && ((ca.gaps||[]).length || (ca.formsFound||[]).length)) {
+    capCard.classList.remove('hidden');
+    capCard.innerHTML =
+      '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Email Capture Audit</div>' +
+      ((ca.formsFound||[]).length
+        ? '<div class="text-xs text-green-700 mb-2">&#10003; Forms found: ' + ca.formsFound.map(clean).join(', ') + '</div>'
+        : '<div class="text-xs text-red-600 mb-2">&#9888; No email capture forms detected</div>') +
+      ((ca.gaps||[]).length ? '<div class="text-xs font-semibold text-gray-700 mb-1 mt-2">Gaps</div><ul class="text-xs text-gray-500 list-disc pl-4 space-y-1">' + ca.gaps.map(function(g){return '<li>'+clean(g)+'</li>';}).join('') + '</ul>' : '');
+  }
+
+  // Sequences
+  var sequences = es.sequences || [];
+  var seqList = document.getElementById('email-sequences-list');
+  if (seqList && sequences.length) {
+    seqList.innerHTML = sequences.map(function(seq) {
+      var emails = seq.emails || [];
+      var bm = seq.performanceBenchmarks || {};
+      return '<div class="mb-8">' +
+        '<div class="flex items-center gap-3 mb-4">' +
+          '<span class="text-xs font-bold text-white bg-[#1a1a2e] px-3 py-1 rounded-full">' + clean(seq.sequenceType || 'Sequence') + '</span>' +
+          '<span class="text-xs text-gray-500">' + clean(seq.goal) + '</span>' +
+        '</div>' +
+        // Benchmarks strip
+        (bm.expectedOpenRate || bm.expectedCTR || bm.expectedConversionRate
+          ? '<div class="flex flex-wrap gap-6 mb-4 bg-gray-50 rounded-xl p-3">' +
+            (bm.expectedOpenRate ? '<div class="text-center"><div class="text-sm font-bold text-[#1a1a2e]">' + clean(bm.expectedOpenRate) + '</div><div class="text-[10px] text-gray-400 uppercase">Open Rate</div></div>' : '') +
+            (bm.expectedCTR ? '<div class="text-center"><div class="text-sm font-bold text-[#1a1a2e]">' + clean(bm.expectedCTR) + '</div><div class="text-[10px] text-gray-400 uppercase">CTR</div></div>' : '') +
+            (bm.expectedConversionRate ? '<div class="text-center"><div class="text-sm font-bold text-[#1a1a2e]">' + clean(bm.expectedConversionRate) + '</div><div class="text-[10px] text-gray-400 uppercase">Conversion</div></div>' : '') +
+            '</div>' : '') +
+        // Email cards
+        '<div class="space-y-4">' + emails.map(function(em) {
+          var subjects = (em.subjectLineOptions || []).filter(Boolean);
+          var bodyLines = clean(em.bodyCopy || '');
+          return '<div class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">' +
+            // Header bar
+            '<div class="bg-gray-50 border-b border-gray-100 px-4 py-2 flex items-center justify-between">' +
+              '<span class="text-xs font-bold text-[#f97316]">Email ' + (em.emailNumber||'') + '</span>' +
+              '<span class="text-xs text-gray-400">' + clean(em.timing) + '</span>' +
+            '</div>' +
+            '<div class="p-4">' +
+              // Purpose
+              (em.purpose ? '<p class="text-xs text-gray-400 italic mb-3">' + clean(em.purpose) + '</p>' : '') +
+              // Subject options
+              (subjects.length ? '<div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Subject lines</div><div class="space-y-1 mb-3">' + subjects.map(function(s){return '<div class="text-sm font-semibold text-[#1a1a2e] bg-orange-50 border border-orange-100 rounded px-3 py-1.5">'+clean(s)+'</div>';}).join('') + '</div>' : '') +
+              // Preview text
+              (em.previewText ? '<div class="text-xs text-gray-400 italic mb-3">&#9654; Preview: ' + clean(em.previewText) + '</div>' : '') +
+              // Body copy
+              (bodyLines ? '<div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line bg-gray-50 rounded-xl p-4 mb-3 border border-gray-100">' + bodyLines + '</div>' : '') +
+              // CTA button
+              (em.primaryCTA ? '<div class="mt-2"><span class="inline-flex items-center gap-2 bg-[#f97316] text-white text-xs font-bold px-4 py-2 rounded-lg">' + clean(em.primaryCTA) + '</span></div>' : '') +
+            '</div>' +
+          '</div>';
+        }).join('') + '</div>' +
+        // SVG flowchart
+        '<div class="mt-6">' + buildEmailFlowchart(seq) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // A/B tests
+  var abTests = es.abTestSuggestions || [];
+  if (abTests.length) {
+    var abWrap = document.getElementById('email-abtests-wrap');
+    var abList = document.getElementById('email-abtests-list');
+    if (abWrap) abWrap.classList.remove('hidden');
+    if (abList) abList.innerHTML = abTests.map(function(t) {
+      return '<div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">' +
+        '<div class="text-sm font-semibold text-[#1a1a2e] mb-2">&#128203; ' + clean(t.whatToTest) + '</div>' +
+        (t.variantA
+          ? '<div class="grid grid-cols-2 gap-2 mb-2">' +
+            '<div class="bg-gray-50 rounded-lg p-3 text-xs"><div class="font-bold text-gray-500 mb-1">A &mdash; Control</div><div class="text-gray-700">' + clean(t.variantA) + '</div></div>' +
+            '<div class="bg-blue-50 rounded-lg p-3 text-xs"><div class="font-bold text-blue-600 mb-1">B &mdash; Test</div><div class="text-gray-700">' + clean(t.variantB||'') + '</div></div>' +
+          '</div>'
+          : '') +
+        (t.howToMeasure ? '<div class="text-xs text-gray-400 mt-1">&#128200; ' + clean(t.howToMeasure) + '</div>' : '') +
+      '</div>';
+    }).join('');
+  }
+}
+
+
+// ── Load report (called once — report page is only shown after audit completes) ──
+async function loadReport() {
+  if (isDemo) {
+    populateReport({
+      url: session.url||'yourbusiness.com.au', industry: session.industry||'General',
+      overallScore: session.overallScore||session.preScore||0,
+      executiveSummary: 'Run a full audit to see your personalised executive summary here.',
+      plugins: [], pluginOutputs: {}, synthesis: { topPriorities: [], quickWins: [], overallInsight: 'Complete the audit to see your insight.' },
+    });
+    return;
+  }
+
+  try {
+    var res = await fetch('/api/audit/' + auditId);
+    if (!res.ok) throw new Error('not-found');
+    var data = await res.json();
+
+    if (data.status === 'complete') {
+      populateReport(data);
+    } else {
+      // Audit not ready yet — redirect back to scanning page which handles the wait
+      console.warn('[report] Audit not complete (status=' + (data.status||'unknown') + '), redirecting to scanning page...');
+      window.location.replace('scanning.html?auditId=' + auditId);
+    }
+  } catch(err) {
+    console.error('[report] Load failed:', err);
+    populateReport({
+      url: session.url||'---', industry: session.industry||'---',
+      overallScore: session.overallScore||0,
+      executiveSummary: 'Could not load report. Please start a new audit.',
+      plugins: [], pluginOutputs: {}, synthesis: {},
+    });
+  }
+}
+loadReport();
+
+</script>
+</body>
+</html>
