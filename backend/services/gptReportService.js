@@ -1,6 +1,7 @@
 import { OpenAI } from 'openai';
 import { getAuditById, getAuditPlugins } from '../db/queries.js';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 import { marked } from 'marked';
 import fs from 'fs';
 import path from 'path';
@@ -403,48 +404,34 @@ ${p.claude_output}
 
   console.log(`[GPT Report] Launching Puppeteer to generate PDF...`);
 
-  // ─── Container-safe Puppeteer launch ──────────────────────────
-  // On Railway, PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium (system Chromium)
-  // is set in the Dockerfile. On Windows dev, prefer local Chrome.
-  const isLinux = process.platform !== 'win32';
-
-  const launchOptions = {
-    headless: true,
-    protocolTimeout: 120_000,   // handles Railway cold-start delays
-    ...(isLinux && { userDataDir: '/tmp/puppeteer-gpt-user-data' }),
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',        // use /tmp instead of /dev/shm
-      '--disable-gpu',
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--disable-extensions',
-      '--disable-popup-blocking',
-      '--disable-crash-reporter',       // disable crashpad crash reporting
-      '--disable-breakpad',             // disable breakpad crash handler
-      '--no-crashpad',                  // explicitly disable crashpad (Chrome 127+)
-      '--disable-background-timer-throttling',
-      '--disable-backgrounding-occluded-windows',
-      '--disable-renderer-backgrounding',
-    ],
-  };
-
-  // Use system Chromium if PUPPETEER_EXECUTABLE_PATH is set in environment
+  // ─── Resolve Chromium executable ─────────────────────────────
+  // Production: @sparticuz/chromium (crashpad-free, container-safe)
+  // Windows dev: local Chrome if installed
+  let executablePath;
   if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-    console.log(`[GPT Report] Using system Chromium: ${launchOptions.executablePath}`);
+    executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    console.log(`[GPT Report] Using PUPPETEER_EXECUTABLE_PATH: ${executablePath}`);
   } else if (process.platform === 'win32') {
     const localChrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-    if (fs.existsSync(localChrome)) {
-      launchOptions.executablePath = localChrome;
-      delete launchOptions.userDataDir;
-      console.log(`[GPT Report] Using local Chrome: ${launchOptions.executablePath}`);
-    }
+    executablePath = fs.existsSync(localChrome) ? localChrome : await chromium.executablePath();
+    console.log(`[GPT Report] Using: ${executablePath}`);
+  } else {
+    executablePath = await chromium.executablePath();
+    console.log(`[GPT Report] Using @sparticuz/chromium: ${executablePath}`);
   }
 
-  // Launch Puppeteer
-  const browser = await puppeteer.launch(launchOptions);
+  const browser = await puppeteer.launch({
+    executablePath,
+    headless: chromium.headless,
+    defaultViewport: chromium.defaultViewport,
+    protocolTimeout: 120_000,
+    args: [
+      ...chromium.args,
+      '--disable-crash-reporter',
+      '--disable-breakpad',
+      '--no-crashpad',
+    ],
+  });
 
   try {
     const page = await browser.newPage();

@@ -1,4 +1,14 @@
-import puppeteer from 'puppeteer';
+// ============================================================
+// backend/services/puppeteerService.js
+// PDF generation using Puppeteer + @sparticuz/chromium
+//
+// @sparticuz/chromium ships a pre-compiled Chromium binary with
+// crashpad completely removed — purpose-built for containers.
+// On Windows dev, falls back to local Chrome or bundled Chromium.
+// ============================================================
+
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -10,65 +20,40 @@ if (!fs.existsSync(REPORTS_DIR)) {
   fs.mkdirSync(REPORTS_DIR, { recursive: true });
 }
 
-// ─── Container-safe Puppeteer launch options ──────────────────
-// On Railway (Linux), we use the apt-installed system Chromium via
-// PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium. On Windows dev we
-// prefer local Chrome; fall back to Puppeteer's bundled Chromium.
-function buildLaunchOptions(userDataDir) {
-  const isLinux = process.platform !== 'win32';
-
-  const opts = {
-    headless: true,
-    // protocolTimeout covers cold-start delays on Railway
-    protocolTimeout: 120_000,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',        // use /tmp instead of /dev/shm
-      '--disable-gpu',
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--disable-extensions',
-      '--disable-popup-blocking',
-      '--disable-crash-reporter',       // disable crashpad crash reporting
-      '--disable-breakpad',             // disable breakpad crash handler
-      '--no-crashpad',                  // explicitly disable crashpad on Chrome 127+
-      '--disable-background-timer-throttling',
-      '--disable-backgrounding-occluded-windows',
-      '--disable-renderer-backgrounding',
-    ],
-  };
-
-  // Use system Chromium if PUPPETEER_EXECUTABLE_PATH is set (set in Dockerfile)
+// ─── Resolve the correct Chromium executable ──────────────────
+// Production (Railway/Docker): @sparticuz/chromium extracts its
+//   crashpad-free binary to /tmp/chromium and returns the path.
+// Windows dev: use local Chrome if available.
+async function resolveExecutablePath() {
+  // Honour an explicit override (e.g. PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium)
   if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    opts.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-    console.log(`[Puppeteer] Using system Chromium: ${opts.executablePath}`);
-  } else if (process.platform === 'win32') {
-    // Windows dev: prefer local Chrome if installed
+    console.log(`[Puppeteer] Using PUPPETEER_EXECUTABLE_PATH: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+
+  // Windows dev: prefer locally installed Chrome
+  if (process.platform === 'win32') {
     const localChrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
     if (fs.existsSync(localChrome)) {
-      opts.executablePath = localChrome;
-      console.log(`[Puppeteer] Using local Chrome: ${opts.executablePath}`);
+      console.log(`[Puppeteer] Using local Chrome: ${localChrome}`);
+      return localChrome;
     }
   }
 
-  // Provide a writable userDataDir in containers (avoids Chrome profile write errors)
-  if (isLinux && userDataDir) {
-    opts.userDataDir = userDataDir;
-  }
-
-  return opts;
+  // Container / Linux: @sparticuz/chromium — extracts to /tmp/chromium
+  const execPath = await chromium.executablePath();
+  console.log(`[Puppeteer] Using @sparticuz/chromium: ${execPath}`);
+  return execPath;
 }
 
 /**
- * Generate a PDF from the report page using Puppeteer
- * @param {string} auditId - The audit ID to generate for
- * @returns {Promise<string>} - Returns the file path of the generated PDF
+ * Generate a PDF from the report page using Puppeteer.
+ * @param {string} auditId
+ * @returns {Promise<string>} Path to the generated PDF file
  */
 export async function generateReportPDF(auditId) {
   const pdfPath = path.join(REPORTS_DIR, `audit-puppeteer-${auditId}.pdf`);
 
-  // If already exists, return the cached path
   if (fs.existsSync(pdfPath)) {
     console.log(`[Puppeteer] Serving cached PDF for audit: ${auditId}`);
     return pdfPath;
@@ -76,13 +61,26 @@ export async function generateReportPDF(auditId) {
 
   console.log(`[Puppeteer] Starting PDF generation for audit: ${auditId}`);
 
-  const launchOptions = buildLaunchOptions('/tmp/puppeteer-user-data');
-  const browser = await puppeteer.launch(launchOptions);
+  const executablePath = await resolveExecutablePath();
+
+  // @sparticuz/chromium.args includes all container-safe flags:
+  // --no-sandbox, --disable-setuid-sandbox, --disable-dev-shm-usage, etc.
+  // We merge with our own extras.
+  const browser = await puppeteer.launch({
+    executablePath,
+    headless: chromium.headless,
+    defaultViewport: chromium.defaultViewport,
+    protocolTimeout: 120_000,
+    args: [
+      ...chromium.args,
+      '--disable-crash-reporter',
+      '--disable-breakpad',
+      '--no-crashpad',
+    ],
+  });
 
   try {
     const page = await browser.newPage();
-
-    // Generous timeouts for Railway cold starts
     page.setDefaultNavigationTimeout(90_000);
     page.setDefaultTimeout(90_000);
 
@@ -90,22 +88,18 @@ export async function generateReportPDF(auditId) {
     const reportUrl = `http://localhost:${port}/report.html?auditId=${auditId}&pdf=true`;
     console.log(`[Puppeteer] Navigating to ${reportUrl}`);
 
-    // Wait until network is mostly idle so charts/animations render
     await page.goto(reportUrl, { waitUntil: 'networkidle0', timeout: 90_000 });
-
-    // Extra time for JS animations and intersection observers
     await new Promise(r => setTimeout(r, 2000));
 
-    // Scroll to bottom to trigger lazy-loaded content / intersection observers
+    // Scroll to trigger intersection observers / lazy content
     await page.evaluate(async () => {
       await new Promise((resolve) => {
         let totalHeight = 0;
         const distance = 100;
         const timer = setInterval(() => {
-          const scrollHeight = document.body.scrollHeight;
           window.scrollBy(0, distance);
           totalHeight += distance;
-          if (totalHeight >= scrollHeight) {
+          if (totalHeight >= document.body.scrollHeight) {
             clearInterval(timer);
             resolve();
           }
@@ -116,17 +110,17 @@ export async function generateReportPDF(auditId) {
 
     await new Promise(r => setTimeout(r, 1000));
 
-    console.log('[Puppeteer] Generating PDF buffer...');
+    console.log('[Puppeteer] Generating PDF...');
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: { top: '0px', bottom: '0px', left: '0px', right: '0px' },
     });
 
-    console.log(`[Puppeteer] Saving PDF to ${pdfPath}`);
     fs.writeFileSync(pdfPath, pdfBuffer);
-
+    console.log(`[Puppeteer] PDF saved to ${pdfPath}`);
     return pdfPath;
+
   } catch (err) {
     console.error('[Puppeteer] Error generating PDF:', err);
     throw err;

@@ -1,16 +1,15 @@
 # ============================================================
 # ClickTrends AI Audit — Dockerfile
-# Uses system Chromium (apt) instead of Puppeteer's bundled
-# Chromium. This is the most reliable approach for Railway/
-# Docker environments — no crashpad issues, no missing libs.
+# Uses @sparticuz/chromium — a pre-compiled Chromium with
+# crashpad completely removed, purpose-built for containers.
+# No apt chromium needed. No bundled Puppeteer Chromium needed.
 # ============================================================
 
 FROM node:20-slim
 
-# Install system Chromium + all libraries it needs
-# chromium is the Debian package — already patched for containers
+# System libraries that the @sparticuz/chromium binary links against.
+# No 'chromium' apt package needed — the binary ships inside the npm package.
 RUN apt-get update && apt-get install -y \
-    chromium \
     ca-certificates \
     fonts-liberation \
     fonts-noto-color-emoji \
@@ -45,16 +44,12 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
-# Tell Puppeteer to use the system Chromium we just installed,
-# and skip downloading its own bundled Chromium during npm ci.
+# Skip downloading Puppeteer's own bundled Chromium — we use @sparticuz/chromium instead
 ENV PUPPETEER_SKIP_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-
 ENV NODE_ENV=production
 
 WORKDIR /app
 
-# Install dependencies — Puppeteer download is skipped by PUPPETEER_SKIP_DOWNLOAD
 COPY package*.json ./
 RUN npm ci --omit=dev
 
@@ -62,24 +57,22 @@ RUN npm ci --omit=dev
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
 
-# Create writable directories that Chrome needs at runtime
+# Create writable directories Chrome needs at runtime
+# /tmp/chromium is where @sparticuz/chromium extracts its binary
 RUN mkdir -p reports \
+             /tmp/chromium \
              /tmp/puppeteer-user-data \
-             /tmp/puppeteer-gpt-user-data \
-             /tmp/chrome-crashes
+             /tmp/puppeteer-gpt-user-data
 
 # Non-root user for security
 RUN addgroup --system --gid 1001 nodejs \
  && adduser  --system --uid 1001 appuser \
  && chown -R appuser:nodejs /app \
- && chown -R appuser:nodejs /tmp/puppeteer-user-data \
- && chown -R appuser:nodejs /tmp/puppeteer-gpt-user-data \
- && chown -R appuser:nodejs /tmp/chrome-crashes
+ && chmod 1777 /tmp
 USER appuser
 
 EXPOSE 3000
 
-# Health check — Railway uses this to confirm the container is serving traffic
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
