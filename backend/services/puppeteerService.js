@@ -1,10 +1,10 @@
 // ============================================================
 // backend/services/puppeteerService.js
-// PDF generation using Puppeteer + @sparticuz/chromium
+// PDF generation — Puppeteer + @sparticuz/chromium
 //
-// @sparticuz/chromium ships a pre-compiled Chromium binary with
-// crashpad completely removed — purpose-built for containers.
-// On Windows dev, falls back to local Chrome or bundled Chromium.
+// The Chromium binary is pre-extracted during Docker build into
+// /app/chromium-binary (set as CHROMIUM_BINARY_PATH env var).
+// No runtime extraction needed — no /tmp permission issues.
 // ============================================================
 
 import puppeteer from 'puppeteer-core';
@@ -20,18 +20,26 @@ if (!fs.existsSync(REPORTS_DIR)) {
   fs.mkdirSync(REPORTS_DIR, { recursive: true });
 }
 
-// ─── Resolve the correct Chromium executable ──────────────────
-// Production (Railway/Docker): @sparticuz/chromium extracts its
-//   crashpad-free binary to /tmp/chromium and returns the path.
-// Windows dev: use local Chrome if available.
-async function resolveExecutablePath() {
-  // Honour an explicit override (e.g. PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium)
+// ─── Resolve the Chromium executable path ─────────────────────
+// Priority:
+//  1. CHROMIUM_BINARY_PATH  — pre-extracted binary set in Dockerfile
+//  2. PUPPETEER_EXECUTABLE_PATH — explicit override (e.g. /usr/bin/chromium)
+//  3. Local Chrome on Windows dev
+//  4. chromium.executablePath() — runtime extraction into /tmp (fallback)
+async function resolveChromiumPath() {
+  // 1. Pre-extracted binary (set by Dockerfile during build — most reliable)
+  if (process.env.CHROMIUM_BINARY_PATH && fs.existsSync(process.env.CHROMIUM_BINARY_PATH)) {
+    console.log(`[Puppeteer] Using pre-extracted binary: ${process.env.CHROMIUM_BINARY_PATH}`);
+    return process.env.CHROMIUM_BINARY_PATH;
+  }
+
+  // 2. Explicit path override
   if (process.env.PUPPETEER_EXECUTABLE_PATH) {
     console.log(`[Puppeteer] Using PUPPETEER_EXECUTABLE_PATH: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
     return process.env.PUPPETEER_EXECUTABLE_PATH;
   }
 
-  // Windows dev: prefer locally installed Chrome
+  // 3. Windows dev: local Chrome
   if (process.platform === 'win32') {
     const localChrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
     if (fs.existsSync(localChrome)) {
@@ -40,10 +48,9 @@ async function resolveExecutablePath() {
     }
   }
 
-  // Container / Linux: @sparticuz/chromium — extracts to /tmp/chromium
-  const execPath = await chromium.executablePath();
-  console.log(`[Puppeteer] Using @sparticuz/chromium: ${execPath}`);
-  return execPath;
+  // 4. Fallback: runtime extraction (may fail in restricted containers)
+  console.log('[Puppeteer] Falling back to runtime chromium extraction...');
+  return await chromium.executablePath();
 }
 
 /**
@@ -61,11 +68,8 @@ export async function generateReportPDF(auditId) {
 
   console.log(`[Puppeteer] Starting PDF generation for audit: ${auditId}`);
 
-  const executablePath = await resolveExecutablePath();
+  const executablePath = await resolveChromiumPath();
 
-  // @sparticuz/chromium.args includes all container-safe flags:
-  // --no-sandbox, --disable-setuid-sandbox, --disable-dev-shm-usage, etc.
-  // We merge with our own extras.
   const browser = await puppeteer.launch({
     executablePath,
     headless: chromium.headless,
@@ -91,7 +95,7 @@ export async function generateReportPDF(auditId) {
     await page.goto(reportUrl, { waitUntil: 'networkidle0', timeout: 90_000 });
     await new Promise(r => setTimeout(r, 2000));
 
-    // Scroll to trigger intersection observers / lazy content
+    // Scroll to trigger intersection observers / lazy-loaded content
     await page.evaluate(async () => {
       await new Promise((resolve) => {
         let totalHeight = 0;
@@ -118,7 +122,7 @@ export async function generateReportPDF(auditId) {
     });
 
     fs.writeFileSync(pdfPath, pdfBuffer);
-    console.log(`[Puppeteer] PDF saved to ${pdfPath}`);
+    console.log(`[Puppeteer] PDF saved: ${pdfPath}`);
     return pdfPath;
 
   } catch (err) {

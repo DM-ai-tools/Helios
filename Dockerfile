@@ -1,14 +1,15 @@
 # ============================================================
 # ClickTrends AI Audit — Dockerfile
-# Uses @sparticuz/chromium — a pre-compiled Chromium with
-# crashpad completely removed, purpose-built for containers.
-# No apt chromium needed. No bundled Puppeteer Chromium needed.
+# Uses @sparticuz/chromium — crashpad-free Chromium binary
+# compiled specifically for container environments.
+#
+# The binary is pre-extracted during build (as root) into /app
+# so the non-root appuser never needs to write to /tmp at runtime.
 # ============================================================
 
 FROM node:20-slim
 
-# System libraries that the @sparticuz/chromium binary links against.
-# No 'chromium' apt package needed — the binary ships inside the npm package.
+# System libraries the Chromium binary links against at runtime
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     fonts-liberation \
@@ -44,26 +45,40 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
-# Skip downloading Puppeteer's own bundled Chromium — we use @sparticuz/chromium instead
+# Skip bundled Puppeteer Chromium download — we use @sparticuz/chromium
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV NODE_ENV=production
 
 WORKDIR /app
 
+# Install dependencies (npm install reads package.json directly,
+# bypassing any stale package-lock.json)
 COPY package*.json ./
-# Use npm install (not npm ci) so it reads package.json directly.
-# package-lock.json may be stale if dependencies were added without
-# running npm install locally (e.g. due to PowerShell execution policy).
 RUN npm install --omit=dev --no-audit --no-fund
+
+# ── Pre-extract @sparticuz/chromium binary during build ────────
+# Extracted as root into /app/chromium-binary so the non-root
+# appuser never needs to write to /tmp at runtime.
+# We set a fixed extraction path via CHROMIUM_PATH so the code
+# can find it without needing to decompress again.
+RUN node -e "import('@sparticuz/chromium').then(async (mod) => { \
+      const chromium = mod.default; \
+      const p = await chromium.executablePath('/app/chromium-binary'); \
+      console.log('[Docker build] Chromium pre-extracted to:', p); \
+    }).catch(e => { console.error(e); process.exit(1); })"
+
+# Mark the binary executable (should already be set by sparticuz, but be explicit)
+RUN chmod 755 /app/chromium-binary
+
+# Expose the pre-extracted path as an env variable the service code reads
+ENV CHROMIUM_BINARY_PATH=/app/chromium-binary
 
 # Copy application source
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
 
-# Create writable directories Chrome needs at runtime
-# /tmp/chromium is where @sparticuz/chromium extracts its binary
+# Create writable directories the app and Chrome need at runtime
 RUN mkdir -p reports \
-             /tmp/chromium \
              /tmp/puppeteer-user-data \
              /tmp/puppeteer-gpt-user-data
 
