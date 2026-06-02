@@ -79,6 +79,7 @@ router.get('/:id', async (req, res) => {
       console.log(`[Status Route] Serving audit ${auditId} from temp cache`);
       return res.json(JSON.parse(cachedDataStr));
     }
+    console.log(`[Status Route] audit_final_json not found for ${auditId} — using fallback path`);
   } catch(e) {
     console.error(`[Status Route] Redis cache error:`, e);
   }
@@ -88,10 +89,32 @@ router.get('/:id', async (req, res) => {
 
   const plugins = await getAuditPlugins(req.params.id).catch(() => []);
 
+  // ── PLUGIN_META lookup for human-readable names ──────────────────
+  // Plugin records in Redis only store plugin_id, NOT the human name.
+  // We must map id → name here, same as the frontend PLUGIN_META table.
+  const PLUGIN_NAMES = {
+    'seo-audit':         'SEO Audit',
+    'competitive-brief': 'Competitive Intelligence',
+    'campaign-plan':     'Campaign Plan',
+    'content-copy':      'Content & Copy',
+    'email-sequence':    'Email Sequence',
+    'brand-review':      'Brand Review',
+  };
+
+  // ── Build pluginOutputs — the full claude_output per plugin ──────
+  // Each plugin's claude_output contains ALL sub-sections (detailedFindings,
+  // legalAndComplianceFlags, revisedSections, voiceAndToneProfile, etc.)
+  // that the report.html render functions need.
   const pluginOutputs = {};
   plugins.forEach(p => {
     if (p.claude_output) {
-      try { pluginOutputs[p.plugin_id] = typeof p.claude_output === 'string' ? JSON.parse(p.claude_output) : p.claude_output; } catch (e) {}
+      try {
+        pluginOutputs[p.plugin_id] = typeof p.claude_output === 'string'
+          ? JSON.parse(p.claude_output)
+          : p.claude_output;
+      } catch (e) {
+        console.error(`[Status Route] Failed to parse claude_output for plugin ${p.plugin_id}:`, e.message);
+      }
     }
   });
 
@@ -116,6 +139,15 @@ router.get('/:id', async (req, res) => {
     } catch (e) {}
   }
 
+  // Build plugins array with correct human-readable names and full summaries
+  const pluginsArray = plugins.map(p => ({
+    id:      p.plugin_id,
+    name:    PLUGIN_NAMES[p.plugin_id] || p.plugin_id,
+    status:  p.status,
+    score:   p.score,
+    summary: p.summary || (pluginOutputs[p.plugin_id]?.summary ?? ''),
+  }));
+
   res.json({
     id: audit.id,
     status: audit.status,
@@ -131,13 +163,7 @@ router.get('/:id', async (req, res) => {
     publicToken: audit.public_token,
     createdAt: audit.created_at,
     completedAt: audit.completed_at,
-    plugins: plugins.map(p => ({
-      id: p.plugin_id,
-      name: p.name,
-      status: p.status,
-      score: p.score,
-      summary: p.summary,
-    })),
+    plugins: pluginsArray,
   });
 });
 
