@@ -87,8 +87,21 @@
     }
 
     /* Fade in on scroll (simple) */
-    .fade-section { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
-    .fade-section.visible { opacity: 1; transform: translateY(0); }
+    .fade-section {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    /* Sections that are already in viewport on load should be immediately visible */
+    .fade-section.in-view-now {
+      opacity: 1 !important;
+      transform: translateY(0) !important;
+      transition: none !important;
+    }
 
     /* â”€â”€ Brand Review â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .sev-badge {
@@ -803,7 +816,16 @@ function populateReport(data) {
   if (pluginOutputs['seo-audit'])         renderSeoAudit(pluginOutputs['seo-audit']);
   if (pluginOutputs['content-copy'])      renderContentCopy(pluginOutputs['content-copy']);
 
-  document.querySelectorAll('.fade-section').forEach(function(el) { observer.observe(el); });
+  // Trigger IntersectionObserver for all fade sections
+  // Immediately mark any already-in-viewport sections as visible
+  document.querySelectorAll('.fade-section').forEach(function(el) {
+    var rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom >= 0) {
+      el.classList.add('visible');
+    } else {
+      observer.observe(el);
+    }
+  });
 }
 
 var observer = new IntersectionObserver(function(entries) {
@@ -1471,22 +1493,27 @@ async function loadReport() {
 
   try {
     var res = await fetch('/api/audit/' + auditId);
-    if (!res.ok) throw new Error('not-found');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     var data = await res.json();
+    console.log('[report] API response status:', data.status, 'pluginOutputs keys:', Object.keys(data.pluginOutputs || {}));
 
     if (data.status === 'complete') {
       populateReport(data);
-    } else {
-      // Audit not ready yet — redirect back to scanning page which handles the wait
-      console.warn('[report] Audit not complete (status=' + (data.status||'unknown') + '), redirecting to scanning page...');
+    } else if (data.status === 'analyzing' || data.status === 'running' || data.status === 'pending') {
+      // Audit not ready yet — redirect back to scanning page
+      console.warn('[report] Audit still running (status=' + data.status + '), redirecting to scanning…');
       window.location.replace('scanning.html?auditId=' + auditId);
+    } else {
+      // Unknown or failed status — show what we have rather than blank page
+      console.warn('[report] Unexpected status:', data.status, '— rendering with available data');
+      populateReport(Object.assign({ status: data.status }, data));
     }
   } catch(err) {
     console.error('[report] Load failed:', err);
     populateReport({
       url: session.url||'---', industry: session.industry||'---',
       overallScore: session.overallScore||0,
-      executiveSummary: 'Could not load report. Please start a new audit.',
+      executiveSummary: 'Could not load report data. The audit may have expired or there was a network error. Please start a new audit.',
       plugins: [], pluginOutputs: {}, synthesis: {},
     });
   }
