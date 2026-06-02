@@ -434,14 +434,33 @@
       <span class="text-xl">&#128140;</span>
       <h2 class="text-xl font-bold text-[#1a1a2e]">Email Sequence Plan</h2>
     </div>
+    <!-- Category score pills -->
+    <div id="email-category-scores" class="hidden mb-6"></div>
+    <!-- Summary -->
+    <div id="email-summary-card" class="hidden bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6"></div>
     <!-- Capture audit -->
     <div id="email-capture-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 hidden"></div>
     <!-- Sequences -->
     <div id="email-sequences-list"></div>
+    <!-- Metrics to track -->
+    <div id="email-metrics-wrap" class="mb-6 hidden">
+      <h3 class="text-base font-bold text-[#1a1a2e] mb-3">Metrics to Track</h3>
+      <div id="email-metrics-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"></div>
+    </div>
+    <!-- Recommendations -->
+    <div id="email-recs-wrap" class="mb-6 hidden">
+      <h3 class="text-base font-bold text-[#1a1a2e] mb-3">Recommendations</h3>
+      <div id="email-recs-list" class="space-y-3"></div>
+    </div>
     <!-- A/B Tests -->
     <div id="email-abtests-wrap" class="mb-6 hidden">
       <h3 class="text-base font-bold text-[#1a1a2e] mb-3">A/B Test Recommendations</h3>
       <div id="email-abtests-list" class="space-y-3"></div>
+    </div>
+    <!-- After-sequence options -->
+    <div id="email-nextsteps-wrap" class="hidden mb-6">
+      <h3 class="text-base font-bold text-[#1a1a2e] mb-3">Next Steps</h3>
+      <div id="email-nextsteps-list" class="flex flex-wrap gap-2"></div>
     </div>
   </div>
 
@@ -1388,92 +1407,254 @@ function renderEmailSequence(es) {
   section.classList.remove('hidden');
   console.log('[Email Sequence] Rendering. Keys:', Object.keys(es), 'sequences:', (es.sequences||[]).length);
 
-  // Capture audit
+  // Category Scores
+  var cs = es.categoryScores || {};
+  var catEl = document.getElementById('email-category-scores');
+  var catLabels = { emailCapture: 'Email Capture', leadMagnet: 'Lead Magnet', contentForNurture: 'Content for Nurture', conversionPath: 'Conversion Path' };
+  if (catEl && Object.keys(cs).length) {
+    catEl.classList.remove('hidden');
+    catEl.innerHTML = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">' +
+      Object.keys(catLabels).map(function(key) {
+        var label = catLabels[key];
+        var val = typeof cs[key] === 'number' ? cs[key] : '—';
+        var col = val >= 75 ? '#22c55e' : val >= 55 ? '#f59e0b' : '#ef4444';
+        return '<div style="background:white;border-radius:14px;border:1px solid #f3f4f6;box-shadow:0 1px 4px rgba(0,0,0,0.04);padding:16px;text-align:center;">' +
+          '<div style="font-size:24px;font-weight:800;color:' + col + ';">' + val + '</div>' +
+          '<div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.07em;margin-top:4px;">' + label + '</div>' +
+          '</div>';
+      }).join('') + '</div>';
+  }
+
+  // Summary
+  var sumCard = document.getElementById('email-summary-card');
+  if (sumCard && es.summary) {
+    sumCard.classList.remove('hidden');
+    sumCard.innerHTML = '<div style="font-size:10px;font-weight:700;color:#f97316;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Plugin Summary</div>' +
+      '<p style="font-size:14px;color:#374151;line-height:1.7;">' + clean(es.summary) + '</p>';
+  }
+
+  // Capture Audit
   var ca = es.captureAudit || {};
   var capCard = document.getElementById('email-capture-card');
-  if (capCard && ((ca.gaps||[]).length || (ca.formsFound||[]).length || (ca.recommendations||[]).length)) {
+  if (capCard && ((ca.formsFound||[]).length || (ca.leadMagnets||[]).length || (ca.gaps||[]).length || (ca.recommendations||[]).length)) {
     capCard.classList.remove('hidden');
     capCard.innerHTML =
-      '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Email Capture Audit</div>' +
-      ((ca.formsFound||[]).length
-        ? '<div class="text-xs text-green-700 mb-2">&#10003; Forms found: ' + ca.formsFound.map(clean).join(', ') + '</div>'
-        : '<div class="text-xs text-red-600 mb-2">&#9888; No email capture forms detected</div>') +
-      ((ca.gaps||[]).length ? '<div class="text-xs font-semibold text-gray-700 mb-1 mt-2">Gaps</div><ul class="text-xs text-gray-500 list-disc pl-4 space-y-1">' + ca.gaps.map(function(g){return '<li>'+clean(g)+'</li>';}).join('') + '</ul>' : '') +
-      ((ca.recommendations||[]).length ? '<div class="text-xs font-semibold text-gray-700 mb-1 mt-2">Recommendations</div><ul class="text-xs text-gray-500 list-disc pl-4 space-y-1">' + ca.recommendations.map(function(r){return '<li>'+clean(r)+'</li>';}).join('') + '</ul>' : '');
+      '<div style="font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:16px;">Email Capture Audit</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">' +
+        '<div>' +
+          '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Forms Found</div>' +
+          ((ca.formsFound||[]).length
+            ? '<ul style="font-size:12px;color:#15803d;list-style:disc;padding-left:16px;margin:0 0 12px;">' + ca.formsFound.map(function(f){return '<li>'+clean(f)+'</li>';}).join('') + '</ul>'
+            : '<p style="font-size:12px;color:#dc2626;font-style:italic;margin-bottom:12px;">&#9888; No email capture forms detected</p>') +
+          ((ca.leadMagnets||[]).length
+            ? '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Lead Magnets</div>' +
+              '<ul style="font-size:12px;color:#1d4ed8;list-style:disc;padding-left:16px;margin:0;">' + ca.leadMagnets.map(function(m){return '<li>'+clean(m)+'</li>';}).join('') + '</ul>'
+            : '') +
+        '</div>' +
+        '<div>' +
+          ((ca.gaps||[]).length
+            ? '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Gaps</div><ul style="font-size:12px;color:#dc2626;list-style:disc;padding-left:16px;margin:0 0 12px;">' + ca.gaps.map(function(g){return '<li>'+clean(g)+'</li>';}).join('') + '</ul>'
+            : '') +
+          ((ca.recommendations||[]).length
+            ? '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Recommendations</div><ul style="font-size:12px;color:#374151;list-style:disc;padding-left:16px;margin:0;">' + ca.recommendations.map(function(r){return '<li>'+clean(r)+'</li>';}).join('') + '</ul>'
+            : '') +
+        '</div>' +
+      '</div>';
   }
 
   // Sequences
   var sequences = es.sequences || [];
   var seqList = document.getElementById('email-sequences-list');
-  if (seqList && !sequences.length) {
-    // Sequences missing but section is shown — display summary as fallback
-    seqList.innerHTML = es.summary
-      ? '<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6"><p class="text-sm text-gray-700 leading-relaxed">' + clean(es.summary) + '</p></div>'
-      : '<p class="text-sm text-gray-400 italic p-2">Email sequence data is processing.</p>';
+  if (seqList) {
+    if (!sequences.length) {
+      seqList.innerHTML = es.summary
+        ? '<div style="background:white;border-radius:14px;border:1px solid #f3f4f6;padding:24px;margin-bottom:24px;"><p style="font-size:14px;color:#374151;line-height:1.7;">' + clean(es.summary) + '</p></div>'
+        : '<p style="font-size:13px;color:#9ca3af;font-style:italic;padding:8px;margin-bottom:24px;">Email sequence data is processing.</p>';
+    } else {
+      seqList.innerHTML = sequences.map(function(seq) {
+        var emails = seq.emails || [];
+        var bm = seq.performanceBenchmarks || {};
+        var suppRules = seq.suppressionRules || [];
+        return '<div style="background:white;border-radius:16px;border:1px solid #f3f4f6;box-shadow:0 2px 12px rgba(0,0,0,0.05);margin-bottom:28px;overflow:hidden;">' +
+
+          // Sequence header
+          '<div style="background:#1a1a2e;padding:20px 24px;">' +
+            '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+              '<span style="background:#f97316;color:white;font-size:11px;font-weight:700;padding:4px 14px;border-radius:99px;">' + clean(seq.sequenceType || 'Sequence') + '</span>' +
+              '<span style="color:#9ca3af;font-size:13px;">' + clean(seq.goal||'') + '</span>' +
+            '</div>' +
+            (seq.audience ? '<p style="color:#6b7280;font-size:12px;margin-top:8px;margin-bottom:0;">' + clean(seq.audience) + '</p>' : '') +
+          '</div>' +
+
+          '<div style="padding:24px;">' +
+
+          // Narrative arc
+          (seq.narrativeArc
+            ? '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px 18px;margin-bottom:18px;">' +
+                '<div style="font-size:10px;font-weight:700;color:#ea580c;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Narrative Arc</div>' +
+                '<p style="font-size:13px;color:#374151;line-height:1.65;margin:0;">' + clean(seq.narrativeArc) + '</p>' +
+              '</div>'
+            : '') +
+
+          // Logic strip (exit / re-entry / suppression)
+          (seq.exitCondition || seq.reEntryRule || suppRules.length
+            ? '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px;">' +
+                (seq.exitCondition
+                  ? '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px 16px;">' +
+                      '<div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">&#10003; Exit Condition</div>' +
+                      '<p style="font-size:12px;color:#374151;margin:0;">' + clean(seq.exitCondition) + '</p>' +
+                    '</div>'
+                  : '') +
+                (seq.reEntryRule
+                  ? '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;">' +
+                      '<div style="font-size:10px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">&#8635; Re-Entry Rule</div>' +
+                      '<p style="font-size:12px;color:#374151;margin:0;">' + clean(seq.reEntryRule) + '</p>' +
+                    '</div>'
+                  : '') +
+                (suppRules.length
+                  ? '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;">' +
+                      '<div style="font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">&#9888; Suppression Rules</div>' +
+                      '<ul style="font-size:12px;color:#374151;list-style:disc;padding-left:14px;margin:0;">' + suppRules.map(function(r){return '<li>'+clean(r)+'</li>';}).join('') + '</ul>' +
+                    '</div>'
+                  : '') +
+              '</div>'
+            : '') +
+
+          // Branching logic
+          (seq.branchingLogicNotes
+            ? '<div style="background:#f9fafb;border:1px solid #f3f4f6;border-radius:10px;padding:14px 18px;margin-bottom:18px;">' +
+                '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">&#9654; Branching Logic</div>' +
+                '<p style="font-size:13px;color:#374151;line-height:1.65;margin:0;">' + clean(seq.branchingLogicNotes) + '</p>' +
+              '</div>'
+            : '') +
+
+          // Performance benchmarks
+          (bm.expectedOpenRate || bm.expectedCTR || bm.expectedConversionRate || bm.expectedUnsubRate
+            ? '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:20px;background:#f9fafb;border:1px solid #f3f4f6;border-radius:12px;padding:16px 20px;margin-bottom:20px;">' +
+                (bm.expectedOpenRate ? '<div style="text-align:center;"><div style="font-size:20px;font-weight:800;color:#1a1a2e;">' + clean(bm.expectedOpenRate) + '</div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;">Open Rate</div></div>' : '') +
+                (bm.expectedCTR ? '<div style="text-align:center;"><div style="font-size:20px;font-weight:800;color:#1a1a2e;">' + clean(bm.expectedCTR) + '</div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;">CTR</div></div>' : '') +
+                (bm.expectedConversionRate ? '<div style="text-align:center;"><div style="font-size:20px;font-weight:800;color:#1a1a2e;">' + clean(bm.expectedConversionRate) + '</div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;">Conversion</div></div>' : '') +
+                (bm.expectedUnsubRate ? '<div style="text-align:center;"><div style="font-size:20px;font-weight:800;color:#ef4444;">' + clean(bm.expectedUnsubRate) + '</div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;">Unsub Rate</div></div>' : '') +
+                (bm.reviewCadence ? '<div style="margin-left:auto;"><div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">Review Cadence</div><div style="font-size:12px;color:#374151;">' + clean(bm.reviewCadence) + '</div></div>' : '') +
+              '</div>'
+            : '') +
+
+          // Email cards
+          '<div style="display:flex;flex-direction:column;gap:16px;margin-bottom:20px;">' +
+          emails.map(function(em) {
+            var subjects = (em.subjectLineOptions || []).filter(Boolean);
+            var bodyLines = clean(em.bodyCopy || '');
+            return '<div style="border:1px solid #f3f4f6;border-radius:14px;overflow:hidden;">' +
+              '<div style="background:#f9fafb;border-bottom:1px solid #f3f4f6;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;">' +
+                '<span style="font-size:12px;font-weight:700;color:#f97316;">Email ' + (em.emailNumber||'') + '</span>' +
+                '<span style="font-size:11px;color:#9ca3af;">' + clean(em.timing||'') + '</span>' +
+              '</div>' +
+              '<div style="padding:18px;">' +
+                (em.purpose ? '<p style="font-size:12px;color:#9ca3af;font-style:italic;margin-bottom:12px;">' + clean(em.purpose) + '</p>' : '') +
+                (subjects.length
+                  ? '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Subject Lines</div>' +
+                    '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">' +
+                    subjects.map(function(s){ return '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#1a1a2e;">' + clean(s) + '</div>'; }).join('') +
+                    '</div>'
+                  : '') +
+                (em.previewText ? '<div style="font-size:11px;color:#9ca3af;font-style:italic;margin-bottom:12px;">&#9654; Preview: ' + clean(em.previewText) + '</div>' : '') +
+                (bodyLines ? '<div style="background:#f9fafb;border:1px solid #f3f4f6;border-radius:10px;padding:18px;font-size:13px;color:#374151;line-height:1.75;white-space:pre-line;margin-bottom:14px;">' + bodyLines + '</div>' : '') +
+                (em.primaryCTA ? '<div style="margin-bottom:10px;"><span style="display:inline-block;background:#f97316;color:white;font-size:12px;font-weight:700;padding:9px 20px;border-radius:8px;">' + clean(em.primaryCTA) + '</span></div>' : '') +
+                (em.segmentConditionNotes ? '<div style="font-size:11px;color:#9ca3af;border-top:1px solid #f3f4f6;padding-top:10px;margin-top:8px;">' + clean(em.segmentConditionNotes) + '</div>' : '') +
+              '</div>' +
+            '</div>';
+          }).join('') +
+          '</div>' +
+
+          // SVG flowchart
+          (emails.length ? '<div style="margin-bottom:8px;">' + buildEmailFlowchart(seq) + '</div>' : '') +
+
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
   }
-  if (seqList && sequences.length) {
-    seqList.innerHTML = sequences.map(function(seq) {
-      var emails = seq.emails || [];
-      var bm = seq.performanceBenchmarks || {};
-      return '<div class="mb-8">' +
-        '<div class="flex items-center gap-3 mb-4">' +
-          '<span class="text-xs font-bold text-white bg-[#1a1a2e] px-3 py-1 rounded-full">' + clean(seq.sequenceType || 'Sequence') + '</span>' +
-          '<span class="text-xs text-gray-500">' + clean(seq.goal) + '</span>' +
+
+  // Metrics to Track
+  var mt = es.metricsToTrack || {};
+  var metricsWrap = document.getElementById('email-metrics-wrap');
+  var metricsCard = document.getElementById('email-metrics-card');
+  if (metricsWrap && metricsCard && (mt.primaryConversionMetric || (mt.perEmailMetrics||[]).length || (mt.sequenceLevelMetrics||[]).length)) {
+    metricsWrap.classList.remove('hidden');
+    metricsCard.innerHTML =
+      (mt.primaryConversionMetric ? '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Primary Conversion Metric</div><p style="font-size:14px;font-weight:700;color:#1a1a2e;margin:0 0 16px;">' + clean(mt.primaryConversionMetric) + '</p>' : '') +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">' +
+        ((mt.perEmailMetrics||[]).length ? '<div><div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Per-Email</div><ul style="font-size:12px;color:#374151;list-style:disc;padding-left:16px;margin:0;">' + mt.perEmailMetrics.map(function(m){return '<li style="margin-bottom:4px;">'+clean(m)+'</li>';}).join('') + '</ul></div>' : '') +
+        ((mt.sequenceLevelMetrics||[]).length ? '<div><div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Sequence-Level</div><ul style="font-size:12px;color:#374151;list-style:disc;padding-left:16px;margin:0;">' + mt.sequenceLevelMetrics.map(function(m){return '<li style="margin-bottom:4px;">'+clean(m)+'</li>';}).join('') + '</ul></div>' : '') +
+      '</div>' +
+      (mt.reviewCadence ? '<div style="margin-top:14px;font-size:12px;color:#9ca3af;border-top:1px solid #f3f4f6;padding-top:12px;">&#128197; Review Cadence: ' + clean(mt.reviewCadence) + '</div>' : '');
+  }
+
+  // Recommendations
+  var recs = es.recommendations || [];
+  var recsWrap = document.getElementById('email-recs-wrap');
+  var recsList = document.getElementById('email-recs-list');
+  if (recsWrap && recsList && recs.length) {
+    recsWrap.classList.remove('hidden');
+    recsList.innerHTML = recs.map(function(r) {
+      var impLower = (r.expectedImpact||'').toLowerCase();
+      var impCol = impLower === 'high' ? '#dc2626' : impLower === 'medium' ? '#d97706' : '#6b7280';
+      var impBg  = impLower === 'high' ? '#fef2f2' : impLower === 'medium' ? '#fffbeb' : '#f3f4f6';
+      var isQuick = (r.effort||'').toLowerCase().includes('quick');
+      return '<div style="background:white;border:1px solid #f3f4f6;border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">' +
+        '<div style="display:flex;align-items:flex-start;gap:12px;">' +
+          '<div style="min-width:24px;height:24px;background:#fff7ed;border:1px solid #fed7aa;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#f97316;">' + (r.priority||'') + '</div>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:14px;font-weight:600;color:#1a1a2e;margin-bottom:6px;">' + clean(r.action||'') + '</div>' +
+            (r.rationale ? '<p style="font-size:12px;color:#6b7280;margin:0 0 10px;line-height:1.6;">' + clean(r.rationale) + '</p>' : '') +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+              '<span style="font-size:10px;font-weight:700;color:' + impCol + ';background:' + impBg + ';padding:2px 10px;border-radius:99px;">' + clean(r.expectedImpact||'') + ' Impact</span>' +
+              '<span style="font-size:10px;font-weight:700;color:' + (isQuick?'#166534':'#1d4ed8') + ';background:' + (isQuick?'#f0fdf4':'#eff6ff') + ';padding:2px 10px;border-radius:99px;">' + clean(r.effort||'') + '</span>' +
+            '</div>' +
+          '</div>' +
         '</div>' +
-        // Benchmarks strip
-        (bm.expectedOpenRate || bm.expectedCTR || bm.expectedConversionRate
-          ? '<div class="flex flex-wrap gap-6 mb-4 bg-gray-50 rounded-xl p-3">' +
-            (bm.expectedOpenRate ? '<div class="text-center"><div class="text-sm font-bold text-[#1a1a2e]">' + clean(bm.expectedOpenRate) + '</div><div class="text-[10px] text-gray-400 uppercase">Open Rate</div></div>' : '') +
-            (bm.expectedCTR ? '<div class="text-center"><div class="text-sm font-bold text-[#1a1a2e]">' + clean(bm.expectedCTR) + '</div><div class="text-[10px] text-gray-400 uppercase">CTR</div></div>' : '') +
-            (bm.expectedConversionRate ? '<div class="text-center"><div class="text-sm font-bold text-[#1a1a2e]">' + clean(bm.expectedConversionRate) + '</div><div class="text-[10px] text-gray-400 uppercase">Conversion</div></div>' : '') +
-            '</div>' : '') +
-        // Email cards
-        '<div class="space-y-4">' + emails.map(function(em) {
-          var subjects = (em.subjectLineOptions || []).filter(Boolean);
-          var bodyLines = clean(em.bodyCopy || '');
-          return '<div class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">' +
-            // Header bar
-            '<div class="bg-gray-50 border-b border-gray-100 px-4 py-2 flex items-center justify-between">' +
-              '<span class="text-xs font-bold text-[#f97316]">Email ' + (em.emailNumber||'') + '</span>' +
-              '<span class="text-xs text-gray-400">' + clean(em.timing) + '</span>' +
-            '</div>' +
-            '<div class="p-4">' +
-              // Purpose
-              (em.purpose ? '<p class="text-xs text-gray-400 italic mb-3">' + clean(em.purpose) + '</p>' : '') +
-              // Subject options
-              (subjects.length ? '<div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Subject lines</div><div class="space-y-1 mb-3">' + subjects.map(function(s){return '<div class="text-sm font-semibold text-[#1a1a2e] bg-orange-50 border border-orange-100 rounded px-3 py-1.5">'+clean(s)+'</div>';}).join('') + '</div>' : '') +
-              // Preview text
-              (em.previewText ? '<div class="text-xs text-gray-400 italic mb-3">&#9654; Preview: ' + clean(em.previewText) + '</div>' : '') +
-              // Body copy
-              (bodyLines ? '<div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line bg-gray-50 rounded-xl p-4 mb-3 border border-gray-100">' + bodyLines + '</div>' : '') +
-              // CTA button
-              (em.primaryCTA ? '<div class="mt-2"><span class="inline-flex items-center gap-2 bg-[#f97316] text-white text-xs font-bold px-4 py-2 rounded-lg">' + clean(em.primaryCTA) + '</span></div>' : '') +
-            '</div>' +
-          '</div>';
-        }).join('') + '</div>' +
-        // SVG flowchart
-        '<div class="mt-6">' + buildEmailFlowchart(seq) + '</div>' +
       '</div>';
     }).join('');
   }
 
-  // A/B tests
+  // A/B Tests
   var abTests = es.abTestSuggestions || [];
-  if (abTests.length) {
-    var abWrap = document.getElementById('email-abtests-wrap');
-    var abList = document.getElementById('email-abtests-list');
-    if (abWrap) abWrap.classList.remove('hidden');
-    if (abList) abList.innerHTML = abTests.map(function(t) {
-      return '<div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">' +
-        '<div class="text-sm font-semibold text-[#1a1a2e] mb-2">&#128203; ' + clean(t.whatToTest) + '</div>' +
+  var abWrap = document.getElementById('email-abtests-wrap');
+  var abList = document.getElementById('email-abtests-list');
+  if (abWrap && abList && abTests.length) {
+    abWrap.classList.remove('hidden');
+    abList.innerHTML = abTests.map(function(t) {
+      return '<div style="background:white;border:1px solid #f3f4f6;border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">' +
+        '<div style="font-size:14px;font-weight:600;color:#1a1a2e;margin-bottom:12px;">&#128203; ' + clean(t.whatToTest||'') + '</div>' +
         (t.variantA
-          ? '<div class="grid grid-cols-2 gap-2 mb-2">' +
-            '<div class="bg-gray-50 rounded-lg p-3 text-xs"><div class="font-bold text-gray-500 mb-1">A &mdash; Control</div><div class="text-gray-700">' + clean(t.variantA) + '</div></div>' +
-            '<div class="bg-blue-50 rounded-lg p-3 text-xs"><div class="font-bold text-blue-600 mb-1">B &mdash; Test</div><div class="text-gray-700">' + clean(t.variantB||'') + '</div></div>' +
-          '</div>'
+          ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
+              '<div style="background:#f9fafb;border-radius:10px;padding:12px;font-size:12px;">' +
+                '<div style="font-weight:700;color:#6b7280;margin-bottom:4px;">A &mdash; Control</div>' +
+                '<div style="color:#374151;">' + clean(t.variantA) + '</div>' +
+              '</div>' +
+              '<div style="background:#eff6ff;border-radius:10px;padding:12px;font-size:12px;">' +
+                '<div style="font-weight:700;color:#2563eb;margin-bottom:4px;">B &mdash; Test</div>' +
+                '<div style="color:#374151;">' + clean(t.variantB||'') + '</div>' +
+              '</div>' +
+            '</div>'
           : '') +
-        (t.howToMeasure ? '<div class="text-xs text-gray-400 mt-1">&#128200; ' + clean(t.howToMeasure) + '</div>' : '') +
+        '<div style="display:flex;gap:16px;flex-wrap:wrap;">' +
+          (t.howToSplit ? '<div style="font-size:11px;color:#9ca3af;">Split: ' + clean(t.howToSplit) + '</div>' : '') +
+          (t.howToMeasure ? '<div style="font-size:11px;color:#9ca3af;">&#128200; ' + clean(t.howToMeasure) + '</div>' : '') +
+          (t.expectedLift ? '<div style="font-size:11px;font-weight:700;color:#16a34a;">&#8599; ' + clean(t.expectedLift) + '</div>' : '') +
+        '</div>' +
       '</div>';
+    }).join('');
+  }
+
+  // After-Sequence Next Steps
+  var nextSteps = es.afterSequenceOptions || [];
+  var nsWrap = document.getElementById('email-nextsteps-wrap');
+  var nsList = document.getElementById('email-nextsteps-list');
+  if (nsWrap && nsList && nextSteps.length) {
+    nsWrap.classList.remove('hidden');
+    nsList.innerHTML = nextSteps.map(function(step) {
+      return '<span style="display:inline-flex;align-items:center;gap:6px;background:white;border:1px solid #e5e7eb;border-radius:99px;padding:7px 16px;font-size:12px;color:#374151;box-shadow:0 1px 4px rgba(0,0,0,0.04);">&#8594; ' + clean(typeof step === 'string' ? step : (step.option || '')) + '</span>';
     }).join('');
   }
 }
