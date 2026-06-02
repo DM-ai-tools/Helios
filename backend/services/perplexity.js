@@ -203,21 +203,23 @@ export async function enrichWithPerplexity(crawledData, onProgress = () => {}) {
   const industry = crawledData.industry || 'General';
   const topKws   = crawledData.keywordStats?.topKeywords ?? [];
 
-  // Run sequentially to avoid rate-limit collisions and partial timeouts
-  onProgress('Running Perplexity web research (business overview)…');
-  const businessOverview = await researchBusinessOverview(domain, industry).catch(e => {
-    console.warn('[Perplexity] businessOverview failed:', e.message); return null;
-  });
+  // Run in parallel for maximum speed
+  onProgress('Running Perplexity web research (business, competitors, trends)…');
+  const [bizRes, compRes, trendsRes] = await Promise.all([
+    researchBusinessOverview(domain, industry).catch(e => {
+      console.warn('[Perplexity] businessOverview failed:', e.message); return null;
+    }),
+    researchCompetitors(domain, industry, topKws).catch(e => {
+      console.warn('[Perplexity] competitors failed:', e.message); return null;
+    }),
+    researchIndustryTrends(industry).catch(e => {
+      console.warn('[Perplexity] industryTrends failed:', e.message); return null;
+    })
+  ]);
 
-  onProgress('Running Perplexity web research (competitors)…');
-  const competitorLandscape = await researchCompetitors(domain, industry, topKws).catch(e => {
-    console.warn('[Perplexity] competitors failed:', e.message); return null;
-  });
-
-  onProgress('Running Perplexity web research (industry trends)…');
-  const industryTrends = await researchIndustryTrends(industry).catch(e => {
-    console.warn('[Perplexity] industryTrends failed:', e.message); return null;
-  });
+  const businessOverview = bizRes;
+  const competitorLandscape = compRes;
+  const industryTrends = trendsRes;
 
   // Attach to crawledData
   if (businessOverview)    crawledData.perplexityBusiness    = businessOverview;

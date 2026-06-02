@@ -61,11 +61,25 @@ export async function crawlWebsite(url, onProgress = () => {}) {
 
     onProgress(`Found ${internalLinks.length} internal pages — crawling…`);
 
-    // Crawl internal pages (cap at 10 for performance)
+    // Crawl internal pages in parallel (cap at 10 for performance, batch of 5)
     const pagesToCrawl = internalLinks.slice(0, 10);
-    for (const pageUrl of pagesToCrawl) {
-      try {
-        const pageData = await crawlPage(pageUrl);
+    
+    // Batch processing to avoid overwhelming the target server
+    const batchSize = 5;
+    for (let i = 0; i < pagesToCrawl.length; i += batchSize) {
+      const batch = pagesToCrawl.slice(i, i + batchSize);
+      const results = await Promise.all(batch.map(async (pageUrl) => {
+        try {
+          return await crawlPage(pageUrl);
+        } catch (err) {
+          console.warn(`[Crawler] Skipping ${pageUrl}: ${err.message}`);
+          return null;
+        }
+      }));
+
+      for (const pageData of results) {
+        if (!pageData) continue;
+        const pageUrl = pageData.url;
         crawledData.pages.push(pageData);
         crawledData.headings.push(...(pageData.headings || []));
         crawledData.ctaText.push(...(pageData.ctaText || []));
@@ -81,8 +95,6 @@ export async function crawlWebsite(url, onProgress = () => {}) {
         if (/testimonial|reviews|case-stud/i.test(pageUrl)) {
           crawledData.testimonials.push(...(pageData.testimonials || []));
         }
-      } catch (err) {
-        console.warn(`[Crawler] Skipping ${pageUrl}: ${err.message}`);
       }
     }
 
