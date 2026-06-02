@@ -431,24 +431,16 @@ ${p.claude_output}
 
   console.log(`[GPT Report] Launching Puppeteer to generate PDF...`);
 
-  // ─── Resolve Chromium executable ───────────────────────────────
-  // 1. CHROMIUM_BINARY_PATH  — pre-extracted during Docker build (most reliable)
-  // 2. PUPPETEER_EXECUTABLE_PATH — explicit override
-  // 3. Local Chrome on Windows dev
-  // 4. chromium.executablePath() — runtime extraction (fallback)
+  // ─── Resolve Chromium executable ──────────────────────────────
+  // Production (root in Docker): @sparticuz/chromium extracts its
+  //   crashpad-free binary to /tmp/chromium — root always has write access.
+  // Windows dev: prefer local Chrome.
   let executablePath;
-  if (process.env.CHROMIUM_BINARY_PATH && fs.existsSync(process.env.CHROMIUM_BINARY_PATH)) {
-    executablePath = process.env.CHROMIUM_BINARY_PATH;
-    console.log(`[GPT Report] Using pre-extracted binary: ${executablePath}`);
-  } else if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-    console.log(`[GPT Report] Using PUPPETEER_EXECUTABLE_PATH: ${executablePath}`);
-  } else if (process.platform === 'win32') {
+  if (process.platform === 'win32') {
     const localChrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
     executablePath = fs.existsSync(localChrome) ? localChrome : await chromium.executablePath();
     console.log(`[GPT Report] Using: ${executablePath}`);
   } else {
-    console.log('[GPT Report] Falling back to runtime chromium extraction...');
     executablePath = await chromium.executablePath();
     console.log(`[GPT Report] Using @sparticuz/chromium: ${executablePath}`);
   }
@@ -460,11 +452,14 @@ ${p.claude_output}
     protocolTimeout: 120_000,
     args: [
       ...chromium.args,
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
       '--disable-crash-reporter',
       '--disable-breakpad',
       '--no-crashpad',
     ],
   });
+
 
   try {
     const page = await browser.newPage();

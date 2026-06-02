@@ -3,10 +3,9 @@
 # Based on official Puppeteer troubleshooting guide:
 # https://pptr.dev/troubleshooting
 #
-# Strategy: Install ALL official Debian dependencies listed by
-# the Puppeteer docs, then use @sparticuz/chromium with the
-# binary baked into the image at a fixed path during build.
-# Run as root to avoid all permission issues in Railway.
+# Runs as root — eliminates all EACCES/permission issues.
+# @sparticuz/chromium extracts its crashpad-free binary to
+# /tmp/chromium at first launch (root can always write /tmp).
 # ============================================================
 
 FROM node:20-slim
@@ -16,6 +15,7 @@ FROM node:20-slim
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     fonts-liberation \
+    fonts-noto-color-emoji \
     libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
@@ -50,55 +50,35 @@ RUN apt-get update && apt-get install -y \
     lsb-release \
     wget \
     xdg-utils \
-    fonts-noto-color-emoji \
     --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
-# Skip Puppeteer's own bundled Chromium — we use @sparticuz/chromium
+# Skip Puppeteer's own bundled Chromium — we use @sparticuz/chromium instead
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV NODE_ENV=production
 
 WORKDIR /app
 
-# Install dependencies — npm install (not npm ci) so it reads package.json
-# directly in case package-lock.json is stale
+# Install dependencies — npm install reads package.json directly
+# (bypasses any stale package-lock.json)
 COPY package*.json ./
 RUN npm install --omit=dev --no-audit --no-fund
-
-# ── Pre-bake the @sparticuz/chromium binary into the image ─────
-# Run extraction as root during build. The binary is decompressed
-# to /app/chromium-binary and marked executable. This is a permanent
-# file in the image layer — no runtime writes to /tmp needed.
-RUN node -e " \
-  const { execSync } = require('child_process'); \
-  import('@sparticuz/chromium').then(async (mod) => { \
-    const chromium = mod.default; \
-    const p = await chromium.executablePath('/app/chromium-binary'); \
-    console.log('[Build] @sparticuz/chromium extracted to:', p); \
-    execSync('chmod 755 /app/chromium-binary'); \
-    execSync('ls -lh /app/chromium-binary'); \
-  }).catch(err => { console.error('[Build] Extraction failed:', err); process.exit(1); }); \
-"
-
-# Confirm the binary exists and is executable before continuing
-RUN test -f /app/chromium-binary && echo '[Build] Binary OK' || (echo '[Build] Binary MISSING' && exit 1)
-
-# Set the path so both service files find it immediately
-ENV CHROMIUM_BINARY_PATH=/app/chromium-binary
 
 # Copy application source
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
 
-# Create writable directories the app needs at runtime
+# Create app directories
 RUN mkdir -p reports
 
-# ── Run as root ────────────────────────────────────────────────
-# Per Puppeteer docs, running as non-root in containers requires
-# sandbox configuration. Since we use --no-sandbox in our launch
-# args (trusted internal content only), running as root is safe
-# and eliminates all permission-related launch failures.
-# Do NOT add a USER directive — keep root for Railway compatibility.
+# No USER directive — run as root.
+# Per pptr.dev/troubleshooting, non-root containers require sandbox
+# configuration. We use --no-sandbox (trusted internal content).
+# Running as root + --no-sandbox is the standard Railway pattern
+# and eliminates all EACCES launch failures.
+#
+# @sparticuz/chromium will extract its binary to /tmp/chromium on
+# first launch. Root always has write access to /tmp.
 
 EXPOSE 3000
 

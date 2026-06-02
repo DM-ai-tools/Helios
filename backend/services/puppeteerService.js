@@ -2,9 +2,9 @@
 // backend/services/puppeteerService.js
 // PDF generation — Puppeteer + @sparticuz/chromium
 //
-// The Chromium binary is pre-extracted during Docker build into
-// /app/chromium-binary (set as CHROMIUM_BINARY_PATH env var).
-// No runtime extraction needed — no /tmp permission issues.
+// Container runs as root (no USER in Dockerfile), so
+// @sparticuz/chromium can extract its binary to /tmp/chromium
+// at first launch without any permission issues.
 // ============================================================
 
 import puppeteer from 'puppeteer-core';
@@ -20,26 +20,11 @@ if (!fs.existsSync(REPORTS_DIR)) {
   fs.mkdirSync(REPORTS_DIR, { recursive: true });
 }
 
-// ─── Resolve the Chromium executable path ─────────────────────
-// Priority:
-//  1. CHROMIUM_BINARY_PATH  — pre-extracted binary set in Dockerfile
-//  2. PUPPETEER_EXECUTABLE_PATH — explicit override (e.g. /usr/bin/chromium)
-//  3. Local Chrome on Windows dev
-//  4. chromium.executablePath() — runtime extraction into /tmp (fallback)
+// ─── Resolve Chromium executable ──────────────────────────────
+// Production (Railway/Docker — root): @sparticuz/chromium extracts
+//   its crashpad-free binary to /tmp/chromium and returns the path.
+// Windows dev: use local Chrome if available.
 async function resolveChromiumPath() {
-  // 1. Pre-extracted binary (set by Dockerfile during build — most reliable)
-  if (process.env.CHROMIUM_BINARY_PATH && fs.existsSync(process.env.CHROMIUM_BINARY_PATH)) {
-    console.log(`[Puppeteer] Using pre-extracted binary: ${process.env.CHROMIUM_BINARY_PATH}`);
-    return process.env.CHROMIUM_BINARY_PATH;
-  }
-
-  // 2. Explicit path override
-  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    console.log(`[Puppeteer] Using PUPPETEER_EXECUTABLE_PATH: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
-    return process.env.PUPPETEER_EXECUTABLE_PATH;
-  }
-
-  // 3. Windows dev: local Chrome
   if (process.platform === 'win32') {
     const localChrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
     if (fs.existsSync(localChrome)) {
@@ -48,9 +33,10 @@ async function resolveChromiumPath() {
     }
   }
 
-  // 4. Fallback: runtime extraction (may fail in restricted containers)
-  console.log('[Puppeteer] Falling back to runtime chromium extraction...');
-  return await chromium.executablePath();
+  // Linux/container: runtime extraction to /tmp/chromium (root can always write /tmp)
+  const execPath = await chromium.executablePath();
+  console.log(`[Puppeteer] Using @sparticuz/chromium: ${execPath}`);
+  return execPath;
 }
 
 /**
@@ -77,6 +63,8 @@ export async function generateReportPDF(auditId) {
     protocolTimeout: 120_000,
     args: [
       ...chromium.args,
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
       '--disable-crash-reporter',
       '--disable-breakpad',
       '--no-crashpad',
