@@ -349,19 +349,20 @@ async function runAnalyzePipeline({ auditId, crawledData, url, industry, email, 
       emit(auditId, 'plugin-queued', { pluginId: plugin.id, pluginName: plugin.name });
     }
 
-    // Run plugins sequentially — each fires its own running/complete SSE events
+    // Run all plugins in parallel — each fires its own running/complete SSE events
     const pluginResults = await runAllPlugins(
       plugins,
       crawledData,
-      // onProgress: fires for 'Running X…' and 'X complete' messages
-      async (msg) => {
+      // onProgress: MUST be synchronous — it is called fire-and-forget inside runAllPlugins.
+      // Any async work (DB writes) must be done with their own .catch() to prevent
+      // unhandled promise rejections that would crash the server and reset SSE connections.
+      (msg) => {
         const matchedPlugin = plugins.find(p => msg.includes(p.name));
         if (!matchedPlugin) return;
 
         const isComplete = msg.toLowerCase().includes('complete') || msg.toLowerCase().includes('score:');
 
         if (!isComplete) {
-          // Plugin just started — advance progress and emit running
           currentProgress = Math.min(currentProgress + Math.floor(progressPerPlugin * 0.3), 79);
           emit(auditId, 'plugin-running', {
             pluginId:   matchedPlugin.id,
@@ -369,9 +370,10 @@ async function runAnalyzePipeline({ auditId, crawledData, url, industry, email, 
             message:    msg,
             progress:   currentProgress,
           });
-          await updateAuditPlugin(auditId, matchedPlugin.id, { status: 'running', startedAt: true });
+          // Fire-and-forget DB write — errors logged but never thrown to caller
+          updateAuditPlugin(auditId, matchedPlugin.id, { status: 'running', startedAt: true })
+            .catch(e => console.error(`[SSE] updateAuditPlugin running failed:`, e.message));
         } else {
-          // Plugin finished — advance progress and emit complete
           currentProgress = Math.min(currentProgress + Math.ceil(progressPerPlugin * 0.7), 79);
           emit(auditId, 'plugin-complete', {
             pluginId:   matchedPlugin.id,
@@ -490,14 +492,18 @@ async function runAnalyzePipeline({ auditId, crawledData, url, industry, email, 
     emit(auditId, 'step', { step: 'emailing', message: 'Delivering your audit to inbox…', progress: 95 });
 
     if (email) {
-      await sendAuditReport({
-        to: email,
-        businessName: crawledData.businessSummary?.name || url,
-        reportUrl,
-        docxUrl,
-        overallScore,
-        executiveSummary: synthesis.executiveSummary,
-      });
+      try {
+        await sendAuditReport({
+          to: email,
+          businessName: crawledData.businessSummary?.name || url,
+          reportUrl,
+          docxUrl,
+          overallScore,
+          executiveSummary: synthesis.executiveSummary,
+        });
+      } catch (emailErr) {
+        console.error('[Analyze] Email send failed (non-fatal):', emailErr.message);
+      }
     }
 
     // Use a frontend-friendly report URL (the report.html page with auditId query param)

@@ -7,6 +7,22 @@ import express from 'express';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
+
+// ─── Global error guards ───────────────────────────────────────
+// Prevent unhandled promise rejections / uncaught exceptions from
+// killing the server process and resetting all active SSE connections.
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Server] Unhandled Promise Rejection:', reason?.message || reason);
+  console.error('[Server] Promise:', promise);
+  // Do NOT process.exit() — keep the server alive
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[Server] Uncaught Exception:', err.message);
+  console.error(err.stack);
+  // Do NOT exit — log and continue
+});
+
 import auditRouter from './routes/audit.js';
 import statusRouter from './routes/status.js';
 import initialAuditRouter from './routes/initialAudit.js';
