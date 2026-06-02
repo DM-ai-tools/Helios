@@ -411,9 +411,14 @@ ${p.claude_output}
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
+      '--disable-dev-shm-usage',    // prevents /dev/shm exhaustion in containers
       '--disable-gpu',
       '--disable-extensions',
+      '--no-zygote',                // required in single-process container envs
+      '--disable-crash-reporter',   // silences chrome_crashpad_handler errors
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
     ],
   };
 
