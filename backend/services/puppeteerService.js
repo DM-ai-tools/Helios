@@ -30,7 +30,7 @@ export async function generateReportPDF(auditId, port) {
   // Launch Puppeteer headless — works on both local Windows (via bundled Chromium)
   // and Linux containers (Railway). --no-sandbox is required in container environments.
   const launchOptions = {
-    headless: 'new',
+    headless: true,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',

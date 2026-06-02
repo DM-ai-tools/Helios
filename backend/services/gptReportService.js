@@ -402,13 +402,30 @@ ${p.claude_output}
   const finalHtml = renderHtmlTemplate(audit, htmlContent);
 
   console.log(`[GPT Report] Launching Puppeteer to generate PDF...`);
-  
+
+  // Build launch options — works on both Windows dev and Linux/Docker (Railway).
+  // On Linux the bundled Chromium is used automatically (no executablePath needed).
+  // On Windows we prefer local Chrome if installed; otherwise fall back to bundled Chromium.
+  const launchOptions = {
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--disable-extensions',
+    ],
+  };
+
+  if (process.platform === 'win32') {
+    const localChrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+    if (fs.existsSync(localChrome)) {
+      launchOptions.executablePath = localChrome;
+    }
+  }
+
   // Launch Puppeteer
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-  });
+  const browser = await puppeteer.launch(launchOptions);
 
   try {
     const page = await browser.newPage();

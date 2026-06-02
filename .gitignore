@@ -30,8 +30,22 @@ test.pdf
 install.log
 temp.js
 
+# Dev/debug utility scripts (local only)
+clear-pdf-cache.js
+drop-db.mjs
+dump-crawled-data.mjs
+fetch-audit-result.mjs
+print-debug.mjs
+show-live-results.mjs
+show-redis.mjs
+show-results.mjs
+test-*.mjs
+test-*.cjs
+test-*.js
+
 # macOS
 .DS_Store
 
 # Windows
 Thumbs.db
+

@@ -470,7 +470,9 @@ async function runAnalyzePipeline({ auditId, crawledData, url, industry, email, 
     };
     
     try {
-      await redisClient.setEx(`audit_final_json:${auditId}`, 86400, JSON.stringify(finalCacheData));
+      // TTL matches the base audit:* key (7 days) so score-pillar data is
+      // always available while the audit record itself is alive.
+      await redisClient.setEx(`audit_final_json:${auditId}`, 604800, JSON.stringify(finalCacheData));
       console.log(`[Analyze Pipeline] Saved final output to temp cache for ${auditId}`);
     } catch(e) {
       console.error(`[Analyze Pipeline] Failed to save temp cache for ${auditId}:`, e);

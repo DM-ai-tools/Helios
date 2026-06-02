@@ -126,7 +126,8 @@ async function crawlPage(url) {
     headers: {
       'User-Agent': 'ClickTrends-AI-Audit/1.0 (+https://clicktrends.com.au/audit-bot)',
     },
-    timeout: 10000,
+    // node-fetch v3 dropped the timeout option — use AbortSignal instead
+    signal: AbortSignal.timeout(10000),
   });
 
   if (!response.ok) {

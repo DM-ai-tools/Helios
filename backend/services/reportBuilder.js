@@ -28,7 +28,13 @@ export async function buildReport(auditId, auditData, pluginResults, synthesis, 
 
   // In production: upload to S3/GCS and get signed URLs
   // For now: return placeholder URLs with audit ID
-  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+  // BASE_URL resolution (production-safe):
+  // 1. Use explicit BASE_URL env var if set
+  // 2. Use Railway's auto-injected public domain
+  // 3. Fall back to localhost for local dev only
+  const baseUrl = process.env.BASE_URL
+    || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null)
+    || 'http://localhost:3000';
   const reportUrl = `${baseUrl}/reports/${auditId}`;
   const docxUrl = `${baseUrl}/reports/${auditId}/download.docx`;
 

@@ -54,6 +54,7 @@ COPY package*.json ./
 # Install all production dependencies
 # PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false lets Puppeteer download its own Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
+ENV NODE_ENV=production
 RUN npm ci --omit=dev
 
 # ─── Stage 2: Production image ────────────────────────────────
@@ -115,9 +116,14 @@ RUN addgroup --system --gid 1001 nodejs && \
     chown -R appuser:nodejs /app
 USER appuser
 
-# Railway injects PORT at runtime
+# Puppeteer: use the bundled Chromium from node_modules (already present from deps stage)
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
 ENV NODE_ENV=production
 EXPOSE 3000
+
+# Health check — Railway uses this to confirm the container is serving traffic
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
 # Start the application
 CMD ["node", "backend/server.js"]
