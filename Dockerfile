@@ -51,7 +51,10 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+# Use npm install (not npm ci) so it reads package.json directly.
+# package-lock.json may be stale if dependencies were added without
+# running npm install locally (e.g. due to PowerShell execution policy).
+RUN npm install --omit=dev --no-audit --no-fund
 
 # Copy application source
 COPY backend/ ./backend/

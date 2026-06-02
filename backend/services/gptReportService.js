@@ -317,13 +317,40 @@ export async function generateGptReportPdf(auditId) {
 
   console.log(`[GPT Report] Fetching dataset for audit: ${auditId}`);
   const audit = await getAuditById(auditId);
-  const plugins = await getAuditPlugins(auditId);
+  const rawPlugins = await getAuditPlugins(auditId);
 
-  if (!audit || !plugins || plugins.length === 0) {
+  if (!audit || !rawPlugins || rawPlugins.length === 0) {
     throw new Error('Audit data not found or incomplete');
   }
 
-  console.log(`[GPT Report] Generating report sequentially for ${plugins.length} plugins...`);
+  // getAuditPlugins() stores plugin_id but NOT a human name.
+  // Map id → name so every prompt gets a readable label.
+  const PLUGIN_NAMES = {
+    'seo-audit':         'SEO Audit',
+    'competitive-brief': 'Competitive Intelligence',
+    'campaign-plan':     'Campaign Plan',
+    'content-copy':      'Content & Copy',
+    'email-sequence':    'Email Sequence',
+    'brand-review':      'Brand Review',
+  };
+
+  // Normalise: ensure every plugin has .name and serialised .claude_output
+  const plugins = rawPlugins
+    .filter(p => p.claude_output)   // skip any that failed / have no data
+    .map(p => ({
+      ...p,
+      name: PLUGIN_NAMES[p.plugin_id] || p.plugin_id || 'Unknown Plugin',
+      // Ensure claude_output is a string for prompt embedding
+      claude_output: typeof p.claude_output === 'string'
+        ? p.claude_output
+        : JSON.stringify(p.claude_output, null, 2),
+    }));
+
+  if (plugins.length === 0) {
+    throw new Error('No completed plugin outputs found for this audit');
+  }
+
+  console.log(`[GPT Report] Generating report for ${plugins.length} plugins: ${plugins.map(p => p.name).join(', ')}`);
 
   const model = process.env.OPENAI_MODEL || 'gpt-4o';
   let combinedMarkdown = '';
