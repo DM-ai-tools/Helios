@@ -287,41 +287,53 @@ document.getElementById('site-name').textContent = siteName;
 document.title = `Generating Report for ${siteName} · ClickTrends`;
 document.getElementById('header-status').textContent = `Scanning ${domain}…`;
 
-// ── Progress helpers ───────────────────────────────────────
-let simPct   = 5;
-let simTimer = null;
+// ── Progress state — single high-water mark ────────────────
+// The bar NEVER moves backwards. All updates go through setProgress().
+let displayedPct = 0;
+let tickTimer    = null;
+let tickCeiling  = 45;   // ticker won't go past this until raised by real events
 
 function setProgress(pct, msg) {
-  const p = Math.min(Math.round(pct), 100);
-  document.getElementById('prog-fill').style.width = p + '%';
-  document.getElementById('prog-pct').textContent  = p + '%';
+  // Enforce high-water mark: never go below what's already shown
+  const next = Math.min(Math.max(Math.round(pct), displayedPct), 99);
+  if (next > displayedPct) {
+    displayedPct = next;
+    document.getElementById('prog-fill').style.width = next + '%';
+    document.getElementById('prog-pct').textContent  = next + '%';
+  }
   if (msg) document.getElementById('prog-label').textContent = msg;
-  simPct = Math.max(simPct, p);
 }
 
-function startSim() {
-  if (simTimer) return;
-  simTimer = setInterval(() => {
-    if (simPct < 80) {
-      simPct += 0.5;
-      document.getElementById('prog-fill').style.width  = Math.round(simPct) + '%';
-      document.getElementById('prog-pct').textContent   = Math.round(simPct) + '%';
+// Raise the ceiling so ticker can advance a little past current position
+function raiseCeiling(upTo) {
+  tickCeiling = Math.max(tickCeiling, Math.min(upTo, 97));
+}
+
+function startTicker() {
+  if (tickTimer) return;
+  tickTimer = setInterval(() => {
+    if (displayedPct < tickCeiling) {
+      setProgress(displayedPct + 0.4, null);
     }
   }, 600);
 }
-function stopSim() {
-  if (simTimer) { clearInterval(simTimer); simTimer = null; }
+
+function stopTicker() {
+  if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
 }
 
 // ── Completion ────────────────────────────────────────────
 function onComplete(dest) {
-  stopSim();
-  setProgress(100, '✓ Report ready — opening now…');
+  stopTicker();
+  displayedPct = 100;
+  document.getElementById('prog-fill').style.width  = '100%';
+  document.getElementById('prog-pct').textContent   = '100%';
+  document.getElementById('prog-label').textContent = '✓ Report ready — opening now…';
   document.getElementById('prog-fill').classList.add('done');
-  document.getElementById('prog-pct').style.color = '#22c55e';
+  document.getElementById('prog-pct').style.color   = '#22c55e';
   document.getElementById('spinner-wrap').classList.add('done');
   document.getElementById('spinner-icon').classList.add('done');
-  document.getElementById('card-sub').textContent = 'Your AI audit report is complete and ready to view.';
+  document.getElementById('card-sub').textContent      = 'Your AI audit report is complete and ready to view.';
   document.getElementById('header-status').textContent = 'Report ready!';
   document.getElementById('live-dot').style.background = '#22c55e';
   setTimeout(() => {
@@ -333,26 +345,41 @@ function onComplete(dest) {
 let reconnects = 0;
 function listenSSE() {
   const sse = new EventSource('/api/audit/' + auditId + '/status');
+
   sse.onmessage = function(e) {
     try {
       const ev = JSON.parse(e.data);
-      if (ev.progress !== undefined && ev.progress > simPct) {
-        stopSim();
+
+      // Real progress from backend — high-water mark enforced inside setProgress()
+      if (typeof ev.progress === 'number') {
+        raiseCeiling(ev.progress + 8);   // let ticker advance a bit past this milestone
         setProgress(ev.progress, ev.message || null);
-        startSim();
       } else if (ev.message) {
         document.getElementById('prog-label').textContent = ev.message;
       }
+
+      // Plugin step labels
       if (ev.type === 'plugin-running' && ev.pluginId) {
         const name = ev.pluginId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        document.getElementById('prog-label').textContent = 'Running ' + name + '…';
+        document.getElementById('prog-label').textContent = '⚙ Running ' + name + '…';
       }
+      if (ev.type === 'plugin-complete') {
+        raiseCeiling(displayedPct + 6);  // nudge ceiling up after each plugin finishes
+      }
+
+      // Done
       if (ev.type === 'complete') {
         sse.close();
         onComplete(ev.reportUrl || ('report.html?auditId=' + (ev.auditId || auditId)));
       }
+
+      // Error from backend
+      if (ev.type === 'error') {
+        document.getElementById('prog-label').textContent = '⚠ ' + (ev.message || 'An error occurred');
+      }
     } catch (_) {}
   };
+
   sse.onerror = function() {
     sse.close();
     reconnects++;
@@ -360,14 +387,14 @@ function listenSSE() {
       setTimeout(listenSSE, Math.min(reconnects * 2000, 10000));
     } else {
       document.getElementById('prog-label').textContent = 'Connection lost — please refresh.';
-      stopSim();
+      stopTicker();
     }
   };
 }
 
 // ── Boot ─────────────────────────────────────────────────
 async function boot() {
-  // ── Case A: auditId already exists ──────────────────────
+  // Case A: auditId already exists (normal flow from plugin-select.html)
   if (auditId) {
     try {
       const res  = await fetch('/api/audit/' + auditId);
@@ -378,24 +405,23 @@ async function boot() {
       }
     } catch (_) {}
     setProgress(10, 'Claude AI modules are running…');
-    startSim();
+    raiseCeiling(48);
+    startTicker();
     listenSSE();
     return;
   }
 
-  // ── Case B: no auditId (session was overwritten by processing.html demo) ──
-  // Recover: create the audit record, trigger analyze, then listen to SSE.
+  // Case B: no auditId — recover from session
   if (!session.url) {
-    // Nothing at all → back to start
     window.location.replace('/');
     return;
   }
 
   setProgress(5, 'Setting up your audit…');
-  startSim();
+  raiseCeiling(20);
+  startTicker();
 
   try {
-    // 1. Create DB audit record
     const initRes  = await fetch('/api/audit/init', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -410,8 +436,8 @@ async function boot() {
     history.replaceState(null, '', 'plugin-scanning.html?auditId=' + auditId);
 
     setProgress(15, 'Starting AI analysis…');
+    raiseCeiling(48);
 
-    // 2. Trigger analyze pipeline (Claude + plugins)
     const plugins = session.selectedPlugins || [];
     await fetch('/api/audit/' + auditId + '/analyze', {
       method:  'POST',
@@ -425,11 +451,13 @@ async function boot() {
   } catch (err) {
     console.error('[plugin-scan] Recovery failed:', err);
     document.getElementById('prog-label').textContent = 'Something went wrong — please refresh.';
-    stopSim();
+    stopTicker();
   }
 }
 
 boot();
+
+
 
 </script>
 </body>
