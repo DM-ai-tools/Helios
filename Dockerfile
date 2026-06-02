@@ -119,6 +119,10 @@ COPY .puppeteerrc.cjs ./
 # Create reports directory (PDF output)
 RUN mkdir -p reports
 
+# Pre-create writable /tmp dirs that Chrome needs in restricted containers
+# (userDataDir and crash-dumps-dir — must exist and be writable by appuser)
+RUN mkdir -p /tmp/puppeteer-user-data /tmp/puppeteer-gpt-user-data /tmp/chrome-crashes
+
 # Use a non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 appuser && \

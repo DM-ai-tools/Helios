@@ -29,16 +29,24 @@ export async function generateReportPDF(auditId, port) {
   
   // Launch Puppeteer headless — works on both local Windows (via bundled Chromium)
   // and Linux containers (Railway). --no-sandbox is required in container environments.
+  const isLinux = process.platform !== 'win32';
+
   const launchOptions = {
     headless: true,
+    ...(isLinux && { userDataDir: '/tmp/puppeteer-user-data' }),
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',    // prevents /dev/shm exhaustion in containers
+      '--disable-dev-shm-usage',       // use /tmp instead of /dev/shm
       '--disable-gpu',
+      '--no-first-run',
+      '--no-default-browser-check',
       '--disable-extensions',
-      '--no-zygote',                // required in single-process container envs
-      '--disable-crash-reporter',   // silences chrome_crashpad_handler errors
+      '--disable-popup-blocking',
+      '--no-zygote',                   // no zygote forking in containers
+      '--single-process',              // runs renderer in same process — stops crashpad subprocess
+      '--disable-crash-reporter',      // disable crash reporting
+      '--crash-dumps-dir=/tmp',        // give crashpad a writable DB path (fixes the error directly)
       '--disable-background-timer-throttling',
       '--disable-backgrounding-occluded-windows',
       '--disable-renderer-backgrounding',
@@ -50,6 +58,7 @@ export async function generateReportPDF(auditId, port) {
     const localChrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
     if (fs.existsSync(localChrome)) {
       launchOptions.executablePath = localChrome;
+      delete launchOptions.userDataDir;
     }
   }
 

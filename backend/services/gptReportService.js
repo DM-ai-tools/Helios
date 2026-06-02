@@ -406,16 +406,26 @@ ${p.claude_output}
   // Build launch options — works on both Windows dev and Linux/Docker (Railway).
   // On Linux the bundled Chromium is used automatically (no executablePath needed).
   // On Windows we prefer local Chrome if installed; otherwise fall back to bundled Chromium.
+  const isLinux = process.platform !== 'win32';
+
   const launchOptions = {
     headless: true,
+    // Give Chrome a writable user-data and crash-dumps directory in the container.
+    // Without userDataDir, Chrome tries to write to locations it may not own.
+    ...(isLinux && { userDataDir: '/tmp/puppeteer-gpt-user-data' }),
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',    // prevents /dev/shm exhaustion in containers
+      '--disable-dev-shm-usage',       // use /tmp instead of /dev/shm
       '--disable-gpu',
+      '--no-first-run',
+      '--no-default-browser-check',
       '--disable-extensions',
-      '--no-zygote',                // required in single-process container envs
-      '--disable-crash-reporter',   // silences chrome_crashpad_handler errors
+      '--disable-popup-blocking',
+      '--no-zygote',                   // no zygote forking in containers
+      '--single-process',              // runs renderer in same process — stops crashpad subprocess
+      '--disable-crash-reporter',      // disable crash reporting
+      '--crash-dumps-dir=/tmp',        // give crashpad a writable DB path (fixes the error directly)
       '--disable-background-timer-throttling',
       '--disable-backgrounding-occluded-windows',
       '--disable-renderer-backgrounding',
@@ -426,6 +436,7 @@ ${p.claude_output}
     const localChrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
     if (fs.existsSync(localChrome)) {
       launchOptions.executablePath = localChrome;
+      delete launchOptions.userDataDir; // Windows uses default profile
     }
   }
 
