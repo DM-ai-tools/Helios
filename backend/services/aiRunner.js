@@ -101,6 +101,12 @@ function slimCrawledData(crawledData) {
     homepage:         crawledData.homepage         || {},
     aboutPage:        crawledData.aboutPage        || {},
 
+    // Email-sequence specific fields — required by email-sequence buildUserPrompt
+    // Without these the plugin has no capture context and produces empty sequences
+    emailForms:       (crawledData.emailForms      || []).slice(0, MAX_ITEMS),
+    leadMagnets:      (crawledData.leadMagnets     || []).slice(0, MAX_ITEMS),
+    brandVoice:       crawledData.brandVoice       || null,
+
     // Perplexity research — hard-truncated
     perplexityBusiness:    crawledData.perplexityBusiness
       ? JSON.stringify(crawledData.perplexityBusiness   ).slice(0, MAX_PERPLX) : null,
