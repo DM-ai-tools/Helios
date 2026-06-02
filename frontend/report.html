@@ -383,6 +383,18 @@
       </div>
       <div id="voice-summary-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6"></div>
     </div>
+    <div id="brand-cat-scores-wrap" class="hidden mb-6">
+      <div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-3">Category Scores</div>
+      <div id="brand-cat-scores-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+    </div>
+    <div id="brand-recs-wrap" class="hidden mb-6">
+      <div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-3">Recommendations</div>
+      <div id="brand-recs-list" class="space-y-3"></div>
+    </div>
+    <div id="brand-nextsteps-wrap" class="hidden mb-6">
+      <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Next Steps</div>
+      <div id="brand-nextsteps-list" class="flex flex-wrap gap-2"></div>
+    </div>
 
   </div>
 
@@ -394,6 +406,35 @@
     </div>
     <div id="comp-summary" class="text-sm text-gray-600 mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm"></div>
     <div class="grid md:grid-cols-2 gap-6" id="comp-profiles-grid"></div>
+    <!-- Messaging comparison matrix -->
+    <div id="comp-matrix-wrap" class="hidden mb-6">
+      <div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-3">Messaging Comparison Matrix</div>
+      <div class="overflow-x-auto rounded-xl border border-gray-100 shadow-sm">
+        <table class="w-full text-left" style="border-collapse:collapse">
+          <thead><tr style="background:#f9fafb;border-bottom:1px solid #e5e7eb">
+            <th class="px-3 py-2 text-xs font-bold text-gray-500">Dimension</th>
+            <th class="px-3 py-2 text-xs font-bold text-[#f97316]">Your Company</th>
+            <th class="px-3 py-2 text-xs font-bold text-gray-500">Competitor A</th>
+            <th class="px-3 py-2 text-xs font-bold text-gray-500">Competitor B</th>
+          </tr></thead>
+          <tbody id="comp-matrix-rows"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="comp-gaps-wrap" class="hidden mb-6">
+      <div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-3">Content Gap Analysis</div>
+      <div class="grid md:grid-cols-3 gap-4" id="comp-gaps-grid"></div>
+    </div>
+    <div id="comp-ot-wrap" class="hidden mb-6">
+      <div class="grid md:grid-cols-2 gap-4" id="comp-ot-grid"></div>
+    </div>
+    <div id="comp-battlecard-wrap" class="hidden mb-6">
+      <div id="comp-battlecard-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6"></div>
+    </div>
+    <div id="comp-recs-wrap" class="hidden mb-6">
+      <div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-3">Recommendations</div>
+      <div id="comp-recs-list" class="space-y-3"></div>
+    </div>
   </div>
 
   <!-- --- CAMPAIGN PLAN SECTION --- -->
@@ -426,6 +467,25 @@
     </div>
     <!-- KPIs -->
     <div id="campaign-kpis-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hidden"></div>
+    <div id="campaign-assets-wrap" class="hidden mb-6">
+      <div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-3">Content Assets Needed</div>
+      <div id="campaign-assets-list" class="space-y-3"></div>
+    </div>
+    <div id="campaign-budget-wrap" class="hidden mb-6">
+      <div id="campaign-budget-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6"></div>
+    </div>
+    <div id="campaign-risks-wrap" class="hidden mb-6">
+      <div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-3">Risks &amp; Mitigations</div>
+      <div id="campaign-risks-list" class="space-y-3"></div>
+    </div>
+    <div id="campaign-recs-wrap" class="hidden mb-6">
+      <div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-3">Recommendations</div>
+      <div id="campaign-recs-list" class="space-y-3"></div>
+    </div>
+    <div id="campaign-nextsteps-wrap" class="hidden mb-6">
+      <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Next Steps</div>
+      <div id="campaign-nextsteps-list" class="flex flex-wrap gap-2"></div>
+    </div>
   </div>
 
   <!-- --- EMAIL SEQUENCE SECTION --- -->
@@ -502,6 +562,16 @@
         </table>
       </div>
     </div>
+    <!-- Category Scores -->
+    <div id="seo-cat-scores-wrap" class="hidden mb-6">
+      <div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-3">Category Scores</div>
+      <div id="seo-cat-scores-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+    </div>
+    <!-- Recommendations -->
+    <div id="seo-recs-wrap" class="hidden mb-6">
+      <div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-3">Recommendations</div>
+      <div id="seo-recs-list" class="space-y-3"></div>
+    </div>
   </div>
 
   <!-- --- CONTENT & COPY SECTION --- -->
@@ -525,6 +595,18 @@
     <div class="grid md:grid-cols-2 gap-6 mb-6">
       <div id="cc-lp-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hidden"></div>
       <div id="cc-casestudy-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hidden"></div>
+    <!-- Press release -->
+    <div id="cc-press-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 hidden"></div>
+    <!-- Category Scores -->
+    <div id="cc-cat-scores-wrap" class="hidden mb-6">
+      <div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-3">Category Scores</div>
+      <div id="cc-cat-scores-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+    </div>
+    <!-- Recommendations -->
+    <div id="cc-recs-wrap" class="hidden mb-6">
+      <div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-3">Recommendations</div>
+      <div id="cc-recs-list" class="space-y-3"></div>
+    </div>
     </div>
   </div>
 
@@ -991,6 +1073,25 @@ function renderSeoAudit(sa) {
       '</tr>';
     }).join('');
   }
+
+  // Category scores
+  var seoLabels = { technical:'Technical', onPage:'On-Page', content:'Content', keywords:'Keywords' };
+  var seoCs = sa.categoryScores || {};
+  var sCatWrap = document.getElementById('seo-cat-scores-wrap');
+  var sCatGrid = document.getElementById('seo-cat-scores-grid');
+  if (sCatWrap && Object.keys(seoCs).length) {
+    sCatWrap.classList.remove('hidden');
+    if (sCatGrid) sCatGrid.innerHTML = buildCatScores(seoCs, seoLabels);
+  }
+
+  // Recommendations
+  var seoRecs = sa.recommendations || [];
+  if (seoRecs.length) {
+    var srWrap = document.getElementById('seo-recs-wrap');
+    var srList = document.getElementById('seo-recs-list');
+    if (srWrap) srWrap.classList.remove('hidden');
+    if (srList) srList.innerHTML = seoRecs.slice(0,8).map(buildRecCard).join('');
+  }
 }
 
 // ─── Content & Copy Render ───────────────────────────────────
@@ -1096,6 +1197,37 @@ function renderContentCopy(cc) {
       '</div>'+
       (cs.cta ? '<div class="mt-3"><span class="inline-flex bg-[#f97316] text-white text-xs font-bold px-4 py-2 rounded-lg">'+clean(cs.cta)+'</span></div>' : '');
   }
+
+  // Press release
+  var pr = drafts.pressRelease || {};
+  var prCard = document.getElementById('cc-press-card');
+  if (prCard && (pr.headline || pr.leadParagraph)) {
+    prCard.classList.remove('hidden');
+    prCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Press Release Draft</div>' +
+      (pr.headline ? '<div class="text-base font-bold text-[#1a1a2e] mb-1">'+clean(pr.headline)+'</div>' : '') +
+      (pr.dateline ? '<div class="text-xs text-gray-400 italic mb-2">'+clean(pr.dateline)+'</div>' : '') +
+      (pr.leadParagraph ? '<div class="text-xs text-gray-700 leading-relaxed mb-3 font-semibold">'+clean(pr.leadParagraph)+'</div>' : '') +
+      (pr.body ? '<div class="text-xs text-gray-600 leading-relaxed whitespace-pre-line bg-gray-50 rounded-xl p-4 border border-gray-100 max-h-48 overflow-y-auto">'+clean(pr.body)+'</div>' : '');
+  }
+
+  // Category scores
+  var ccLabels = { homepageCopy:'Homepage', seoContent:'SEO Content', contentVolume:'Volume', ctaEffectiveness:'CTAs' };
+  var ccCs = cc.categoryScores || {};
+  var ccCatWrap = document.getElementById('cc-cat-scores-wrap');
+  var ccCatGrid = document.getElementById('cc-cat-scores-grid');
+  if (ccCatWrap && Object.keys(ccCs).length) {
+    ccCatWrap.classList.remove('hidden');
+    if (ccCatGrid) ccCatGrid.innerHTML = buildCatScores(ccCs, ccLabels);
+  }
+
+  // Recommendations
+  var ccRecs = cc.recommendations || [];
+  if (ccRecs.length) {
+    var ccRWrap = document.getElementById('cc-recs-wrap');
+    var ccRList = document.getElementById('cc-recs-list');
+    if (ccRWrap) ccRWrap.classList.remove('hidden');
+    if (ccRList) ccRList.innerHTML = ccRecs.slice(0,6).map(buildRecCard).join('');
+  }
 }
 
 // clean() — sanitizes Claude output strings before injecting into the DOM.
@@ -1109,6 +1241,41 @@ function clean(str) {
     .replace(/\\"/g, '"')   // literal \"  → "
     .replace(/\\r/g, '')     // strip \r
     .trim();
+}
+
+
+// ── Shared rec card builder ────────────────────────────────────────
+function buildRecCard(r) {
+  var impLower = (r.expectedImpact || '').toLowerCase();
+  var impCol   = impLower === 'high' ? '#dc2626' : impLower === 'medium' ? '#d97706' : '#6b7280';
+  var effortLower = (r.effort || '').toLowerCase();
+  var effortCol = effortLower.indexOf('quick') !== -1 ? '#059669' : '#6366f1';
+  return '<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">' +
+    '<div class="flex items-start gap-3">' +
+      '<div style="min-width:24px;height:24px;border-radius:50%;background:#fff7ed;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#f97316">' + (r.priority || '•') + '</div>' +
+      '<div class="flex-1 min-w-0">' +
+        '<div class="text-sm font-semibold text-[#1a1a2e] mb-1">' + clean(r.action || r.title || '') + '</div>' +
+        (r.rationale ? '<div class="text-xs text-gray-500 mb-2">' + clean(r.rationale) + '</div>' : '') +
+        '<div class="flex flex-wrap gap-2">' +
+          (r.expectedImpact ? '<span style="font-size:10px;font-weight:700;color:' + impCol + ';background:' + (impLower==='high'?'#fef2f2':impLower==='medium'?'#fffbeb':'#f9fafb') + ';padding:2px 8px;border-radius:99px">' + clean(r.expectedImpact) + ' Impact</span>' : '') +
+          (r.effort ? '<span style="font-size:10px;font-weight:600;color:' + effortCol + ';background:' + (effortLower.indexOf('quick')!==-1?'#f0fdf4':'#eff6ff') + ';padding:2px 8px;border-radius:99px">' + clean(r.effort) + '</span>' : '') +
+          (r.timeframe ? '<span style="font-size:10px;color:#9ca3af;padding:2px 8px">' + clean(r.timeframe) + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function buildCatScores(scores, labels) {
+  return Object.entries(labels).map(function(entry) {
+    var key = entry[0], label = entry[1];
+    var val = typeof scores[key] === 'number' ? scores[key] : 0;
+    var col = val >= 70 ? '#22c55e' : val >= 50 ? '#f59e0b' : '#ef4444';
+    return '<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">' +
+      '<div style="font-size:22px;font-weight:900;color:' + col + '">' + val + '</div>' +
+      '<div style="font-size:10px;color:#9ca3af;margin-top:2px">' + label + '</div>' +
+    '</div>';
+  }).join('');
 }
 
 function renderBrandReview(br) {
@@ -1183,28 +1350,153 @@ function renderBrandReview(br) {
         ((voice.toneAdaptations||[]).length ? '<ul style="font-size:11px;color:#6b7280;list-style:disc;padding-left:16px">' + voice.toneAdaptations.map(function(t){ return '<li style="margin-bottom:4px">'+t+'</li>'; }).join('') + '</ul>' : '');
     }
   }
+
+  // Category scores
+  var catLabels2 = { legalCompliance:'Legal', voiceConsistency:'Voice', claimSubstantiation:'Claims', styleAdherence:'Style' };
+  var catScores2 = bp.categoryScores || {};
+  var catWrap2 = document.getElementById('brand-cat-scores-wrap');
+  var catGrid2 = document.getElementById('brand-cat-scores-grid');
+  if (catWrap2 && Object.keys(catScores2).length) {
+    catWrap2.classList.remove('hidden');
+    if (catGrid2) catGrid2.innerHTML = buildCatScores(catScores2, catLabels2);
+  }
+
+  // Recommendations
+  var recs2 = bp.recommendations || [];
+  if (recs2.length) {
+    var rWrap2 = document.getElementById('brand-recs-wrap');
+    var rList2 = document.getElementById('brand-recs-list');
+    if (rWrap2) rWrap2.classList.remove('hidden');
+    if (rList2) rList2.innerHTML = recs2.slice(0,6).map(buildRecCard).join('');
+  }
+
+  // After review options
+  var opts = bp.afterReviewOptions || [];
+  if (opts.length) {
+    var nsWrap = document.getElementById('brand-nextsteps-wrap');
+    var nsList = document.getElementById('brand-nextsteps-list');
+    if (nsWrap) nsWrap.classList.remove('hidden');
+    if (nsList) nsList.innerHTML = opts.map(function(o){return '<span style="display:inline-flex;align-items:center;gap:6px;background:white;border:1px solid #e5e7eb;border-radius:99px;padding:7px 16px;font-size:12px;color:#374151;box-shadow:0 1px 4px rgba(0,0,0,0.04)">&#8594; '+clean(typeof o==='string'?o:(o.option||''))+'</span>';}).join('');
+  }
 }
 
-function renderCompetitiveBrief(cb) {
+function renderCompetitiveBrief(bp) {
   var section = document.getElementById('competitive-brief-section');
-  if (!section || !cb) return;
+  if (!section || !bp) return;
   section.classList.remove('hidden');
+
+  // Summary
   var sumEl = document.getElementById('comp-summary');
-  if (sumEl) sumEl.textContent = cb.summary || cb.marketSummary || '';
-  var profiles = cb.competitorProfiles || cb.competitors || [];
-  var grid = document.getElementById('comp-profiles-grid');
-  if (grid && profiles.length > 0) {
-    grid.innerHTML = profiles.map(function(p) {
-      return '<div style="background:white;border-radius:16px;border:1px solid #f3f4f6;box-shadow:0 1px 3px rgba(0,0,0,0.06);padding:24px">' +
-        '<h3 style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:4px">' + (p.companyName||p.name||'Competitor') + '</h3>' +
-        '<p style="font-size:11px;color:#9ca3af;margin-bottom:16px">' + (p.overview||p.positioning||'') + '</p>' +
-        ((p.strengths||[]).length||( p.weaknesses||[]).length ?
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-            ((p.strengths||[]).length ? '<div><div style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Strengths</div><ul style="font-size:11px;color:#374151;list-style:disc;padding-left:14px">' + p.strengths.map(function(s){ return '<li>'+s+'</li>'; }).join('') + '</ul></div>' : '') +
-            ((p.weaknesses||[]).length ? '<div><div style="font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Weaknesses</div><ul style="font-size:11px;color:#374151;list-style:disc;padding-left:14px">' + p.weaknesses.map(function(w){ return '<li>'+w+'</li>'; }).join('') + '</ul></div>' : '') +
-          '</div>' : '') +
+  if (sumEl) sumEl.innerHTML = '<p class="text-sm text-gray-700 leading-relaxed">' + clean(bp.summary || '') + '</p>';
+
+  // Category scores
+  var catLabels = { differentiationClarity:'Differentiation', audienceSpecificity:'Audience', messageConsistency:'Messaging', competitiveDistinctiveness:'Distinctiveness' };
+  var catGrid = document.getElementById('comp-profiles-grid');
+  var cs = bp.categoryScores || {};
+
+  // Competitor profiles
+  var profiles = bp.competitorProfiles || [];
+  var profGrid = document.getElementById('comp-profiles-grid');
+  if (profGrid && profiles.length) {
+    profGrid.innerHTML = profiles.map(function(p) {
+      var swot = '<div class="grid grid-cols-2 gap-2 mt-3">' +
+        '<div style="background:#f0fdf4;border-radius:8px;padding:8px">' +
+          '<div style="font-size:10px;font-weight:700;color:#059669;margin-bottom:4px">Strengths</div>' +
+          (p.strengths||[]).slice(0,3).map(function(s){return '<div style="font-size:10px;color:#374151">• '+clean(s)+'</div>';}).join('') +
+        '</div>' +
+        '<div style="background:#fef2f2;border-radius:8px;padding:8px">' +
+          '<div style="font-size:10px;font-weight:700;color:#dc2626;margin-bottom:4px">Weaknesses</div>' +
+          (p.weaknesses||[]).slice(0,3).map(function(s){return '<div style="font-size:10px;color:#374151">• '+clean(s)+'</div>';}).join('') +
+        '</div>' +
+      '</div>';
+      var msg = p.messagingAnalysis || {};
+      return '<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">' +
+        '<div class="font-bold text-[#1a1a2e] mb-1">' + clean(p.companyName||p.name||'Competitor') + '</div>' +
+        '<div class="text-xs text-gray-500 mb-3">' + clean(p.overview||'') + '</div>' +
+        (msg.tagline ? '<div class="text-xs italic text-[#f97316] mb-2 border-l-4 border-orange-300 pl-2">"'+clean(msg.tagline)+'"</div>' : '') +
+        (msg.coreValueProp ? '<div class="text-xs text-gray-600 mb-2"><span class="font-semibold">Value prop:</span> '+clean(msg.coreValueProp)+'</div>' : '') +
+        ((msg.keyThemes||[]).length ? '<div class="flex flex-wrap gap-1 mb-2">' + msg.keyThemes.slice(0,4).map(function(t){return '<span style="font-size:10px;background:#f3f4f6;border-radius:99px;padding:2px 8px;color:#374151">'+clean(t)+'</span>';}).join('') + '</div>' : '') +
+        (p.contentStrategy ? '<div class="text-xs text-gray-500 mb-2"><span class="font-semibold">Content:</span> '+clean(p.contentStrategy)+'</div>' : '') +
+        swot +
       '</div>';
     }).join('');
+  }
+
+  // Messaging comparison matrix
+  var matrix = bp.messagingComparisonMatrix || [];
+  if (matrix.length) {
+    var mWrap = document.getElementById('comp-matrix-wrap');
+    var mRows = document.getElementById('comp-matrix-rows');
+    if (mWrap) mWrap.classList.remove('hidden');
+    if (mRows) mRows.innerHTML = matrix.map(function(r) {
+      return '<tr style="border-bottom:1px solid #f3f4f6">' +
+        '<td style="padding:8px 12px;font-size:11px;font-weight:600;color:#374151">' + clean(r.dimension) + '</td>' +
+        '<td style="padding:8px 12px;font-size:11px;color:#f97316;font-weight:600">' + clean(r.yourCompany||r.yourSite||'') + '</td>' +
+        '<td style="padding:8px 12px;font-size:11px;color:#6b7280">' + clean(r.competitorA||'') + '</td>' +
+        '<td style="padding:8px 12px;font-size:11px;color:#6b7280">' + clean(r.competitorB||'') + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  // Content gap analysis
+  var gaps = bp.contentGapAnalysis || {};
+  if (gaps.opportunities || gaps.missedThemes || gaps.formatGaps) {
+    var gWrap = document.getElementById('comp-gaps-wrap');
+    var gGrid = document.getElementById('comp-gaps-grid');
+    if (gWrap) gWrap.classList.remove('hidden');
+    if (gGrid) {
+      var gapSections = [
+        { title:'Opportunities', items: gaps.opportunities||[], col:'#059669', bg:'#f0fdf4' },
+        { title:'Missed Themes', items: gaps.missedThemes||[], col:'#d97706', bg:'#fffbeb' },
+        { title:'Format Gaps',   items: gaps.formatGaps||[],   col:'#6366f1', bg:'#eff6ff' },
+      ];
+      gGrid.innerHTML = gapSections.map(function(gs) {
+        return '<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">' +
+          '<div style="font-size:10px;font-weight:700;color:'+gs.col+';background:'+gs.bg+';border-radius:6px;padding:3px 8px;display:inline-block;margin-bottom:8px">'+gs.title+'</div>' +
+          gs.items.slice(0,5).map(function(item){return '<div style="font-size:11px;color:#374151;margin-bottom:4px">• '+clean(item)+'</div>';}).join('') +
+        '</div>';
+      }).join('');
+    }
+  }
+
+  // Opportunities & threats
+  var ot = bp.opportunitiesAndThreats || {};
+  if ((ot.opportunities||[]).length || (ot.threats||[]).length) {
+    var otWrap = document.getElementById('comp-ot-wrap');
+    var otGrid = document.getElementById('comp-ot-grid');
+    if (otWrap) otWrap.classList.remove('hidden');
+    if (otGrid) otGrid.innerHTML =
+      '<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">' +
+        '<div style="font-size:10px;font-weight:700;color:#059669;margin-bottom:8px">&#128200; Opportunities</div>' +
+        (ot.opportunities||[]).slice(0,5).map(function(o){return '<div style="font-size:11px;color:#374151;margin-bottom:4px">• '+clean(o)+'</div>';}).join('') +
+      '</div>' +
+      '<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">' +
+        '<div style="font-size:10px;font-weight:700;color:#dc2626;margin-bottom:8px">&#9888; Threats</div>' +
+        (ot.threats||[]).slice(0,5).map(function(t){return '<div style="font-size:11px;color:#374151;margin-bottom:4px">• '+clean(t)+'</div>';}).join('') +
+      '</div>';
+  }
+
+  // Battlecard
+  var bc = bp.battlecard || {};
+  if (bc.ourDifferentiators || bc.objectionHandling) {
+    var bcWrap = document.getElementById('comp-battlecard-wrap');
+    var bcCard = document.getElementById('comp-battlecard-card');
+    if (bcWrap) bcWrap.classList.remove('hidden');
+    if (bcCard) bcCard.innerHTML =
+      '<div style="font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:12px">&#9889; Battlecard</div>' +
+      (bc.theirPitch ? '<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#6b7280;margin-bottom:4px">THEIR PITCH</div><div style="font-size:12px;color:#374151;font-style:italic;border-left:3px solid #e5e7eb;padding-left:10px">' + clean(bc.theirPitch) + '</div></div>' : '') +
+      ((bc.ourDifferentiators||[]).length ? '<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#f97316;margin-bottom:6px">OUR DIFFERENTIATORS</div>' + bc.ourDifferentiators.slice(0,5).map(function(d){return '<div style="font-size:11px;color:#374151;margin-bottom:3px">&#10003; '+clean(d)+'</div>';}).join('') + '</div>' : '') +
+      ((bc.objectionHandling||[]).length ? '<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#6366f1;margin-bottom:6px">OBJECTION HANDLING</div>' + bc.objectionHandling.slice(0,3).map(function(o){return '<div style="background:#f9fafb;border-radius:8px;padding:8px;margin-bottom:6px"><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">If they say:</div><div style="font-size:11px;font-style:italic;margin-bottom:6px">"'+clean(o.ifProspectSays)+'"</div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">Respond with:</div><div style="font-size:11px;color:#374151">'+clean(o.respondWith)+'</div></div>';}).join('') + '</div>' : '') +
+      ((bc.landminesToSet||[]).length ? '<div><div style="font-size:10px;font-weight:700;color:#dc2626;margin-bottom:6px">LANDMINES TO SET</div>' + bc.landminesToSet.slice(0,4).map(function(l){return '<div style="font-size:11px;color:#374151;margin-bottom:3px">&#128163; '+clean(l)+'</div>';}).join('') + '</div>' : '');
+  }
+
+  // Recommendations
+  var recs = bp.recommendations || [];
+  if (recs.length) {
+    var rWrap = document.getElementById('comp-recs-wrap');
+    var rList = document.getElementById('comp-recs-list');
+    if (rWrap) rWrap.classList.remove('hidden');
+    if (rList) rList.innerHTML = recs.slice(0,6).map(buildRecCard).join('');
   }
 }
 
@@ -1292,6 +1584,71 @@ function renderCampaignPlan(cp) {
       '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Success Metrics</div>' +
       '<div class="flex items-center gap-2 mb-3"><span class="text-xs font-bold text-white bg-[#f97316] px-2 py-1 rounded">Primary KPI</span><span class="text-sm text-[#1a1a2e] font-semibold">' + clean(sm.primaryKPI) + '</span></div>' +
       ((sm.secondaryKPIs||[]).length ? '<ul class="text-xs text-gray-600 list-disc pl-4 space-y-1">' + sm.secondaryKPIs.map(function(k){return '<li>'+clean(k)+'</li>';}).join('') + '</ul>' : '');
+  }
+
+  // Content pieces needed
+  var assets = cp.contentPiecesNeeded || [];
+  if (assets.length) {
+    var aWrap = document.getElementById('campaign-assets-wrap');
+    var aList = document.getElementById('campaign-assets-list');
+    if (aWrap) aWrap.classList.remove('hidden');
+    if (aList) aList.innerHTML = assets.map(function(a) {
+      var pColor = a.priority && a.priority.toLowerCase().indexOf('must') !== -1 ? '#dc2626' : '#6b7280';
+      return '<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-start gap-3">' +
+        '<span style="font-size:10px;font-weight:700;color:'+pColor+';background:'+(pColor==='#dc2626'?'#fef2f2':'#f9fafb')+';padding:2px 8px;border-radius:99px;white-space:nowrap;margin-top:2px">'+clean(a.priority||'')+'</span>' +
+        '<div><div class="text-xs font-semibold text-[#1a1a2e]">'+clean(a.assetNameAndType||a.name||'')+'</div>' +
+        '<div class="text-xs text-gray-500 mt-1">'+clean(a.description||'')+'</div>' +
+        (a.timeline ? '<div class="text-xs text-gray-400 mt-1">&#128197; '+clean(a.timeline)+'</div>' : '') +
+        '</div></div>';
+    }).join('');
+  }
+
+  // Budget allocation
+  var budget = cp.budgetAllocation || {};
+  if (budget.breakdown || budget.productionVsDistribution) {
+    var budWrap = document.getElementById('campaign-budget-wrap');
+    var budCard = document.getElementById('campaign-budget-card');
+    if (budWrap) budWrap.classList.remove('hidden');
+    if (budCard) budCard.innerHTML =
+      '<div class="text-sm font-bold text-[#1a1a2e] mb-3">&#128181; Budget Allocation</div>' +
+      ((budget.breakdown||[]).length ? '<div class="space-y-2 mb-3">' + budget.breakdown.map(function(b){return '<div class="text-xs text-gray-600 flex items-center gap-2"><span class="text-[#f97316] font-bold">•</span>'+clean(b)+'</div>';}).join('') + '</div>' : '') +
+      (budget.productionVsDistribution ? '<div class="text-xs font-semibold text-gray-600 mb-1">Production vs Distribution: <span class="text-[#1a1a2e]">'+clean(budget.productionVsDistribution)+'</span></div>' : '') +
+      (budget.contingencyRecommendation ? '<div class="text-xs text-gray-400 italic mt-2">'+clean(budget.contingencyRecommendation)+'</div>' : '');
+  }
+
+  // Risks & mitigations
+  var risks = cp.risksAndMitigations || [];
+  if (risks.length) {
+    var riWrap = document.getElementById('campaign-risks-wrap');
+    var riList = document.getElementById('campaign-risks-list');
+    if (riWrap) riWrap.classList.remove('hidden');
+    if (riList) riList.innerHTML = risks.map(function(r) {
+      return '<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">' +
+        '<div class="flex items-start gap-3">' +
+          '<span style="font-size:16px">&#9888;&#65039;</span>' +
+          '<div><div class="text-xs font-semibold text-[#1a1a2e] mb-1">'+clean(r.risk||r.title||'')+'</div>' +
+          '<div class="text-xs text-gray-500"><span class="font-semibold">Mitigation:</span> '+clean(r.mitigation||r.response||'')+'</div></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Recommendations
+  var recsC = cp.recommendations || [];
+  if (recsC.length) {
+    var rcWrap = document.getElementById('campaign-recs-wrap');
+    var rcList = document.getElementById('campaign-recs-list');
+    if (rcWrap) rcWrap.classList.remove('hidden');
+    if (rcList) rcList.innerHTML = recsC.slice(0,6).map(buildRecCard).join('');
+  }
+
+  // Next steps
+  var nextS = cp.nextSteps || [];
+  if (nextS.length) {
+    var nsWrapC = document.getElementById('campaign-nextsteps-wrap');
+    var nsListC = document.getElementById('campaign-nextsteps-list');
+    if (nsWrapC) nsWrapC.classList.remove('hidden');
+    if (nsListC) nsListC.innerHTML = nextS.map(function(s){return '<span style="display:inline-flex;align-items:center;gap:6px;background:white;border:1px solid #e5e7eb;border-radius:99px;padding:7px 16px;font-size:12px;color:#374151;box-shadow:0 1px 4px rgba(0,0,0,0.04)">&#8594; '+clean(typeof s==='string'?s:(s.step||''))+'</span>';}).join('');
   }
 }
 
