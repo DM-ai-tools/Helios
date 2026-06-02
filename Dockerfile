@@ -50,9 +50,13 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 COPY package*.json ./
+# Copy the Puppeteer config BEFORE npm ci so Chromium is downloaded
+# to the path defined by cacheDirectory (/app/.cache/puppeteer).
+# Without this, Puppeteer uses its default location (/root/.cache/puppeteer)
+# which is never transferred to the runner stage.
+COPY .puppeteerrc.cjs ./
 
-# Install all production dependencies
-# PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false lets Puppeteer download its own Chromium
+# Install all production dependencies + download Puppeteer's bundled Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
 ENV NODE_ENV=production
 RUN npm ci --omit=dev
@@ -100,6 +104,11 @@ WORKDIR /app
 
 # Copy node_modules (with Puppeteer's Chromium) from deps stage
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copy the Puppeteer Chromium cache from the deps stage.
+# This is the binary that npm ci downloaded into /app/.cache/puppeteer
+# (the path set by .puppeteerrc.cjs in stage 1).
+COPY --from=deps /app/.cache ./.cache
 
 # Copy application source
 COPY backend/ ./backend/
