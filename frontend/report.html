@@ -1240,79 +1240,73 @@ function renderSeoAudit(sa) {
   var sumCard = document.getElementById('seo-summary-card');
   if (sumCard && sa.summary) {
     sumCard.classList.remove('hidden');
-    sumCard.innerHTML = '<div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-2">Executive Summary</div>'+
-      '<p class="text-sm text-gray-700 leading-relaxed">' + clean(sa.summary) + '</p>';
+    sumCard.className = "p-card mb-6";
+    sumCard.innerHTML = '<div class="p-card-title">&#128269; SEO Summary</div><p style="font-size:13px;color:#4b5563;line-height:1.7;">' + clean(sa.summary) + '</p>';
   }
 
-  // Technical checklist
-  var tc = sa.technicalChecklist || [];
+  // Tech checklist
+  var tech = sa.technicalChecklist || [];
   var techCard = document.getElementById('seo-tech-card');
-  if (techCard && tc.length) {
-    techCard.classList.remove('hidden');
-    var pass = tc.filter(function(c){return (c.status||'').toLowerCase()==='pass';}).length;
-    techCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-1">Technical SEO Checklist</div>'+
-      '<div class="text-xs text-gray-400 mb-4">'+pass+' / '+tc.length+' checks passed</div>'+
-      '<div class="space-y-2">'+tc.map(function(c){
-        return '<div class="flex items-start gap-3">'+
-          '<div class="mt-0.5">'+statusBadge(c.status)+'</div>'+
-          '<div><div class="text-xs font-semibold text-gray-800">'+clean(c.check)+'</div>'+
-          (c.details ? '<div class="text-xs text-gray-400 mt-0.5">'+clean(c.details)+'</div>' : '')+
-          '</div></div>';
-      }).join('')+'</div>';
+  if (techCard && tech.length) {
+    techCard.className = "p-card";
+    techCard.innerHTML = '<div class="p-card-title">&#9881; Technical SEO</div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px">' + tech.map(function(t) {
+        var status = (t.status||'').toLowerCase();
+        var icon = status === 'pass' ? '&#10004;&#65039;' : status === 'warning' ? '&#9888;&#65039;' : '&#10060;';
+        return '<div style="display:flex;gap:10px;font-size:12px;color:#374151;padding:8px 0;border-bottom:1px solid #f3f4f6"><span style="flex-shrink:0">' + icon + '</span><span><span style="font-weight:600">' + clean(t.item) + ':</span> ' + clean(t.details) + '</span></div>';
+      }).join('') + '</div>';
   }
 
   // On-page issues
-  var op = sa.onPageIssues || [];
-  var opCard = document.getElementById('seo-onpage-card');
-  if (opCard && op.length) {
-    opCard.classList.remove('hidden');
-    opCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-4">On-Page Issues <span class="text-xs font-normal text-gray-400">('+op.length+' found)</span></div>'+
-      '<div class="space-y-3">'+op.map(function(o){
-        return '<div class="border border-gray-100 rounded-xl p-3">'+
-          '<div class="flex items-center justify-between mb-1">'+
-            '<span class="text-xs font-semibold text-gray-700">'+clean(o.pageUrl)+'</span>'+
-            '<span class="'+sevClass(o.severity)+' text-[10px] px-2 py-0.5 rounded-full font-bold">'+clean(o.severity)+'</span>'+
-          '</div>'+
-          '<div class="text-xs text-gray-500 mb-2">'+clean(o.issue)+'</div>'+
-          (o.recommendedFix ? '<div class="text-xs text-[#1a1a2e] font-semibold bg-orange-50 border border-orange-100 rounded px-2 py-1">&rarr; '+clean(o.recommendedFix)+'</div>' : '')+
+  var onp = sa.onPageIssues || [];
+  var onpCard = document.getElementById('seo-onpage-card');
+  if (onpCard && onp.length) {
+    onpCard.className = "p-card";
+    onpCard.innerHTML = '<div class="p-card-title">&#128196; On-Page Issues</div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px">' + onp.map(function(o) {
+        var sev = (o.severity||'').toLowerCase();
+        var col = sev==='high'?'#dc2626':sev==='medium'?'#f59e0b':'#3b82f6';
+        var bg = sev==='high'?'#fef2f2':sev==='medium'?'#fffbeb':'#eff6ff';
+        return '<div style="background:'+bg+';border-left:3px solid '+col+';padding:10px;border-radius:0 8px 8px 0">' +
+          '<div style="font-size:12px;font-weight:700;color:#1a1a2e;margin-bottom:2px">' + clean(o.issue) + '</div>' +
+          '<div style="font-size:11px;color:#4b5563">URL: <span style="font-family:monospace">' + clean(o.affectedUrl) + '</span></div>' +
+          '<div style="font-size:11px;color:#1a1a2e;margin-top:6px;font-weight:600">Fix: ' + clean(o.fix) + '</div>' +
         '</div>';
-      }).join('')+'</div>';
+      }).join('') + '</div>';
   }
 
-  // Keyword opportunities
+  // Keywords
   var kw = sa.keywordOpportunities || [];
   if (kw.length) {
     var kwWrap = document.getElementById('seo-keywords-wrap');
     var kwRows = document.getElementById('seo-keywords-rows');
     if (kwWrap) kwWrap.classList.remove('hidden');
-    if (kwRows) kwRows.innerHTML = kw.map(function(k){
-      return '<tr>'+
-        '<td class="font-semibold text-[#1a1a2e]">'+clean(k.keyword)+'</td>'+
-        '<td>'+diffBadge(k.estimatedDifficulty)+'</td>'+
-        '<td style="font-size:11px;color:#6b7280;">'+clean(k.intent)+'</td>'+
-        '<td>'+oppBadge(k.opportunityScore)+'</td>'+
-        '<td style="font-size:11px;color:#374151;">'+clean(k.recommendedContentType)+'</td>'+
-      '</tr>';
-    }).join('');
+    if (kwRows) {
+      kwWrap.querySelector('table').className = 'matrix-table';
+      kwRows.innerHTML = kw.map(function(k) {
+        var diff = k.difficulty || 0;
+        var diffCol = diff > 70 ? '#dc2626' : diff > 40 ? '#f59e0b' : '#22c55e';
+        return '<tr>' +
+          '<td><span style="font-weight:700;color:#1a1a2e">' + clean(k.keyword) + '</span></td>' +
+          '<td>' + clean(k.volume) + '</td>' +
+          '<td><span style="color:'+diffCol+';font-weight:600">' + diff + '/100</span></td>' +
+          '<td style="color:#6b7280">' + clean(k.intent) + '</td>' +
+        '</tr>';
+      }).join('');
+    }
   }
 
   // Content gaps
-  var gaps = sa.contentGaps || [];
-  if (gaps.length) {
-    var gWrap = document.getElementById('seo-gaps-wrap');
-    var gGrid = document.getElementById('seo-gaps-grid');
-    if (gWrap) gWrap.classList.remove('hidden');
-    if (gGrid) gGrid.innerHTML = gaps.map(function(g){
-      return '<div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">'+
-        '<div class="flex items-center justify-between mb-2">'+
-          '<span class="text-sm font-bold text-[#1a1a2e]">'+clean(g.topic)+'</span>'+
-          priorityBadge(g.priority)+
-        '</div>'+
-        '<p class="text-xs text-gray-500 mb-2">'+clean(g.whyItMatters)+'</p>'+
-        '<div class="flex items-center gap-2">'+
-          '<span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">'+clean(g.recommendedFormat)+'</span>'+
-          '<span class="text-[10px] text-gray-400">'+clean(g.estimatedEffort)+'</span>'+
-        '</div>'+
+  var cg = sa.contentGaps || [];
+  if (cg.length) {
+    var cgWrap = document.getElementById('seo-gaps-wrap');
+    var cgGrid = document.getElementById('seo-gaps-grid');
+    if (cgWrap) cgWrap.classList.remove('hidden');
+    if (cgGrid) cgGrid.innerHTML = cg.map(function(g) {
+      return '<div class="gap-box p-card">' +
+        '<div style="font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:4px">' + clean(g.topic) + '</div>' +
+        '<div style="font-size:12px;color:#6b7280;margin-bottom:10px">' + clean(g.competitorsCoveringIt) + '</div>' +
+        '<div style="font-size:11px;font-weight:600;color:#2563eb;background:#eff6ff;padding:6px;border-radius:6px">Action: ' + clean(g.suggestedAction) + '</div>' +
       '</div>';
     }).join('');
   }
@@ -1322,14 +1316,18 @@ function renderSeoAudit(sa) {
   if (comp.length) {
     var cWrap = document.getElementById('seo-comp-wrap');
     var cRows = document.getElementById('seo-comp-rows');
-    if (cWrap) cWrap.classList.remove('hidden');
+    if (cWrap) {
+      cWrap.classList.remove('hidden');
+      cWrap.querySelector('.text-xs.font-bold').className = 'section-label';
+      cWrap.querySelector('table').className = 'matrix-table';
+    }
     if (cRows) cRows.innerHTML = comp.map(function(r){
       return '<tr>'+
-        '<td class="font-semibold text-xs">'+clean(r.dimension)+'</td>'+
-        '<td style="font-size:11px">'+clean(r.yourSite)+'</td>'+
-        '<td style="font-size:11px;color:#6b7280">'+clean(r.competitorA)+'</td>'+
-        '<td style="font-size:11px;color:#6b7280">'+clean(r.competitorB)+'</td>'+
-        '<td style="font-size:11px;font-weight:700;color:#f97316">'+clean(r.winner)+'</td>'+
+        '<td style="font-weight:700">'+clean(r.dimension)+'</td>'+
+        '<td class="yours">'+clean(r.yourSite)+'</td>'+
+        '<td>'+clean(r.competitorA)+'</td>'+
+        '<td>'+clean(r.competitorB)+'</td>'+
+        '<td style="font-weight:800;color:#f97316">'+clean(r.winner)+'</td>'+
       '</tr>';
     }).join('');
   }
@@ -1350,7 +1348,10 @@ function renderSeoAudit(sa) {
     var srWrap = document.getElementById('seo-recs-wrap');
     var srList = document.getElementById('seo-recs-list');
     if (srWrap) srWrap.classList.remove('hidden');
-    if (srList) srList.innerHTML = seoRecs.slice(0,8).map(buildRecCard).join('');
+    if (srList) {
+      srWrap.querySelector('.text-xs.font-bold').className = 'section-label';
+      srList.innerHTML = seoRecs.slice(0,8).map(buildRecCard).join('');
+    }
   }
 }
 
@@ -1366,8 +1367,9 @@ function renderContentCopy(cc) {
   var sumCard = document.getElementById('cc-summary-card');
   if (sumCard && cc.summary) {
     sumCard.classList.remove('hidden');
-    sumCard.innerHTML = '<div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-2">Executive Summary</div>'+
-      '<p class="text-sm text-gray-700 leading-relaxed">'+clean(cc.summary)+'</p>';
+    sumCard.className = "p-card mb-6";
+    sumCard.innerHTML = '<div class="p-card-title">&#9997; Executive Summary</div>' +
+      '<p style="font-size:13px;color:#4b5563;line-height:1.7;">'+clean(cc.summary)+'</p>';
   }
 
   // Voice & Tone
@@ -1375,10 +1377,11 @@ function renderContentCopy(cc) {
   var voiceCard = document.getElementById('cc-voice-card');
   if (voiceCard && (vt.current || vt.recommended)) {
     voiceCard.classList.remove('hidden');
-    voiceCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Voice &amp; Tone</div>'+
-      (vt.current ? '<div class="mb-2"><div class="text-xs text-gray-400 mb-0.5">Current</div><div class="text-sm text-gray-700">'+clean(vt.current)+'</div></div>' : '')+
-      (vt.recommended ? '<div class="mb-3"><div class="text-xs text-gray-400 mb-0.5">Recommended</div><div class="text-sm font-semibold text-[#1a1a2e] bg-orange-50 border-l-4 border-orange-400 pl-3 py-1">'+clean(vt.recommended)+'</div></div>' : '')+
-      ((vt.adjectives||[]).length ? '<div class="flex flex-wrap gap-1">'+vt.adjectives.map(function(a){return '<span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">'+clean(a)+'</span>';}).join('')+'</div>' : '');
+    voiceCard.className = "p-card";
+    voiceCard.innerHTML = '<div class="p-card-title">&#128172; Voice &amp; Tone</div>'+
+      (vt.current ? '<div style="margin-bottom:12px"><div style="font-size:9px;font-weight:800;color:#6b7280;margin-bottom:4px">CURRENT</div><div style="font-size:13px;color:#374151">'+clean(vt.current)+'</div></div>' : '')+
+      (vt.recommended ? '<div style="margin-bottom:16px"><div style="font-size:9px;font-weight:800;color:#6b7280;margin-bottom:4px">RECOMMENDED</div><div style="font-size:13px;font-weight:700;color:#1a1a2e;background:#fff7ed;border-left:4px solid #f97316;padding:8px 12px">'+clean(vt.recommended)+'</div></div>' : '')+
+      ((vt.adjectives||[]).length ? '<div style="display:flex;flex-wrap:wrap;gap:6px">'+vt.adjectives.map(function(a){return '<span class="channel-tag">'+clean(a)+'</span>';}).join('')+'</div>' : '');
   }
 
   // Blog post
@@ -1386,11 +1389,12 @@ function renderContentCopy(cc) {
   var blogCard = document.getElementById('cc-blog-card');
   if (blogCard && blog.headline) {
     blogCard.classList.remove('hidden');
-    blogCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Blog Post Draft</div>'+
-      '<div class="text-base font-bold text-[#1a1a2e] mb-1">'+clean(blog.headline)+'</div>'+
-      (blog.primaryKeyword ? '<div class="text-[10px] bg-orange-50 border border-orange-100 text-orange-700 px-2 py-0.5 rounded-full inline-block mb-2">&#128269; '+clean(blog.primaryKeyword)+'</div>' : '')+
-      (blog.metaDescription ? '<div class="text-xs text-gray-500 italic mb-3">'+clean(blog.metaDescription)+'</div>' : '')+
-      (blog.fullDraft ? '<div class="text-xs text-gray-700 leading-relaxed whitespace-pre-line bg-gray-50 rounded-xl p-4 border border-gray-100 max-h-64 overflow-y-auto">'+clean(blog.fullDraft)+'</div>' : '');
+    blogCard.className = "p-card";
+    blogCard.innerHTML = '<div class="p-card-title">&#128221; Blog Post Draft</div>'+
+      '<div style="font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:6px">'+clean(blog.headline)+'</div>'+
+      (blog.primaryKeyword ? '<div style="font-size:10px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:3px 10px;border-radius:99px;display:inline-block;margin-bottom:8px">&#128269; '+clean(blog.primaryKeyword)+'</div>' : '')+
+      (blog.metaDescription ? '<div style="font-size:11px;color:#6b7280;font-style:italic;margin-bottom:12px">'+clean(blog.metaDescription)+'</div>' : '')+
+      (blog.fullDraft ? '<div class="email-copy" style="background:#f9fafb;border-radius:8px;padding:12px;border:1px solid #f3f4f6">'+clean(blog.fullDraft)+'</div>' : '');
   }
 
   // Social media posts
@@ -1398,16 +1402,17 @@ function renderContentCopy(cc) {
   var socCard = document.getElementById('cc-social-card');
   if (socCard && social.length) {
     socCard.classList.remove('hidden');
-    socCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Social Media Posts</div>'+
-      '<div class="space-y-3">'+social.map(function(s){
+    socCard.className = "p-card";
+    socCard.innerHTML = '<div class="p-card-title">&#128242; Social Media Posts</div>'+
+      '<div style="display:flex;flex-direction:column;gap:12px">'+social.map(function(s){
         var pColor = {LinkedIn:'#0077b5',X:'#1a1a2e',Instagram:'#e1306c',Facebook:'#1877f2'};
         var c = pColor[s.platform] || '#374151';
-        return '<div class="border border-gray-100 rounded-xl p-3">'+
-          '<div class="text-[10px] font-bold mb-2" style="color:'+c+'">'+clean(s.platform)+'</div>'+
-          '<div class="text-xs font-semibold text-[#1a1a2e] mb-1">'+clean(s.hook)+'</div>'+
-          '<div class="text-xs text-gray-600 mb-2">'+clean(s.body)+'</div>'+
-          '<div class="text-xs text-[#f97316] font-bold mb-1">'+clean(s.cta)+'</div>'+
-          ((s.hashtags||[]).length ? '<div class="flex flex-wrap gap-1">'+s.hashtags.map(function(h){return '<span class="text-[10px] text-blue-600">#'+clean(h).replace(/^#/,'')+'</span>';}).join('')+'</div>' : '')+
+        return '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:12px">'+
+          '<div style="font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px;color:'+c+'">'+clean(s.platform)+'</div>'+
+          '<div style="font-size:12px;font-weight:700;color:#1a1a2e;margin-bottom:6px">'+clean(s.hook)+'</div>'+
+          '<div style="font-size:11px;color:#4b5563;margin-bottom:8px;line-height:1.5">'+clean(s.body)+'</div>'+
+          '<div style="font-size:11px;color:#f97316;font-weight:700;margin-bottom:6px">'+clean(s.cta)+'</div>'+
+          ((s.hashtags||[]).length ? '<div style="display:flex;flex-wrap:wrap;gap:4px">'+s.hashtags.map(function(h){return '<span style="font-size:10px;color:#2563eb">#'+clean(h).replace(/^#/,'')+'</span>';}).join('')+'</div>' : '')+
         '</div>';
       }).join('')+'</div>';
   }
@@ -1417,15 +1422,16 @@ function renderContentCopy(cc) {
   var enlCard = document.getElementById('cc-email-card');
   if (enlCard && enl.subjectLine) {
     enlCard.classList.remove('hidden');
-    enlCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Email Newsletter</div>'+
-      '<div class="bg-orange-50 border border-orange-100 rounded-xl p-3 mb-3">'+
-        '<div class="text-xs text-gray-400 mb-0.5">Subject</div>'+
-        '<div class="text-sm font-bold text-[#1a1a2e]">'+clean(enl.subjectLine)+'</div>'+
-        (enl.previewText ? '<div class="text-xs text-gray-500 italic mt-1">'+clean(enl.previewText)+'</div>' : '')+
+    enlCard.className = "p-card";
+    enlCard.innerHTML = '<div class="p-card-title">&#128231; Email Newsletter</div>'+
+      '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:12px;margin-bottom:12px">'+
+        '<div style="font-size:10px;color:#c2410c;margin-bottom:2px;font-weight:700">Subject</div>'+
+        '<div style="font-size:13px;font-weight:700;color:#9a3412">'+clean(enl.subjectLine)+'</div>'+
+        (enl.previewText ? '<div style="font-size:11px;color:#9a3412;opacity:.8;font-style:italic;margin-top:4px">'+clean(enl.previewText)+'</div>' : '')+
       '</div>'+
-      (enl.heroStatement ? '<div class="text-sm font-semibold text-[#1a1a2e] mb-3 border-l-4 border-[#f97316] pl-3">'+clean(enl.heroStatement)+'</div>' : '')+
-      ((enl.bodyBlocks||[]).length ? '<div class="space-y-2 mb-3">'+enl.bodyBlocks.map(function(b){return '<div class="text-xs text-gray-600 bg-gray-50 rounded-lg p-3">'+clean(b)+'</div>';}).join('')+'</div>' : '')+
-      (enl.primaryCTA ? '<span class="inline-flex items-center bg-[#f97316] text-white text-xs font-bold px-4 py-2 rounded-lg">'+clean(enl.primaryCTA)+'</span>' : '');
+      (enl.heroStatement ? '<div style="font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:12px;border-left:4px solid #f97316;padding-left:10px">'+clean(enl.heroStatement)+'</div>' : '')+
+      ((enl.bodyBlocks||[]).length ? '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">'+enl.bodyBlocks.map(function(b){return '<div style="font-size:11px;color:#4b5563;background:#f9fafb;border-radius:8px;padding:10px">'+clean(b)+'</div>';}).join('')+'</div>' : '')+
+      (enl.primaryCTA ? '<span style="display:inline-flex;align-items:center;background:#f97316;color:white;font-size:11px;font-weight:700;padding:8px 16px;border-radius:8px">'+clean(enl.primaryCTA)+'</span>' : '');
   }
 
   // Landing page
@@ -1433,12 +1439,13 @@ function renderContentCopy(cc) {
   var lpCard = document.getElementById('cc-lp-card');
   if (lpCard && lp.headline) {
     lpCard.classList.remove('hidden');
-    lpCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Landing Page Copy</div>'+
-      '<div class="text-xl font-black text-[#1a1a2e] mb-1">'+clean(lp.headline)+'</div>'+
-      (lp.subheadline ? '<div class="text-sm text-gray-500 mb-4">'+clean(lp.subheadline)+'</div>' : '')+
-      ((lp.valuePropositions||[]).length ? '<div class="space-y-2 mb-4">'+lp.valuePropositions.map(function(v){return '<div class="flex gap-2 text-xs text-gray-700"><span class="text-[#f97316] font-bold">&#10003;</span>'+clean(v)+'</div>';}).join('')+'</div>' : '')+
-      (lp.socialProofRecommendation ? '<div class="text-xs text-gray-400 italic mb-3">'+clean(lp.socialProofRecommendation)+'</div>' : '')+
-      (lp.primaryCTA ? '<span class="inline-flex items-center bg-[#1a1a2e] text-white text-xs font-bold px-4 py-2 rounded-lg">'+clean(lp.primaryCTA)+'</span>' : '');
+    lpCard.className = "p-card";
+    lpCard.innerHTML = '<div class="p-card-title">&#128187; Landing Page Copy</div>'+
+      '<div style="font-size:20px;font-weight:900;color:#1a1a2e;margin-bottom:6px;line-height:1.2">'+clean(lp.headline)+'</div>'+
+      (lp.subheadline ? '<div style="font-size:13px;color:#6b7280;margin-bottom:16px">'+clean(lp.subheadline)+'</div>' : '')+
+      ((lp.valuePropositions||[]).length ? '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">'+lp.valuePropositions.map(function(v){return '<div style="display:flex;gap:8px;font-size:12px;color:#374151"><span style="color:#22c55e;font-weight:800">&#10003;</span>'+clean(v)+'</div>';}).join('')+'</div>' : '')+
+      (lp.socialProofRecommendation ? '<div style="font-size:11px;color:#9ca3af;font-style:italic;margin-bottom:16px;background:#f9fafb;padding:10px;border-radius:8px">'+clean(lp.socialProofRecommendation)+'</div>' : '')+
+      (lp.primaryCTA ? '<span style="display:inline-flex;align-items:center;background:#1a1a2e;color:white;font-size:11px;font-weight:700;padding:10px 20px;border-radius:8px">'+clean(lp.primaryCTA)+'</span>' : '');
   }
 
   // Case study
@@ -1446,16 +1453,17 @@ function renderContentCopy(cc) {
   var csCard = document.getElementById('cc-casestudy-card');
   if (csCard && cs.title) {
     csCard.classList.remove('hidden');
-    csCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Case Study Framework</div>'+
-      '<div class="text-base font-bold text-[#1a1a2e] mb-1">'+clean(cs.title)+'</div>'+
-      (cs.snapshot ? '<div class="bg-orange-50 border border-orange-100 rounded-xl p-3 mb-3 text-xs font-semibold text-orange-900">'+clean(cs.snapshot)+'</div>' : '')+
-      '<div class="space-y-2">'+
-        (cs.challenge ? '<div class="text-xs"><span class="font-bold text-gray-600">Challenge: </span><span class="text-gray-600">'+clean(cs.challenge)+'</span></div>' : '')+
-        (cs.solution ? '<div class="text-xs"><span class="font-bold text-gray-600">Solution: </span><span class="text-gray-600">'+clean(cs.solution)+'</span></div>' : '')+
-        (cs.results ? '<div class="text-xs"><span class="font-bold text-[#f97316]">Results: </span><span class="text-gray-700 font-semibold">'+clean(cs.results)+'</span></div>' : '')+
-        (cs.quoteIdea ? '<div class="text-xs italic border-l-4 border-gray-200 pl-3 text-gray-500">'+clean(cs.quoteIdea)+'</div>' : '')+
+    csCard.className = "p-card";
+    csCard.innerHTML = '<div class="p-card-title">&#128202; Case Study Framework</div>'+
+      '<div style="font-size:15px;font-weight:800;color:#1a1a2e;margin-bottom:6px">'+clean(cs.title)+'</div>'+
+      (cs.snapshot ? '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px;margin-bottom:12px;font-size:11px;font-weight:700;color:#166534">'+clean(cs.snapshot)+'</div>' : '')+
+      '<div style="display:flex;flex-direction:column;gap:8px">'+
+        (cs.challenge ? '<div style="font-size:11px"><span style="font-weight:800;color:#6b7280">Challenge: </span><span style="color:#4b5563">'+clean(cs.challenge)+'</span></div>' : '')+
+        (cs.solution ? '<div style="font-size:11px"><span style="font-weight:800;color:#6b7280">Solution: </span><span style="color:#4b5563">'+clean(cs.solution)+'</span></div>' : '')+
+        (cs.results ? '<div style="font-size:12px"><span style="font-weight:800;color:#f97316">Results: </span><span style="color:#1a1a2e;font-weight:700">'+clean(cs.results)+'</span></div>' : '')+
+        (cs.quoteIdea ? '<div style="font-size:11px;font-style:italic;border-left:3px solid #e5e7eb;padding-left:10px;color:#6b7280;margin-top:8px">'+clean(cs.quoteIdea)+'</div>' : '')+
       '</div>'+
-      (cs.cta ? '<div class="mt-3"><span class="inline-flex bg-[#f97316] text-white text-xs font-bold px-4 py-2 rounded-lg">'+clean(cs.cta)+'</span></div>' : '');
+      (cs.cta ? '<div style="margin-top:16px"><span style="display:inline-flex;background:#f97316;color:white;font-size:11px;font-weight:700;padding:8px 16px;border-radius:8px">'+clean(cs.cta)+'</span></div>' : '');
   }
 
   // Press release
@@ -1463,11 +1471,12 @@ function renderContentCopy(cc) {
   var prCard = document.getElementById('cc-press-card');
   if (prCard && (pr.headline || pr.leadParagraph)) {
     prCard.classList.remove('hidden');
-    prCard.innerHTML = '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Press Release Draft</div>' +
-      (pr.headline ? '<div class="text-base font-bold text-[#1a1a2e] mb-1">'+clean(pr.headline)+'</div>' : '') +
-      (pr.dateline ? '<div class="text-xs text-gray-400 italic mb-2">'+clean(pr.dateline)+'</div>' : '') +
-      (pr.leadParagraph ? '<div class="text-xs text-gray-700 leading-relaxed mb-3 font-semibold">'+clean(pr.leadParagraph)+'</div>' : '') +
-      (pr.body ? '<div class="text-xs text-gray-600 leading-relaxed whitespace-pre-line bg-gray-50 rounded-xl p-4 border border-gray-100 max-h-48 overflow-y-auto">'+clean(pr.body)+'</div>' : '');
+    prCard.className = "p-card mb-6";
+    prCard.innerHTML = '<div class="p-card-title">&#128240; Press Release Draft</div>' +
+      (pr.headline ? '<div style="font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:6px">'+clean(pr.headline)+'</div>' : '') +
+      (pr.dateline ? '<div style="font-size:11px;color:#6b7280;font-style:italic;margin-bottom:12px">'+clean(pr.dateline)+'</div>' : '') +
+      (pr.leadParagraph ? '<div style="font-size:12px;color:#374151;line-height:1.7;margin-bottom:12px;font-weight:700">'+clean(pr.leadParagraph)+'</div>' : '') +
+      (pr.body ? '<div class="email-copy" style="background:#f9fafb;border-radius:8px;padding:14px;border:1px solid #f3f4f6">'+clean(pr.body)+'</div>' : '');
   }
 
   // Category scores
@@ -1486,7 +1495,10 @@ function renderContentCopy(cc) {
     var ccRWrap = document.getElementById('cc-recs-wrap');
     var ccRList = document.getElementById('cc-recs-list');
     if (ccRWrap) ccRWrap.classList.remove('hidden');
-    if (ccRList) ccRList.innerHTML = ccRecs.slice(0,6).map(buildRecCard).join('');
+    if (ccRList) {
+      ccRWrap.querySelector('.text-xs.font-bold').className = 'section-label';
+      ccRList.innerHTML = ccRecs.slice(0,6).map(buildRecCard).join('');
+    }
   }
 }
 
@@ -1545,76 +1557,105 @@ function buildCatScores(scores, labels) {
   }).join('');
 }
 
-function renderBrandReview(br) {
+function renderBrandReview(bp) {
   var section = document.getElementById('brand-review-section');
-  if (!section || !br) return;
+  if (!section || !bp) return;
   section.classList.remove('hidden');
-  var riskLevel = br.score>=75?'LOW':br.score>=55?'MEDIUM':br.score>=35?'HIGH':'CRITICAL';
-  var bannerEl  = document.getElementById('brand-risk-banner');
-  if (bannerEl) {
-    bannerEl.classList.remove('hidden');
-    var cfgMap = {
-      CRITICAL: { bg:'#fef2f2', border:'#fecaca', icon:'[!]', label:'CRITICAL brand risk', sub:'Immediate legal review recommended.' },
-      HIGH:     { bg:'#fff7ed', border:'#fed7aa', icon:'[!]', label:'HIGH risk detected',  sub:'Several compliance issues need attention.' },
-      MEDIUM:   { bg:'#fffbeb', border:'#fde68a', icon:'[~]', label:'MEDIUM risk',          sub:'Address priority findings before the next campaign.' },
-      LOW:      { bg:'#f0fdf4', border:'#bbf7d0', icon:'[ok]',label:'LOW risk - brand-safe', sub:'Minor style improvements only.' },
-    };
-    var cfg = cfgMap[riskLevel];
-    bannerEl.style.cssText = 'background:'+cfg.bg+';border:1px solid '+cfg.border+';border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;';
-    document.getElementById('brand-risk-icon').textContent  = cfg.icon;
-    document.getElementById('brand-risk-label').textContent = cfg.label;
-    document.getElementById('brand-risk-sub').textContent   = cfg.sub;
+
+  // Overall Score & Risk
+  var bnr = document.getElementById('brand-risk-banner');
+  var bIco = document.getElementById('brand-risk-icon');
+  var bLbl = document.getElementById('brand-risk-label');
+  var bSub = document.getElementById('brand-risk-sub');
+  if (bnr) {
+    bnr.classList.remove('hidden');
+    var isHigh = bp.score < 60;
+    var isMed = bp.score >= 60 && bp.score < 80;
+    bnr.style.background = isHigh ? '#fef2f2' : (isMed ? '#fffbeb' : '#f0fdf4');
+    bnr.style.border = '1px solid ' + (isHigh ? '#fecaca' : (isMed ? '#fde68a' : '#bbf7d0'));
+    bnr.style.color = isHigh ? '#991b1b' : (isMed ? '#92400e' : '#166534');
+    if (bIco) bIco.innerHTML = isHigh ? '&#9888;&#65039;' : (isMed ? '&#9888;&#65039;' : '&#10004;&#65039;');
+    if (bLbl) bLbl.innerHTML = isHigh ? 'High Risk / Needs Rework' : (isMed ? 'Moderate Risk / Needs Polish' : 'Low Risk / Looks Good');
+    if (bSub) bSub.innerHTML = 'Brand Score: ' + (bp.score || 'N/A') + '/100';
   }
-  var flags = br.legalAndComplianceFlags || [];
-  if (flags.length > 0) {
-    var wrap = document.getElementById('legal-flags-wrap'), ct = document.getElementById('legal-flag-count'), list = document.getElementById('legal-flags-list');
-    if (wrap) wrap.classList.remove('hidden');
-    if (ct)   ct.textContent = flags.length + ' flag' + (flags.length!==1?'s':'');
-    if (list) list.innerHTML = flags.map(function(f) {
-      return '<div class="legal-flag-card">' +
-        '<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:4px">' + (f.issue||'') + '</div>' +
-        (f.quote ? '<blockquote style="font-size:11px;font-style:italic;color:#9ca3af;border-left:2px solid #e5e7eb;padding-left:8px;margin-bottom:4px">"' + f.quote + '"</blockquote>' : '') +
-        '<div style="font-size:11px;color:#6b7280"><strong>Location:</strong> ' + (f.location||'---') + '</div>' +
-        (f.recommendedAction ? '<div style="font-size:11px;color:#374151;margin-top:4px"><strong>Fix:</strong> ' + f.recommendedAction + '</div>' : '') +
-      '</div>';
-    }).join('');
+
+  // Legal & Compliance Flags
+  var flags = bp.legalAndComplianceFlags || [];
+  if (flags.length) {
+    var fw = document.getElementById('legal-flags-wrap');
+    var fc = document.getElementById('legal-flag-count');
+    var fl = document.getElementById('legal-flags-list');
+    if (fw) fw.classList.remove('hidden');
+    if (fc) fc.innerHTML = flags.length + ' Issues Found';
+    if (fl) {
+      fl.innerHTML = flags.map(function(f) {
+        return '<div class="rec-card" style="border-left:3px solid #dc2626">' +
+          '<div class="rec-body">' +
+            '<div class="rec-title" style="color:#991b1b">' + clean(f.issue) + '</div>' +
+            '<div class="rec-rationale">' + clean(f.explanation) + '</div>' +
+            '<div style="font-size:11px;color:#166534;background:#f0fdf4;padding:6px 10px;border-radius:6px;font-weight:600">Fix: ' + clean(f.recommendedFix) + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
   }
-  var findings = br.detailedFindings || [];
-  if (findings.length > 0) {
-    var wrap2 = document.getElementById('findings-wrap'), rows = document.getElementById('findings-rows');
-    if (wrap2) wrap2.classList.remove('hidden');
-    if (rows) rows.innerHTML = findings.map(function(f) {
-      return '<tr>' +
-        '<td><div style="font-weight:600;font-size:12px;color:#1a1a2e">' + (f.issue||'') + '</div>' +
-             (f.quote ? '<div class="finding-quote">"' + (f.quote||'').slice(0,80) + (f.quote.length>80?'...':'') + '"</div>' : '') + '</td>' +
-        '<td style="font-size:11px;color:#9ca3af">' + (f.location||'').replace(/^https?:\/\/(www\.)?/,'').split('/').slice(0,2).join('/') + '</td>' +
-        '<td><span class="sev-badge ' + sevClass(f.severity) + '">' + (f.severity||'') + '</span></td>' +
-        '<td style="font-size:12px;color:#374151">' + (f.suggestion||'') + '</td>' +
-      '</tr>';
-    }).join('');
+
+  // Detailed Findings
+  var df = bp.detailedFindings || [];
+  if (df.length) {
+    var dfw = document.getElementById('findings-wrap');
+    var dfr = document.getElementById('findings-rows');
+    if (dfw) dfw.classList.remove('hidden');
+    if (dfr) {
+      dfr.innerHTML = df.map(function(f) {
+        var s = (f.severity||'').toLowerCase();
+        var col = s==='high'?'#dc2626':s==='medium'?'#f59e0b':'#3b82f6';
+        return '<div class="findings-row" style="display:flex;gap:12px;align-items:flex-start">' +
+          '<div class="severity-dot" style="background:'+col+'"></div>' +
+          '<div>' +
+            '<div style="font-size:13px;font-weight:600;color:#1a1a2e;margin-bottom:4px">' + clean(f.element) + '</div>' +
+            '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">Current: ' + clean(f.currentState) + '</div>' +
+            '<div style="font-size:11px;color:#059669;font-weight:600">Required: ' + clean(f.requiredChange) + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
   }
-  var revised = (br.revisedSections||[]).filter(function(s){ return s.originalText&&s.suggestedRevision; });
-  if (revised.length > 0) {
-    var wrap3 = document.getElementById('before-after-wrap'), list3 = document.getElementById('before-after-list');
-    if (wrap3) wrap3.classList.remove('hidden');
-    if (list3) list3.innerHTML = revised.slice(0,6).map(function(s) {
-      return '<div class="before-after-card">' +
-        '<div class="ba-before"><div class="ba-label">Before - ' + (s.severity||'') + '</div><div class="ba-text">' + s.originalText + '</div></div>' +
-        '<div class="ba-after"><div class="ba-label">After</div><div class="ba-text">' + s.suggestedRevision + '</div></div>' +
-        (s.reason ? '<div class="ba-reason"><div class="ba-label">Why</div><div class="ba-text">' + s.reason + '</div></div>' : '') +
-      '</div>';
-    }).join('');
+
+  // Before & After Sections
+  var revs = bp.revisedSections || [];
+  if (revs.length) {
+    var baw = document.getElementById('before-after-wrap');
+    var bal = document.getElementById('before-after-list');
+    if (baw) baw.classList.remove('hidden');
+    if (bal) {
+      bal.innerHTML = revs.map(function(r) {
+        return '<div class="p-card">' +
+          '<div class="p-card-title">' + clean(r.sectionName) + '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+            '<div style="background:#fef2f2;border-radius:8px;padding:12px"><div style="font-size:9px;font-weight:800;color:#dc2626;margin-bottom:6px">ORIGINAL</div><div style="font-size:11px;color:#7f1d1d;line-height:1.5">' + clean(r.originalText) + '</div></div>' +
+            '<div style="background:#f0fdf4;border-radius:8px;padding:12px"><div style="font-size:9px;font-weight:800;color:#059669;margin-bottom:6px">REVISED</div><div style="font-size:11px;color:#14532d;line-height:1.5;font-weight:500">' + clean(r.revisedText) + '</div></div>' +
+          '</div>' +
+          (r.explanation ? '<div style="font-size:11px;color:#6b7280;margin-top:10px;padding-top:10px;border-top:1px dashed #e5e7eb">Why: ' + clean(r.explanation) + '</div>' : '') +
+        '</div>';
+      }).join('');
+    }
   }
-  var voice = br.voiceAndToneProfile;
-  if (voice) {
-    var wrap4 = document.getElementById('voice-summary-wrap'), card = document.getElementById('voice-summary-card');
-    if (wrap4) wrap4.classList.remove('hidden');
-    if (card) {
-      var attrs = (voice.attributes||[]).map(function(a){ return '<span style="display:inline-block;background:#fff7ed;color:#c2410c;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;border:1px solid #fed7aa;margin:2px">' + a + '</span>'; }).join('');
-      card.innerHTML =
-        (voice.personality ? '<p style="font-size:13px;color:#6b7280;font-style:italic;margin-bottom:12px;border-left:3px solid #fed7aa;padding-left:12px">"' + voice.personality + '"</p>' : '') +
-        (attrs ? '<div style="margin-bottom:12px">' + attrs + '</div>' : '') +
-        ((voice.toneAdaptations||[]).length ? '<ul style="font-size:11px;color:#6b7280;list-style:disc;padding-left:16px">' + voice.toneAdaptations.map(function(t){ return '<li style="margin-bottom:4px">'+t+'</li>'; }).join('') + '</ul>' : '');
+
+  // Voice & Tone
+  var vt = bp.voiceAndToneProfile || {};
+  if (vt.primaryTone || vt.secondaryTone || vt.vocabularyRules) {
+    var vsw = document.getElementById('voice-summary-wrap');
+    var vsc = document.getElementById('voice-summary-card');
+    if (vsw) vsw.classList.remove('hidden');
+    if (vsc) {
+      vsc.className = "p-card mb-6";
+      vsc.innerHTML = '<div class="p-card-title">&#128172; Voice & Tone</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">' +
+          '<div><div style="font-size:9px;font-weight:800;color:#6b7280;margin-bottom:4px">PRIMARY TONE</div><div style="font-size:13px;font-weight:700;color:#1a1a2e">' + clean(vt.primaryTone) + '</div></div>' +
+          '<div><div style="font-size:9px;font-weight:800;color:#6b7280;margin-bottom:4px">SECONDARY TONE</div><div style="font-size:13px;font-weight:700;color:#1a1a2e">' + clean(vt.secondaryTone) + '</div></div>' +
+        '</div>' +
+        (vt.vocabularyRules ? '<div style="font-size:11px;color:#4b5563;background:#f9fafb;padding:10px;border-radius:8px">Rules: ' + clean(vt.vocabularyRules) + '</div>' : '');
     }
   }
 
@@ -1634,7 +1675,10 @@ function renderBrandReview(br) {
     var rWrap2 = document.getElementById('brand-recs-wrap');
     var rList2 = document.getElementById('brand-recs-list');
     if (rWrap2) rWrap2.classList.remove('hidden');
-    if (rList2) rList2.innerHTML = recs2.slice(0,6).map(buildRecCard).join('');
+    if (rList2) {
+      rWrap2.querySelector('.text-xs.font-bold').className = 'section-label';
+      rList2.innerHTML = recs2.slice(0,6).map(buildRecCard).join('');
+    }
   }
 
   // After review options
@@ -1643,7 +1687,7 @@ function renderBrandReview(br) {
     var nsWrap = document.getElementById('brand-nextsteps-wrap');
     var nsList = document.getElementById('brand-nextsteps-list');
     if (nsWrap) nsWrap.classList.remove('hidden');
-    if (nsList) nsList.innerHTML = opts.map(function(o){return '<span style="display:inline-flex;align-items:center;gap:6px;background:white;border:1px solid #e5e7eb;border-radius:99px;padding:7px 16px;font-size:12px;color:#374151;box-shadow:0 1px 4px rgba(0,0,0,0.04)">&#8594; '+clean(typeof o==='string'?o:(o.option||''))+'</span>';}).join('');
+    if (nsList) nsList.innerHTML = opts.map(function(o){return '<span class="next-step-chip">&#8594; '+clean(typeof o==='string'?o:(o.option||''))+'</span>';}).join('');
   }
 }
 
@@ -1654,36 +1698,38 @@ function renderCompetitiveBrief(bp) {
 
   // Summary
   var sumEl = document.getElementById('comp-summary');
-  if (sumEl) sumEl.innerHTML = '<p class="text-sm text-gray-700 leading-relaxed">' + clean(bp.summary || '') + '</p>';
+  if (sumEl) {
+    sumEl.className = "p-card mb-6";
+    sumEl.innerHTML = '<p style="font-size:13px;color:#4b5563;line-height:1.7;">' + clean(bp.summary || '') + '</p>';
+  }
 
   // Category scores
   var catLabels = { differentiationClarity:'Differentiation', audienceSpecificity:'Audience', messageConsistency:'Messaging', competitiveDistinctiveness:'Distinctiveness' };
-  var catGrid = document.getElementById('comp-profiles-grid');
-  var cs = bp.categoryScores || {};
+  var catScores = bp.categoryScores || {};
 
   // Competitor profiles
   var profiles = bp.competitorProfiles || [];
   var profGrid = document.getElementById('comp-profiles-grid');
   if (profGrid && profiles.length) {
     profGrid.innerHTML = profiles.map(function(p) {
-      var swot = '<div class="grid grid-cols-2 gap-2 mt-3">' +
-        '<div style="background:#f0fdf4;border-radius:8px;padding:8px">' +
-          '<div style="font-size:10px;font-weight:700;color:#059669;margin-bottom:4px">Strengths</div>' +
-          (p.strengths||[]).slice(0,3).map(function(s){return '<div style="font-size:10px;color:#374151">• '+clean(s)+'</div>';}).join('') +
+      var swot = '<div class="swot-grid">' +
+        '<div class="swot-box swot-box-s">' +
+          '<div class="swot-label swot-label-s">Strengths</div>' +
+          (p.strengths||[]).slice(0,3).map(function(s){return '<div class="swot-item">• '+clean(s)+'</div>';}).join('') +
         '</div>' +
-        '<div style="background:#fef2f2;border-radius:8px;padding:8px">' +
-          '<div style="font-size:10px;font-weight:700;color:#dc2626;margin-bottom:4px">Weaknesses</div>' +
-          (p.weaknesses||[]).slice(0,3).map(function(s){return '<div style="font-size:10px;color:#374151">• '+clean(s)+'</div>';}).join('') +
+        '<div class="swot-box swot-box-w">' +
+          '<div class="swot-label swot-label-w">Weaknesses</div>' +
+          (p.weaknesses||[]).slice(0,3).map(function(s){return '<div class="swot-item">• '+clean(s)+'</div>';}).join('') +
         '</div>' +
       '</div>';
       var msg = p.messagingAnalysis || {};
-      return '<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">' +
-        '<div class="font-bold text-[#1a1a2e] mb-1">' + clean(p.companyName||p.name||'Competitor') + '</div>' +
-        '<div class="text-xs text-gray-500 mb-3">' + clean(p.overview||'') + '</div>' +
-        (msg.tagline ? '<div class="text-xs italic text-[#f97316] mb-2 border-l-4 border-orange-300 pl-2">"'+clean(msg.tagline)+'"</div>' : '') +
-        (msg.coreValueProp ? '<div class="text-xs text-gray-600 mb-2"><span class="font-semibold">Value prop:</span> '+clean(msg.coreValueProp)+'</div>' : '') +
-        ((msg.keyThemes||[]).length ? '<div class="flex flex-wrap gap-1 mb-2">' + msg.keyThemes.slice(0,4).map(function(t){return '<span style="font-size:10px;background:#f3f4f6;border-radius:99px;padding:2px 8px;color:#374151">'+clean(t)+'</span>';}).join('') + '</div>' : '') +
-        (p.contentStrategy ? '<div class="text-xs text-gray-500 mb-2"><span class="font-semibold">Content:</span> '+clean(p.contentStrategy)+'</div>' : '') +
+      return '<div class="comp-card">' +
+        '<div class="comp-name">' + clean(p.companyName||p.name||'Competitor') + '</div>' +
+        '<div style="font-size:12px;color:#6b7280;margin-bottom:12px">' + clean(p.overview||'') + '</div>' +
+        (msg.tagline ? '<div class="comp-tagline">"'+clean(msg.tagline)+'"</div>' : '') +
+        (msg.coreValueProp ? '<div style="font-size:11px;color:#4b5563;margin-bottom:8px"><span style="font-weight:700;color:#1a1a2e">Value prop:</span> '+clean(msg.coreValueProp)+'</div>' : '') +
+        ((msg.keyThemes||[]).length ? '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">' + msg.keyThemes.slice(0,4).map(function(t){return '<span style="font-size:10px;background:#f3f4f6;border-radius:99px;padding:2px 8px;color:#374151">'+clean(t)+'</span>';}).join('') + '</div>' : '') +
+        (p.contentStrategy ? '<div style="font-size:11px;color:#6b7280;margin-bottom:8px"><span style="font-weight:700;color:#1a1a2e">Content:</span> '+clean(p.contentStrategy)+'</div>' : '') +
         swot +
       '</div>';
     }).join('');
@@ -1695,14 +1741,17 @@ function renderCompetitiveBrief(bp) {
     var mWrap = document.getElementById('comp-matrix-wrap');
     var mRows = document.getElementById('comp-matrix-rows');
     if (mWrap) mWrap.classList.remove('hidden');
-    if (mRows) mRows.innerHTML = matrix.map(function(r) {
-      return '<tr style="border-bottom:1px solid #f3f4f6">' +
-        '<td style="padding:8px 12px;font-size:11px;font-weight:600;color:#374151">' + clean(r.dimension) + '</td>' +
-        '<td style="padding:8px 12px;font-size:11px;color:#f97316;font-weight:600">' + clean(r.yourCompany||r.yourSite||'') + '</td>' +
-        '<td style="padding:8px 12px;font-size:11px;color:#6b7280">' + clean(r.competitorA||'') + '</td>' +
-        '<td style="padding:8px 12px;font-size:11px;color:#6b7280">' + clean(r.competitorB||'') + '</td>' +
-      '</tr>';
-    }).join('');
+    if (mRows) {
+      mWrap.querySelector('table').className = 'matrix-table';
+      mRows.innerHTML = matrix.map(function(r) {
+        return '<tr>' +
+          '<td><span style="font-weight:700">' + clean(r.dimension) + '</span></td>' +
+          '<td class="yours">' + clean(r.yourCompany||r.yourSite||'') + '</td>' +
+          '<td>' + clean(r.competitorA||'') + '</td>' +
+          '<td>' + clean(r.competitorB||'') + '</td>' +
+        '</tr>';
+      }).join('');
+    }
   }
 
   // Content gap analysis
@@ -1718,9 +1767,9 @@ function renderCompetitiveBrief(bp) {
         { title:'Format Gaps',   items: gaps.formatGaps||[],   col:'#6366f1', bg:'#eff6ff' },
       ];
       gGrid.innerHTML = gapSections.map(function(gs) {
-        return '<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">' +
-          '<div style="font-size:10px;font-weight:700;color:'+gs.col+';background:'+gs.bg+';border-radius:6px;padding:3px 8px;display:inline-block;margin-bottom:8px">'+gs.title+'</div>' +
-          gs.items.slice(0,5).map(function(item){return '<div style="font-size:11px;color:#374151;margin-bottom:4px">• '+clean(item)+'</div>';}).join('') +
+        return '<div class="gap-box p-card">' +
+          '<div style="font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:'+gs.col+';background:'+gs.bg+';border-radius:6px;padding:4px 10px;display:inline-block;margin-bottom:10px">'+gs.title+'</div>' +
+          '<div>' + gs.items.slice(0,5).map(function(item){return '<div class="gap-item">• '+clean(item)+'</div>';}).join('') + '</div>' +
         '</div>';
       }).join('');
     }
@@ -1733,13 +1782,13 @@ function renderCompetitiveBrief(bp) {
     var otGrid = document.getElementById('comp-ot-grid');
     if (otWrap) otWrap.classList.remove('hidden');
     if (otGrid) otGrid.innerHTML =
-      '<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">' +
-        '<div style="font-size:10px;font-weight:700;color:#059669;margin-bottom:8px">&#128200; Opportunities</div>' +
-        (ot.opportunities||[]).slice(0,5).map(function(o){return '<div style="font-size:11px;color:#374151;margin-bottom:4px">• '+clean(o)+'</div>';}).join('') +
+      '<div class="p-card">' +
+        '<div style="font-size:12px;font-weight:800;color:#059669;margin-bottom:12px;display:flex;align-items:center;gap:6px"><span>&#128200;</span> Opportunities</div>' +
+        (ot.opportunities||[]).slice(0,5).map(function(o){return '<div style="font-size:12px;color:#374151;margin-bottom:6px;line-height:1.5">• '+clean(o)+'</div>';}).join('') +
       '</div>' +
-      '<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">' +
-        '<div style="font-size:10px;font-weight:700;color:#dc2626;margin-bottom:8px">&#9888; Threats</div>' +
-        (ot.threats||[]).slice(0,5).map(function(t){return '<div style="font-size:11px;color:#374151;margin-bottom:4px">• '+clean(t)+'</div>';}).join('') +
+      '<div class="p-card">' +
+        '<div style="font-size:12px;font-weight:800;color:#dc2626;margin-bottom:12px;display:flex;align-items:center;gap:6px"><span>&#9888;</span> Threats</div>' +
+        (ot.threats||[]).slice(0,5).map(function(t){return '<div style="font-size:12px;color:#374151;margin-bottom:6px;line-height:1.5">• '+clean(t)+'</div>';}).join('') +
       '</div>';
   }
 
@@ -1749,12 +1798,15 @@ function renderCompetitiveBrief(bp) {
     var bcWrap = document.getElementById('comp-battlecard-wrap');
     var bcCard = document.getElementById('comp-battlecard-card');
     if (bcWrap) bcWrap.classList.remove('hidden');
-    if (bcCard) bcCard.innerHTML =
-      '<div style="font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:12px">&#9889; Battlecard</div>' +
-      (bc.theirPitch ? '<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#6b7280;margin-bottom:4px">THEIR PITCH</div><div style="font-size:12px;color:#374151;font-style:italic;border-left:3px solid #e5e7eb;padding-left:10px">' + clean(bc.theirPitch) + '</div></div>' : '') +
-      ((bc.ourDifferentiators||[]).length ? '<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#f97316;margin-bottom:6px">OUR DIFFERENTIATORS</div>' + bc.ourDifferentiators.slice(0,5).map(function(d){return '<div style="font-size:11px;color:#374151;margin-bottom:3px">&#10003; '+clean(d)+'</div>';}).join('') + '</div>' : '') +
-      ((bc.objectionHandling||[]).length ? '<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#6366f1;margin-bottom:6px">OBJECTION HANDLING</div>' + bc.objectionHandling.slice(0,3).map(function(o){return '<div style="background:#f9fafb;border-radius:8px;padding:8px;margin-bottom:6px"><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">If they say:</div><div style="font-size:11px;font-style:italic;margin-bottom:6px">"'+clean(o.ifProspectSays)+'"</div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">Respond with:</div><div style="font-size:11px;color:#374151">'+clean(o.respondWith)+'</div></div>';}).join('') + '</div>' : '') +
-      ((bc.landminesToSet||[]).length ? '<div><div style="font-size:10px;font-weight:700;color:#dc2626;margin-bottom:6px">LANDMINES TO SET</div>' + bc.landminesToSet.slice(0,4).map(function(l){return '<div style="font-size:11px;color:#374151;margin-bottom:3px">&#128163; '+clean(l)+'</div>';}).join('') + '</div>' : '');
+    if (bcCard) {
+      bcCard.className = "battlecard";
+      bcCard.innerHTML =
+      '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:16px;display:flex;align-items:center;gap:8px"><span>&#9889;</span> Battlecard</div>' +
+      (bc.theirPitch ? '<div class="battlecard-section"><div class="battlecard-label">THEIR PITCH</div><div style="font-size:13px;color:#cbd5e1;font-style:italic;border-left:3px solid rgba(255,255,255,.2);padding-left:12px">' + clean(bc.theirPitch) + '</div></div>' : '') +
+      ((bc.ourDifferentiators||[]).length ? '<div class="battlecard-section"><div class="battlecard-label">OUR DIFFERENTIATORS</div><div style="display:flex;flex-direction:column;gap:6px">' + bc.ourDifferentiators.slice(0,5).map(function(d){return '<div style="font-size:12px;color:#f8fafc;display:flex;gap:8px"><span style="color:#22c55e;font-weight:800">&#10003;</span> '+clean(d)+'</div>';}).join('') + '</div></div>' : '') +
+      ((bc.objectionHandling||[]).length ? '<div class="battlecard-section"><div class="battlecard-label">OBJECTION HANDLING</div>' + bc.objectionHandling.slice(0,3).map(function(o){return '<div class="objection-block"><div class="objection-q">If they say: "'+clean(o.ifProspectSays)+'"</div><div class="objection-a">Respond with: '+clean(o.respondWith)+'</div></div>';}).join('') + '</div>' : '') +
+      ((bc.landminesToSet||[]).length ? '<div class="battlecard-section" style="margin-bottom:0"><div class="battlecard-label" style="color:#ef4444">LANDMINES TO SET</div><div style="display:flex;flex-direction:column;gap:6px">' + bc.landminesToSet.slice(0,4).map(function(l){return '<div style="font-size:12px;color:#f8fafc;display:flex;gap:8px"><span style="color:#ef4444">&#128163;</span> '+clean(l)+'</div>';}).join('') + '</div></div>' : '');
+    }
   }
 
   // Recommendations
@@ -2036,262 +2088,65 @@ function buildEmailFlowchart(seq) {
 
 function renderEmailSequence(es) {
   var section = document.getElementById('email-sequence-section');
-  if (!section || !es) {
-    console.warn('[Email Sequence] Missing section or data', { section: !!section, es: !!es });
-    return;
-  }
+  if (!section || !es) return;
   section.classList.remove('hidden');
-  console.log('[Email Sequence] Rendering. Keys:', Object.keys(es), 'sequences:', (es.sequences||[]).length);
 
-  // Category Scores
-  var cs = es.categoryScores || {};
-  var catEl = document.getElementById('email-category-scores');
-  var catLabels = { emailCapture: 'Email Capture', leadMagnet: 'Lead Magnet', contentForNurture: 'Content for Nurture', conversionPath: 'Conversion Path' };
-  if (catEl && Object.keys(cs).length) {
-    catEl.classList.remove('hidden');
-    catEl.innerHTML = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">' +
-      Object.keys(catLabels).map(function(key) {
-        var label = catLabels[key];
-        var val = typeof cs[key] === 'number' ? cs[key] : '—';
-        var col = val >= 75 ? '#22c55e' : val >= 55 ? '#f59e0b' : '#ef4444';
-        return '<div style="background:white;border-radius:14px;border:1px solid #f3f4f6;box-shadow:0 1px 4px rgba(0,0,0,0.04);padding:16px;text-align:center;">' +
-          '<div style="font-size:24px;font-weight:800;color:' + col + ';">' + val + '</div>' +
-          '<div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.07em;margin-top:4px;">' + label + '</div>' +
-          '</div>';
-      }).join('') + '</div>';
+  // Category scores
+  var catLabels = { sequenceLogic:'Sequence Logic', personalization:'Personalization', subjectLines:'Subject Lines', conversionFocus:'Conversion' };
+  var catScores = es.categoryScores || {};
+  var catWrap = document.getElementById('email-category-scores');
+  if (catWrap && Object.keys(catScores).length) {
+    catWrap.classList.remove('hidden');
+    catWrap.innerHTML = '<div class="grid grid-cols-2 md:grid-cols-4 gap-3">' + buildCatScores(catScores, catLabels) + '</div>';
   }
 
   // Summary
   var sumCard = document.getElementById('email-summary-card');
   if (sumCard && es.summary) {
     sumCard.classList.remove('hidden');
-    sumCard.innerHTML = '<div style="font-size:10px;font-weight:700;color:#f97316;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Plugin Summary</div>' +
-      '<p style="font-size:14px;color:#374151;line-height:1.7;">' + clean(es.summary) + '</p>';
-  }
-
-  // Capture Audit
-  var ca = es.captureAudit || {};
-  var capCard = document.getElementById('email-capture-card');
-  if (capCard && ((ca.formsFound||[]).length || (ca.leadMagnets||[]).length || (ca.gaps||[]).length || (ca.recommendations||[]).length)) {
-    capCard.classList.remove('hidden');
-    capCard.innerHTML =
-      '<div style="font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:16px;">Email Capture Audit</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">' +
-        '<div>' +
-          '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Forms Found</div>' +
-          ((ca.formsFound||[]).length
-            ? '<ul style="font-size:12px;color:#15803d;list-style:disc;padding-left:16px;margin:0 0 12px;">' + ca.formsFound.map(function(f){return '<li>'+clean(f)+'</li>';}).join('') + '</ul>'
-            : '<p style="font-size:12px;color:#dc2626;font-style:italic;margin-bottom:12px;">&#9888; No email capture forms detected</p>') +
-          ((ca.leadMagnets||[]).length
-            ? '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Lead Magnets</div>' +
-              '<ul style="font-size:12px;color:#1d4ed8;list-style:disc;padding-left:16px;margin:0;">' + ca.leadMagnets.map(function(m){return '<li>'+clean(m)+'</li>';}).join('') + '</ul>'
-            : '') +
-        '</div>' +
-        '<div>' +
-          ((ca.gaps||[]).length
-            ? '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Gaps</div><ul style="font-size:12px;color:#dc2626;list-style:disc;padding-left:16px;margin:0 0 12px;">' + ca.gaps.map(function(g){return '<li>'+clean(g)+'</li>';}).join('') + '</ul>'
-            : '') +
-          ((ca.recommendations||[]).length
-            ? '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Recommendations</div><ul style="font-size:12px;color:#374151;list-style:disc;padding-left:16px;margin:0;">' + ca.recommendations.map(function(r){return '<li>'+clean(r)+'</li>';}).join('') + '</ul>'
-            : '') +
-        '</div>' +
-      '</div>';
+    sumCard.className = "p-card mb-6";
+    sumCard.innerHTML = '<div class="p-card-title">&#128203; Strategy Overview</div>' +
+      '<p style="font-size:13px;color:#4b5563;line-height:1.7;">' + clean(es.summary) + '</p>';
   }
 
   // Sequences
-  var sequences = es.sequences || [];
-  var seqList = document.getElementById('email-sequences-list');
-  if (seqList) {
-    if (!sequences.length) {
-      seqList.innerHTML = es.summary
-        ? '<div style="background:white;border-radius:14px;border:1px solid #f3f4f6;padding:24px;margin-bottom:24px;"><p style="font-size:14px;color:#374151;line-height:1.7;">' + clean(es.summary) + '</p></div>'
-        : '<p style="font-size:13px;color:#9ca3af;font-style:italic;padding:8px;margin-bottom:24px;">Email sequence data is processing.</p>';
-    } else {
-      seqList.innerHTML = sequences.map(function(seq) {
-        var emails = seq.emails || [];
-        var bm = seq.performanceBenchmarks || {};
-        var suppRules = seq.suppressionRules || [];
-        return '<div style="background:white;border-radius:16px;border:1px solid #f3f4f6;box-shadow:0 2px 12px rgba(0,0,0,0.05);margin-bottom:28px;overflow:hidden;">' +
-
-          // Sequence header
-          '<div style="background:#1a1a2e;padding:20px 24px;">' +
-            '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
-              '<span style="background:#f97316;color:white;font-size:11px;font-weight:700;padding:4px 14px;border-radius:99px;">' + clean(seq.sequenceType || 'Sequence') + '</span>' +
-              '<span style="color:#9ca3af;font-size:13px;">' + clean(seq.goal||'') + '</span>' +
+  var seqs = es.sequences || [];
+  var seqWrap = document.getElementById('email-sequences-wrap');
+  if (seqWrap && seqs.length) {
+    seqWrap.classList.remove('hidden');
+    seqWrap.innerHTML = seqs.map(function(seq) {
+      return '<div class="p-card" style="margin-bottom:24px">' +
+        '<div style="font-size:18px;font-weight:800;color:#1a1a2e;margin-bottom:4px">' + clean(seq.sequenceName) + '</div>' +
+        '<div style="font-size:12px;color:#6b7280;margin-bottom:16px">' + clean(seq.goal) + '</div>' +
+        (seq.emails||[]).map(function(email, idx) {
+          return '<div class="email-card">' +
+            '<div class="email-header">' +
+              '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+                '<div>' +
+                  '<div class="email-num">EMAIL ' + (idx+1) + '</div>' +
+                  '<div class="email-subject">' + clean(email.subjectLine) + '</div>' +
+                '</div>' +
+                '<span style="background:rgba(255,255,255,.1);border-radius:99px;padding:4px 10px;font-size:10px;font-weight:700;color:#fff;white-space:nowrap">&#128336; ' + clean(email.timing) + '</span>' +
+              '</div>' +
             '</div>' +
-            (seq.audience ? '<p style="color:#6b7280;font-size:12px;margin-top:8px;margin-bottom:0;">' + clean(seq.audience) + '</p>' : '') +
-          '</div>' +
-
-          '<div style="padding:24px;">' +
-
-          // Narrative arc
-          (seq.narrativeArc
-            ? '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px 18px;margin-bottom:18px;">' +
-                '<div style="font-size:10px;font-weight:700;color:#ea580c;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Narrative Arc</div>' +
-                '<p style="font-size:13px;color:#374151;line-height:1.65;margin:0;">' + clean(seq.narrativeArc) + '</p>' +
-              '</div>'
-            : '') +
-
-          // Logic strip (exit / re-entry / suppression)
-          (seq.exitCondition || seq.reEntryRule || suppRules.length
-            ? '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px;">' +
-                (seq.exitCondition
-                  ? '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px 16px;">' +
-                      '<div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">&#10003; Exit Condition</div>' +
-                      '<p style="font-size:12px;color:#374151;margin:0;">' + clean(seq.exitCondition) + '</p>' +
-                    '</div>'
-                  : '') +
-                (seq.reEntryRule
-                  ? '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;">' +
-                      '<div style="font-size:10px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">&#8635; Re-Entry Rule</div>' +
-                      '<p style="font-size:12px;color:#374151;margin:0;">' + clean(seq.reEntryRule) + '</p>' +
-                    '</div>'
-                  : '') +
-                (suppRules.length
-                  ? '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;">' +
-                      '<div style="font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">&#9888; Suppression Rules</div>' +
-                      '<ul style="font-size:12px;color:#374151;list-style:disc;padding-left:14px;margin:0;">' + suppRules.map(function(r){return '<li>'+clean(r)+'</li>';}).join('') + '</ul>' +
-                    '</div>'
-                  : '') +
-              '</div>'
-            : '') +
-
-          // Branching logic
-          (seq.branchingLogicNotes
-            ? '<div style="background:#f9fafb;border:1px solid #f3f4f6;border-radius:10px;padding:14px 18px;margin-bottom:18px;">' +
-                '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">&#9654; Branching Logic</div>' +
-                '<p style="font-size:13px;color:#374151;line-height:1.65;margin:0;">' + clean(seq.branchingLogicNotes) + '</p>' +
-              '</div>'
-            : '') +
-
-          // Performance benchmarks
-          (bm.expectedOpenRate || bm.expectedCTR || bm.expectedConversionRate || bm.expectedUnsubRate
-            ? '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:20px;background:#f9fafb;border:1px solid #f3f4f6;border-radius:12px;padding:16px 20px;margin-bottom:20px;">' +
-                (bm.expectedOpenRate ? '<div style="text-align:center;"><div style="font-size:20px;font-weight:800;color:#1a1a2e;">' + clean(bm.expectedOpenRate) + '</div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;">Open Rate</div></div>' : '') +
-                (bm.expectedCTR ? '<div style="text-align:center;"><div style="font-size:20px;font-weight:800;color:#1a1a2e;">' + clean(bm.expectedCTR) + '</div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;">CTR</div></div>' : '') +
-                (bm.expectedConversionRate ? '<div style="text-align:center;"><div style="font-size:20px;font-weight:800;color:#1a1a2e;">' + clean(bm.expectedConversionRate) + '</div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;">Conversion</div></div>' : '') +
-                (bm.expectedUnsubRate ? '<div style="text-align:center;"><div style="font-size:20px;font-weight:800;color:#ef4444;">' + clean(bm.expectedUnsubRate) + '</div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;">Unsub Rate</div></div>' : '') +
-                (bm.reviewCadence ? '<div style="margin-left:auto;"><div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">Review Cadence</div><div style="font-size:12px;color:#374151;">' + clean(bm.reviewCadence) + '</div></div>' : '') +
-              '</div>'
-            : '') +
-
-          // Email cards
-          '<div style="display:flex;flex-direction:column;gap:16px;margin-bottom:20px;">' +
-          emails.map(function(em) {
-            var subjects = (em.subjectLineOptions || []).filter(Boolean);
-            var bodyLines = clean(em.bodyCopy || '');
-            return '<div style="border:1px solid #f3f4f6;border-radius:14px;overflow:hidden;">' +
-              '<div style="background:#f9fafb;border-bottom:1px solid #f3f4f6;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;">' +
-                '<span style="font-size:12px;font-weight:700;color:#f97316;">Email ' + (em.emailNumber||'') + '</span>' +
-                '<span style="font-size:11px;color:#9ca3af;">' + clean(em.timing||'') + '</span>' +
-              '</div>' +
-              '<div style="padding:18px;">' +
-                (em.purpose ? '<p style="font-size:12px;color:#9ca3af;font-style:italic;margin-bottom:12px;">' + clean(em.purpose) + '</p>' : '') +
-                (subjects.length
-                  ? '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Subject Lines</div>' +
-                    '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">' +
-                    subjects.map(function(s){ return '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#1a1a2e;">' + clean(s) + '</div>'; }).join('') +
-                    '</div>'
-                  : '') +
-                (em.previewText ? '<div style="font-size:11px;color:#9ca3af;font-style:italic;margin-bottom:12px;">&#9654; Preview: ' + clean(em.previewText) + '</div>' : '') +
-                (bodyLines ? '<div style="background:#f9fafb;border:1px solid #f3f4f6;border-radius:10px;padding:18px;font-size:13px;color:#374151;line-height:1.75;white-space:pre-line;margin-bottom:14px;">' + bodyLines + '</div>' : '') +
-                (em.primaryCTA ? '<div style="margin-bottom:10px;"><span style="display:inline-block;background:#f97316;color:white;font-size:12px;font-weight:700;padding:9px 20px;border-radius:8px;">' + clean(em.primaryCTA) + '</span></div>' : '') +
-                (em.segmentConditionNotes ? '<div style="font-size:11px;color:#9ca3af;border-top:1px solid #f3f4f6;padding-top:10px;margin-top:8px;">' + clean(em.segmentConditionNotes) + '</div>' : '') +
-              '</div>' +
-            '</div>';
-          }).join('') +
-          '</div>' +
-
-          // SVG flowchart
-          (emails.length ? '<div style="margin-bottom:8px;">' + buildEmailFlowchart(seq) + '</div>' : '') +
-
-          '</div>' +
-        '</div>';
-      }).join('');
-    }
-  }
-
-  // Metrics to Track
-  var mt = es.metricsToTrack || {};
-  var metricsWrap = document.getElementById('email-metrics-wrap');
-  var metricsCard = document.getElementById('email-metrics-card');
-  if (metricsWrap && metricsCard && (mt.primaryConversionMetric || (mt.perEmailMetrics||[]).length || (mt.sequenceLevelMetrics||[]).length)) {
-    metricsWrap.classList.remove('hidden');
-    metricsCard.innerHTML =
-      (mt.primaryConversionMetric ? '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Primary Conversion Metric</div><p style="font-size:14px;font-weight:700;color:#1a1a2e;margin:0 0 16px;">' + clean(mt.primaryConversionMetric) + '</p>' : '') +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">' +
-        ((mt.perEmailMetrics||[]).length ? '<div><div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Per-Email</div><ul style="font-size:12px;color:#374151;list-style:disc;padding-left:16px;margin:0;">' + mt.perEmailMetrics.map(function(m){return '<li style="margin-bottom:4px;">'+clean(m)+'</li>';}).join('') + '</ul></div>' : '') +
-        ((mt.sequenceLevelMetrics||[]).length ? '<div><div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Sequence-Level</div><ul style="font-size:12px;color:#374151;list-style:disc;padding-left:16px;margin:0;">' + mt.sequenceLevelMetrics.map(function(m){return '<li style="margin-bottom:4px;">'+clean(m)+'</li>';}).join('') + '</ul></div>' : '') +
-      '</div>' +
-      (mt.reviewCadence ? '<div style="margin-top:14px;font-size:12px;color:#9ca3af;border-top:1px solid #f3f4f6;padding-top:12px;">&#128197; Review Cadence: ' + clean(mt.reviewCadence) + '</div>' : '');
+            '<div class="email-body">' +
+              '<div style="font-size:11px;font-weight:700;color:#9ca3af;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">PURPOSE: ' + clean(email.purpose) + '</div>' +
+              '<div class="email-copy">' + clean(email.bodyCopy) + '</div>' +
+              (email.cta ? '<div class="email-cta">' + clean(email.cta) + '</div>' : '') +
+            '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>';
+    }).join('');
   }
 
   // Recommendations
   var recs = es.recommendations || [];
   var recsWrap = document.getElementById('email-recs-wrap');
-  var recsList = document.getElementById('email-recs-list');
-  if (recsWrap && recsList && recs.length) {
+  if (recsWrap && recs.length) {
     recsWrap.classList.remove('hidden');
-    recsList.innerHTML = recs.map(function(r) {
-      var impLower = (r.expectedImpact||'').toLowerCase();
-      var impCol = impLower === 'high' ? '#dc2626' : impLower === 'medium' ? '#d97706' : '#6b7280';
-      var impBg  = impLower === 'high' ? '#fef2f2' : impLower === 'medium' ? '#fffbeb' : '#f3f4f6';
-      var isQuick = (r.effort||'').toLowerCase().includes('quick');
-      return '<div style="background:white;border:1px solid #f3f4f6;border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">' +
-        '<div style="display:flex;align-items:flex-start;gap:12px;">' +
-          '<div style="min-width:24px;height:24px;background:#fff7ed;border:1px solid #fed7aa;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#f97316;">' + (r.priority||'') + '</div>' +
-          '<div style="flex:1;">' +
-            '<div style="font-size:14px;font-weight:600;color:#1a1a2e;margin-bottom:6px;">' + clean(r.action||'') + '</div>' +
-            (r.rationale ? '<p style="font-size:12px;color:#6b7280;margin:0 0 10px;line-height:1.6;">' + clean(r.rationale) + '</p>' : '') +
-            '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-              '<span style="font-size:10px;font-weight:700;color:' + impCol + ';background:' + impBg + ';padding:2px 10px;border-radius:99px;">' + clean(r.expectedImpact||'') + ' Impact</span>' +
-              '<span style="font-size:10px;font-weight:700;color:' + (isQuick?'#166534':'#1d4ed8') + ';background:' + (isQuick?'#f0fdf4':'#eff6ff') + ';padding:2px 10px;border-radius:99px;">' + clean(r.effort||'') + '</span>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-  }
-
-  // A/B Tests
-  var abTests = es.abTestSuggestions || [];
-  var abWrap = document.getElementById('email-abtests-wrap');
-  var abList = document.getElementById('email-abtests-list');
-  if (abWrap && abList && abTests.length) {
-    abWrap.classList.remove('hidden');
-    abList.innerHTML = abTests.map(function(t) {
-      return '<div style="background:white;border:1px solid #f3f4f6;border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">' +
-        '<div style="font-size:14px;font-weight:600;color:#1a1a2e;margin-bottom:12px;">&#128203; ' + clean(t.whatToTest||'') + '</div>' +
-        (t.variantA
-          ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
-              '<div style="background:#f9fafb;border-radius:10px;padding:12px;font-size:12px;">' +
-                '<div style="font-weight:700;color:#6b7280;margin-bottom:4px;">A &mdash; Control</div>' +
-                '<div style="color:#374151;">' + clean(t.variantA) + '</div>' +
-              '</div>' +
-              '<div style="background:#eff6ff;border-radius:10px;padding:12px;font-size:12px;">' +
-                '<div style="font-weight:700;color:#2563eb;margin-bottom:4px;">B &mdash; Test</div>' +
-                '<div style="color:#374151;">' + clean(t.variantB||'') + '</div>' +
-              '</div>' +
-            '</div>'
-          : '') +
-        '<div style="display:flex;gap:16px;flex-wrap:wrap;">' +
-          (t.howToSplit ? '<div style="font-size:11px;color:#9ca3af;">Split: ' + clean(t.howToSplit) + '</div>' : '') +
-          (t.howToMeasure ? '<div style="font-size:11px;color:#9ca3af;">&#128200; ' + clean(t.howToMeasure) + '</div>' : '') +
-          (t.expectedLift ? '<div style="font-size:11px;font-weight:700;color:#16a34a;">&#8599; ' + clean(t.expectedLift) + '</div>' : '') +
-        '</div>' +
-      '</div>';
-    }).join('');
-  }
-
-  // After-Sequence Next Steps
-  var nextSteps = es.afterSequenceOptions || [];
-  var nsWrap = document.getElementById('email-nextsteps-wrap');
-  var nsList = document.getElementById('email-nextsteps-list');
-  if (nsWrap && nsList && nextSteps.length) {
-    nsWrap.classList.remove('hidden');
-    nsList.innerHTML = nextSteps.map(function(step) {
-      return '<span style="display:inline-flex;align-items:center;gap:6px;background:white;border:1px solid #e5e7eb;border-radius:99px;padding:7px 16px;font-size:12px;color:#374151;box-shadow:0 1px 4px rgba(0,0,0,0.04);">&#8594; ' + clean(typeof step === 'string' ? step : (step.option || '')) + '</span>';
-    }).join('');
+    recsWrap.innerHTML = '<div class="section-label">Recommendations</div>' +
+      '<div>' + recs.slice(0,6).map(buildRecCard).join('') + '</div>';
   }
 }
 
