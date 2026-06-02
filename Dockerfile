@@ -69,13 +69,14 @@ RUN npm install --omit=dev --no-audit --no-fund
 # Run extraction as root during build. The binary is decompressed
 # to /app/chromium-binary and marked executable. This is a permanent
 # file in the image layer — no runtime writes to /tmp needed.
+RUN mkdir -p /app/chromium-binary
 RUN node -e " \
   const { execSync } = require('child_process'); \
   import('@sparticuz/chromium').then(async (mod) => { \
     const chromium = mod.default; \
     const p = await chromium.executablePath('/app/chromium-binary'); \
     console.log('[Build] @sparticuz/chromium extracted to:', p); \
-    execSync('chmod 755 /app/chromium-binary'); \
+    execSync('chmod -R 755 /app/chromium-binary'); \
     execSync('ls -lh /app/chromium-binary'); \
   }).catch(err => { console.error('[Build] Extraction failed:', err); process.exit(1); }); \
 "
