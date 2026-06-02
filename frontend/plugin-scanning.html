@@ -399,7 +399,11 @@ async function boot() {
     try {
       const res  = await fetch('/api/audit/' + auditId);
       const data = res.ok ? await res.json() : null;
-      if (data && data.status === 'complete') {
+
+      // Only skip to report if truly complete AND we didn't just arrive from
+      // plugin-select.html (which means a new run was just triggered)
+      const fromSelect = urlParams.get('from') === 'select';
+      if (data && data.status === 'complete' && !fromSelect) {
         window.location.replace('report.html?auditId=' + auditId);
         return;
       }
@@ -410,6 +414,7 @@ async function boot() {
     listenSSE();
     return;
   }
+
 
   // Case B: no auditId — recover from session
   if (!session.url) {
