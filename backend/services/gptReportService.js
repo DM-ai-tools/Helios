@@ -403,40 +403,43 @@ ${p.claude_output}
 
   console.log(`[GPT Report] Launching Puppeteer to generate PDF...`);
 
-  // Build launch options — works on both Windows dev and Linux/Docker (Railway).
-  // On Linux the bundled Chromium is used automatically (no executablePath needed).
-  // On Windows we prefer local Chrome if installed; otherwise fall back to bundled Chromium.
+  // ─── Container-safe Puppeteer launch ──────────────────────────
+  // On Railway, PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium (system Chromium)
+  // is set in the Dockerfile. On Windows dev, prefer local Chrome.
   const isLinux = process.platform !== 'win32';
 
   const launchOptions = {
     headless: true,
-    // Give Chrome a writable user-data and crash-dumps directory in the container.
-    // Without userDataDir, Chrome tries to write to locations it may not own.
+    protocolTimeout: 120_000,   // handles Railway cold-start delays
     ...(isLinux && { userDataDir: '/tmp/puppeteer-gpt-user-data' }),
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',       // use /tmp instead of /dev/shm
+      '--disable-dev-shm-usage',        // use /tmp instead of /dev/shm
       '--disable-gpu',
       '--no-first-run',
       '--no-default-browser-check',
       '--disable-extensions',
       '--disable-popup-blocking',
-      '--no-zygote',                   // no zygote forking in containers
-      '--single-process',              // runs renderer in same process — stops crashpad subprocess
-      '--disable-crash-reporter',      // disable crash reporting
-      '--crash-dumps-dir=/tmp',        // give crashpad a writable DB path (fixes the error directly)
+      '--disable-crash-reporter',       // disable crashpad crash reporting
+      '--disable-breakpad',             // disable breakpad crash handler
+      '--no-crashpad',                  // explicitly disable crashpad (Chrome 127+)
       '--disable-background-timer-throttling',
       '--disable-backgrounding-occluded-windows',
       '--disable-renderer-backgrounding',
     ],
   };
 
-  if (process.platform === 'win32') {
+  // Use system Chromium if PUPPETEER_EXECUTABLE_PATH is set in environment
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    console.log(`[GPT Report] Using system Chromium: ${launchOptions.executablePath}`);
+  } else if (process.platform === 'win32') {
     const localChrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
     if (fs.existsSync(localChrome)) {
       launchOptions.executablePath = localChrome;
-      delete launchOptions.userDataDir; // Windows uses default profile
+      delete launchOptions.userDataDir;
+      console.log(`[GPT Report] Using local Chrome: ${launchOptions.executablePath}`);
     }
   }
 
