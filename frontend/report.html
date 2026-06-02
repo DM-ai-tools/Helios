@@ -736,6 +736,10 @@ function buildActionPlan(synthesis, pluginOutputs) {
   return rows.slice(0, 15);
 }
 
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.08 });
+
 function populateReport(data) {
   var url      = data.url      || session.url      || '---';
   var industry = data.industry || session.industry || '---';
@@ -837,19 +841,19 @@ function populateReport(data) {
 
   // Trigger IntersectionObserver for all fade sections
   // Immediately mark any already-in-viewport sections as visible
-  document.querySelectorAll('.fade-section').forEach(function(el) {
-    var rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight && rect.bottom >= 0) {
-      el.classList.add('visible');
-    } else {
-      observer.observe(el);
-    }
+  // Make all non-hidden fade-sections visible after render
+  // Using requestAnimationFrame to ensure the DOM has settled after classList.remove('hidden')
+  requestAnimationFrame(function() {
+    document.querySelectorAll('.fade-section').forEach(function(el) {
+      if (!el.classList.contains('hidden')) {
+        el.classList.add('visible');
+      } else {
+        observer.observe(el);
+      }
+    });
   });
 }
 
-var observer = new IntersectionObserver(function(entries) {
-  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible'); });
-}, { threshold: 0.08 });
 
 function sevClass(sev) {
   var s = (sev||'').toLowerCase();
