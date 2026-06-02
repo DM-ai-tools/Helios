@@ -191,7 +191,259 @@
     .toast-message { font-size: 0.875rem; font-weight: 500; color: #1a1a2e; }
     @keyframes slideUp { to { transform: translateY(0); opacity: 1; } }
     @keyframes slideDown { to { transform: translateY(100%); opacity: 0; } }
-  </style>
+  
+    /* ── Premium Report Styles ───────────────────────────────── */
+    :root {
+      --orange: #f97316;
+      --navy: #1a1a2e;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --indigo: #6366f1;
+      --surface: #f8f9fa;
+      --card: #ffffff;
+      --border: #e8eaed;
+      --text: #1f2937;
+      --muted: #6b7280;
+    }
+
+    /* Score pillars */
+    .score-pillar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 16px;
+      text-align: center;
+      box-shadow: 0 1px 6px rgba(0,0,0,.05);
+      transition: transform .2s;
+    }
+    .score-pillar:hover { transform: translateY(-2px); }
+
+    /* Section headers */
+    .section-label {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10px; font-weight: 800; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--orange);
+      background: #fff7ed; border-radius: 6px; padding: 3px 10px;
+      margin-bottom: 12px;
+    }
+
+    /* Premium card */
+    .p-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.05);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .p-card-title {
+      font-size: 14px; font-weight: 700; color: var(--navy);
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Rec card */
+    .rec-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex; gap: 14px; align-items: flex-start;
+    }
+    .rec-num {
+      min-width: 28px; height: 28px; border-radius: 50%;
+      background: #fff7ed; color: var(--orange);
+      font-size: 12px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .rec-body { flex: 1; min-width: 0; }
+    .rec-title { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 4px; }
+    .rec-rationale { font-size: 11px; color: var(--muted); margin-bottom: 8px; line-height: 1.5; }
+    .rec-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    .badge {
+      font-size: 10px; font-weight: 700; padding: 3px 10px;
+      border-radius: 99px; display: inline-block;
+    }
+    .badge-high { background: #fef2f2; color: #dc2626; }
+    .badge-med  { background: #fffbeb; color: #d97706; }
+    .badge-low  { background: #f0fdf4; color: #16a34a; }
+    .badge-quick { background: #ecfdf5; color: #059669; }
+    .badge-strat  { background: #eff6ff; color: #2563eb; }
+    .badge-time { background: #f3f4f6; color: #6b7280; }
+
+    /* Channel card */
+    .channel-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    }
+    .channel-title { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+    .channel-rationale { font-size: 11px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+    .channel-tag {
+      display: inline-block; background: #f3f4f6;
+      color: #374151; border-radius: 99px;
+      padding: 3px 10px; font-size: 10px; margin: 2px;
+    }
+
+    /* Calendar table */
+    .cal-table { width: 100%; border-collapse: collapse; }
+    .cal-table th {
+      padding: 10px 14px; font-size: 10px; font-weight: 800;
+      letter-spacing: .08em; text-transform: uppercase;
+      color: var(--muted); background: #f8f9fa; text-align: left;
+      border-bottom: 2px solid var(--border);
+    }
+    .cal-table td {
+      padding: 10px 14px; font-size: 12px; color: var(--text);
+      border-bottom: 1px solid #f3f4f6; vertical-align: top;
+    }
+    .cal-table tr:last-child td { border-bottom: none; }
+    .cal-table tr:hover td { background: #fafafa; }
+    .week-pill {
+      display: inline-block; background: var(--orange);
+      color: white; font-size: 10px; font-weight: 800;
+      padding: 2px 8px; border-radius: 99px; white-space: nowrap;
+    }
+
+    /* Competitor profile card */
+    .comp-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.05);
+    }
+    .comp-name { font-size: 16px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+    .comp-tagline {
+      font-style: italic; color: var(--orange); font-size: 12px;
+      border-left: 3px solid var(--orange); padding-left: 10px;
+      margin-bottom: 12px; line-height: 1.4;
+    }
+    .swot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .swot-box { border-radius: 10px; padding: 10px; }
+    .swot-box-s { background: #f0fdf4; }
+    .swot-box-w { background: #fef2f2; }
+    .swot-label { font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+    .swot-label-s { color: #059669; }
+    .swot-label-w { color: #dc2626; }
+    .swot-item { font-size: 10px; color: #374151; padding: 1px 0; }
+
+    /* Score tile */
+    .cat-tile {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px 14px; text-align: center;
+    }
+    .cat-score { font-size: 28px; font-weight: 900; line-height: 1; }
+    .cat-label { font-size: 10px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+
+    /* Flow diagram */
+    .flow-diagram {
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-size: 11px; line-height: 1.6;
+      background: #0f172a; color: #94a3b8;
+      border-radius: 12px; padding: 20px;
+      overflow-x: auto; white-space: pre;
+    }
+    .flow-diagram .flow-node { color: #38bdf8; }
+    .flow-diagram .flow-arrow { color: #f97316; }
+
+    /* Email card */
+    .email-card {
+      border: 1px solid var(--border); border-radius: 14px;
+      overflow: hidden; margin-bottom: 16px;
+    }
+    .email-header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #2d2d4e 100%);
+      padding: 14px 18px;
+    }
+    .email-num { font-size: 10px; font-weight: 700; color: #94a3b8; margin-bottom: 2px; }
+    .email-subject { font-size: 14px; font-weight: 700; color: white; margin-bottom: 2px; }
+    .email-timing { font-size: 10px; color: #f97316; }
+    .email-body { background: white; padding: 16px 18px; }
+    .email-copy {
+      font-size: 12px; color: #374151; line-height: 1.7;
+      white-space: pre-wrap; max-height: 200px; overflow-y: auto;
+    }
+    .email-cta {
+      display: inline-flex; align-items: center;
+      background: var(--orange); color: white;
+      font-size: 11px; font-weight: 700;
+      padding: 8px 18px; border-radius: 8px; margin-top: 12px;
+    }
+
+    /* Battlecard */
+    .battlecard {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      border-radius: 16px; padding: 24px; color: white;
+    }
+    .battlecard-section { margin-bottom: 20px; }
+    .battlecard-label {
+      font-size: 9px; font-weight: 800; letter-spacing: .12em;
+      text-transform: uppercase; color: #f97316; margin-bottom: 10px;
+    }
+    .battlecard-item { font-size: 11px; color: #cbd5e1; padding: 3px 0; }
+    .objection-block {
+      background: rgba(255,255,255,.05); border-radius: 10px;
+      padding: 12px; margin-bottom: 8px;
+    }
+    .objection-q { font-size: 10px; color: #94a3b8; margin-bottom: 4px; }
+    .objection-a { font-size: 11px; color: #e2e8f0; }
+
+    /* Matrix table */
+    .matrix-table { width: 100%; border-collapse: collapse; }
+    .matrix-table th {
+      padding: 10px 14px; font-size: 10px; font-weight: 800;
+      background: #f8f9fa; color: var(--muted);
+      border-bottom: 2px solid var(--border); text-align: left;
+    }
+    .matrix-table td {
+      padding: 10px 14px; font-size: 11px; color: var(--text);
+      border-bottom: 1px solid #f3f4f6; vertical-align: top;
+    }
+    .matrix-table tr:last-child td { border-bottom: none; }
+    .matrix-table .yours { color: var(--orange); font-weight: 600; }
+
+    /* Gap analysis */
+    .gap-box { border-radius: 12px; padding: 16px; }
+    .gap-item { font-size: 11px; color: #374151; padding: 3px 0; line-height: 1.5; }
+
+    /* Next steps chips */
+    .next-step-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: white; border: 1px solid #e5e7eb;
+      border-radius: 99px; padding: 8px 16px;
+      font-size: 11px; color: #374151;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+      margin: 4px;
+    }
+
+    /* Section divider */
+    .plugin-section-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 24px; padding-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+    }
+    .plugin-section-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      background: linear-gradient(135deg, #fff7ed, #fed7aa);
+      flex-shrink: 0;
+    }
+
+    /* Findings table */
+    .findings-row {
+      border-bottom: 1px solid #f3f4f6;
+      padding: 14px 0;
+    }
+    .findings-row:last-child { border-bottom: none; }
+    .severity-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px;
+    }
+
+    </style>
 </head>
 <body>
 
@@ -400,9 +652,11 @@
 
   <!-- --- COMPETITIVE BRIEF SECTION (Perplexity) --- -->
   <div id="competitive-brief-section" class="mb-10 hidden fade-section">
-    <div class="flex items-center gap-2 mb-5">
-      <span class="text-xl">&#9874;</span>
-      <h2 class="text-xl font-bold text-[#1a1a2e]">Competitive Intelligence</h2>
+    <div class="plugin-section-header">
+      <div class="plugin-section-icon" style="background:linear-gradient(135deg,#f0fdf4,#bbf7d0)">⚔️</div>
+      <div>
+        <h2 style="font-size:20px;font-weight:900;color:#1a1a2e;margin:0">Competitive Intelligence</h2>
+      </div>
     </div>
     <div id="comp-summary" class="text-sm text-gray-600 mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm"></div>
     <div class="grid md:grid-cols-2 gap-6" id="comp-profiles-grid"></div>
@@ -439,12 +693,14 @@
 
   <!-- --- CAMPAIGN PLAN SECTION --- -->
   <div id="campaign-plan-section" class="mb-10 hidden fade-section">
-    <div class="flex items-center gap-2 mb-5">
-      <span class="text-xl">&#128200;</span>
-      <h2 class="text-xl font-bold text-[#1a1a2e]">90-Day Campaign Plan</h2>
+    <div class="plugin-section-header">
+      <div class="plugin-section-icon" style="background:linear-gradient(135deg,#faf5ff,#e9d5ff)">📣</div>
+      <div>
+        <h2 style="font-size:20px;font-weight:900;color:#1a1a2e;margin:0">90-Day Campaign Plan</h2>
+      </div>
     </div>
     <!-- Campaign overview card -->
-    <div id="campaign-overview-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6"></div>
+    <div id="campaign-overview-card" class="p-card mb-6"></div>
     <!-- Audience + Messages grid -->
     <div class="grid md:grid-cols-2 gap-6 mb-6">
       <div id="campaign-audience-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hidden"></div>
@@ -490,9 +746,9 @@
 
   <!-- --- EMAIL SEQUENCE SECTION --- -->
   <div id="email-sequence-section" class="mb-10 hidden fade-section">
-    <div class="flex items-center gap-2 mb-5">
-      <span class="text-xl">&#128140;</span>
-      <h2 class="text-xl font-bold text-[#1a1a2e]">Email Sequence Plan</h2>
+    <div class="plugin-section-header">
+      <div class="plugin-section-icon" style="background:linear-gradient(135deg,#ecfdf5,#a7f3d0)">📧</div>
+      <div><h2 style="font-size:20px;font-weight:900;color:#1a1a2e;margin:0">Email Sequence Strategy</h2></div>
     </div>
     <!-- Category score pills -->
     <div id="email-category-scores" class="hidden mb-6"></div>
@@ -527,9 +783,11 @@
 
   <!-- --- SEO AUDIT SECTION --- -->
   <div id="seo-audit-section" class="mb-10 hidden fade-section">
-    <div class="flex items-center gap-2 mb-5">
-      <span class="text-xl">&#128269;</span>
-      <h2 class="text-xl font-bold text-[#1a1a2e]">SEO Audit</h2>
+    <div class="plugin-section-header">
+      <div class="plugin-section-icon" style="background:linear-gradient(135deg,#fff7ed,#fed7aa)">🔍</div>
+      <div>
+        <h2 style="font-size:20px;font-weight:900;color:#1a1a2e;margin:0">SEO Audit</h2>
+      </div>
     </div>
     <div id="seo-summary-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 hidden"></div>
     <!-- Tech checklist + On-page issues -->
@@ -576,9 +834,11 @@
 
   <!-- --- CONTENT & COPY SECTION --- -->
   <div id="content-copy-section" class="mb-10 hidden fade-section">
-    <div class="flex items-center gap-2 mb-5">
-      <span class="text-xl">&#9997;</span>
-      <h2 class="text-xl font-bold text-[#1a1a2e]">Content &amp; Copy</h2>
+    <div class="plugin-section-header">
+      <div class="plugin-section-icon" style="background:linear-gradient(135deg,#fff1f2,#fecdd3)">✍️</div>
+      <div>
+        <h2 style="font-size:20px;font-weight:900;color:#1a1a2e;margin:0">Content & Copy</h2>
+      </div>
     </div>
     <div id="cc-summary-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 hidden"></div>
     <!-- Voice + Blog post -->
@@ -1232,13 +1492,17 @@ function renderContentCopy(cc) {
 
 // clean() — sanitizes Claude output strings before injecting into the DOM.
 // Converts literal \n → real newlines, strips escaped quotes, trims whitespace.
+function stripTags(s) {
+  // Remove HTML tags the AI may have injected into string fields
+  return String(s || '').replace(/<[^>]*>/g, ' ').replace(/&lt;[^&]*&gt;/g,'').replace(/  +/g,' ').trim();
+}
 function clean(str) {
   if (str === null || str === undefined) return '';
-  return String(str)
-    .replace(/\\n/g, '\n')   // literal \n  → newline
-    .replace(/\\t/g, '  ')   // literal \t  → spaces
-    .replace(/\\'/g, "'")   // literal \'  → '
-    .replace(/\\"/g, '"')   // literal \"  → "
+  return stripTags(String(str)
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '  ')
+    .replace(/\\'/g, "'")
+    .replace(/\\"/g, '"'))
     .replace(/\\r/g, '')     // strip \r
     .trim();
 }
@@ -1246,34 +1510,37 @@ function clean(str) {
 
 // ── Shared rec card builder ────────────────────────────────────────
 function buildRecCard(r) {
-  var impLower = (r.expectedImpact || '').toLowerCase();
-  var impCol   = impLower === 'high' ? '#dc2626' : impLower === 'medium' ? '#d97706' : '#6b7280';
-  var effortLower = (r.effort || '').toLowerCase();
-  var effortCol = effortLower.indexOf('quick') !== -1 ? '#059669' : '#6366f1';
-  return '<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">' +
-    '<div class="flex items-start gap-3">' +
-      '<div style="min-width:24px;height:24px;border-radius:50%;background:#fff7ed;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#f97316">' + (r.priority || '•') + '</div>' +
-      '<div class="flex-1 min-w-0">' +
-        '<div class="text-sm font-semibold text-[#1a1a2e] mb-1">' + clean(r.action || r.title || '') + '</div>' +
-        (r.rationale ? '<div class="text-xs text-gray-500 mb-2">' + clean(r.rationale) + '</div>' : '') +
-        '<div class="flex flex-wrap gap-2">' +
-          (r.expectedImpact ? '<span style="font-size:10px;font-weight:700;color:' + impCol + ';background:' + (impLower==='high'?'#fef2f2':impLower==='medium'?'#fffbeb':'#f9fafb') + ';padding:2px 8px;border-radius:99px">' + clean(r.expectedImpact) + ' Impact</span>' : '') +
-          (r.effort ? '<span style="font-size:10px;font-weight:600;color:' + effortCol + ';background:' + (effortLower.indexOf('quick')!==-1?'#f0fdf4':'#eff6ff') + ';padding:2px 8px;border-radius:99px">' + clean(r.effort) + '</span>' : '') +
-          (r.timeframe ? '<span style="font-size:10px;color:#9ca3af;padding:2px 8px">' + clean(r.timeframe) + '</span>' : '') +
-        '</div>' +
-      '</div>' +
-    '</div>' +
+  var imp = (r.expectedImpact || '').toLowerCase();
+  var eff = (r.effort || '').toLowerCase();
+  var impBadge = imp==='high'?'badge-high':imp==='medium'?'badge-med':'badge-low';
+  var effBadge = eff.indexOf('quick')!==-1?'badge-quick':'badge-strat';
+  return '<div class="rec-card">'+
+    '<div class="rec-num">'+(r.priority||'•')+'</div>'+
+    '<div class="rec-body">'+
+      '<div class="rec-title">'+clean(r.action||r.title||'')+'</div>'+
+      (r.rationale?'<div class="rec-rationale">'+clean(r.rationale)+'</div>':'')+
+      '<div class="rec-badges">'+
+        (r.expectedImpact?'<span class="badge '+impBadge+'">'+clean(r.expectedImpact)+' Impact</span>':'')+
+        (r.effort?'<span class="badge '+effBadge+'">'+clean(r.effort)+'</span>':'')+
+        (r.timeframe?'<span class="badge badge-time">'+clean(r.timeframe)+'</span>':'')+
+        (r.dependencies&&r.dependencies!=='None'&&r.dependencies!=='none'?'<span class="badge badge-time">Dep: '+clean(r.dependencies)+'</span>':'')+
+      '</div>'+
+    '</div>'+
   '</div>';
 }
 
 function buildCatScores(scores, labels) {
   return Object.entries(labels).map(function(entry) {
     var key = entry[0], label = entry[1];
-    var val = typeof scores[key] === 'number' ? scores[key] : 0;
+    var val = typeof scores[key] === 'number' ? scores[key] : parseInt(scores[key]) || 0;
     var col = val >= 70 ? '#22c55e' : val >= 50 ? '#f59e0b' : '#ef4444';
-    return '<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">' +
-      '<div style="font-size:22px;font-weight:900;color:' + col + '">' + val + '</div>' +
-      '<div style="font-size:10px;color:#9ca3af;margin-top:2px">' + label + '</div>' +
+    var bg  = val >= 70 ? '#f0fdf4' : val >= 50 ? '#fffbeb' : '#fef2f2';
+    return '<div class="cat-tile" style="border-top:3px solid '+col+'">'+
+      '<div class="cat-score" style="color:'+col+'">'+val+'</div>'+
+      '<div style="font-size:9px;color:#6b7280;margin-top:2px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">'+label+'</div>'+
+      '<div style="height:4px;background:#f3f4f6;border-radius:99px;margin-top:10px;overflow:hidden">'+
+        '<div style="height:100%;width:'+val+'%;background:'+col+';border-radius:99px;transition:width 1s ease"></div>'+
+      '</div>'+
     '</div>';
   }).join('');
 }
@@ -1505,130 +1772,136 @@ function renderCampaignPlan(cp) {
   if (!section || !cp) return;
   section.classList.remove('hidden');
 
-  // Overview card
+  // Campaign overview
   var ov = cp.campaignOverview || {};
   var ovCard = document.getElementById('campaign-overview-card');
-  if (ovCard) {
+  if (ovCard && (ov.campaignName || cp.summary)) {
     ovCard.innerHTML =
-      '<div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-1">Campaign</div>' +
-      '<div class="text-xl font-bold text-[#1a1a2e] mb-2">' + clean(ov.campaignName || 'Campaign Plan') + '</div>' +
-      '<p class="text-sm text-gray-600 mb-4">' + clean(ov.summary || cp.summary || '') + '</p>' +
-      (ov.primaryObjective ? '<div class="inline-flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2 text-xs font-semibold text-orange-700">&#127919; ' + clean(ov.primaryObjective) + '</div>' : '');
+      (ov.campaignName ? '<div style="font-size:20px;font-weight:900;color:#1a1a2e;margin-bottom:6px">'+clean(ov.campaignName)+'</div>' : '')+
+      (cp.summary ? '<p style="font-size:13px;color:#4b5563;line-height:1.7;margin-bottom:14px">'+clean(cp.summary)+'</p>' : '')+
+      (ov.primaryObjective ? '<div style="background:#fff7ed;border-left:4px solid #f97316;border-radius:0 10px 10px 0;padding:12px 16px;margin-bottom:10px"><div style="font-size:10px;font-weight:800;color:#f97316;margin-bottom:4px;letter-spacing:.08em">PRIMARY OBJECTIVE</div><div style="font-size:13px;color:#1a1a2e;font-weight:600">'+clean(ov.primaryObjective)+'</div></div>' : '')+
+      ((ov.secondaryObjectives||[]).length ? '<div style="display:flex;flex-wrap:wrap;gap:8px">'+(ov.secondaryObjectives).map(function(s){return '<span style="background:#f3f4f6;color:#374151;border-radius:99px;padding:4px 12px;font-size:11px">'+clean(s)+'</span>';}).join('')+'</div>' : '');
   }
 
-  // Audience card
-  var ta = cp.targetAudience || {};
+  // Target audience
+  var aud = cp.targetAudience || {};
   var audCard = document.getElementById('campaign-audience-card');
-  if (audCard && (ta.primarySegment || (ta.painPoints||[]).length)) {
-    audCard.classList.remove('hidden');
+  if (audCard && aud.primarySegment) {
     audCard.innerHTML =
-      '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Target Audience</div>' +
-      (ta.primarySegment ? '<div class="text-xs text-gray-500 mb-1"><strong>Primary:</strong> ' + clean(ta.primarySegment) + '</div>' : '') +
-      (ta.secondarySegment ? '<div class="text-xs text-gray-500 mb-3"><strong>Secondary:</strong> ' + clean(ta.secondarySegment) + '</div>' : '') +
-      ((ta.painPoints||[]).length ? '<div class="text-xs font-semibold text-gray-700 mb-1">Pain Points</div><ul class="text-xs text-gray-500 list-disc pl-4 space-y-1">' + ta.painPoints.map(function(p){return '<li>'+clean(p)+'</li>';}).join('') + '</ul>' : '');
+      '<div class="p-card-title">&#127919; Target Audience</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">'+
+        '<div><div style="font-size:10px;color:#9ca3af;font-weight:600;margin-bottom:4px">PRIMARY</div><div style="font-size:13px;font-weight:700;color:#1a1a2e">'+clean(aud.primarySegment)+'</div></div>'+
+        (aud.secondarySegment ? '<div><div style="font-size:10px;color:#9ca3af;font-weight:600;margin-bottom:4px">SECONDARY</div><div style="font-size:13px;color:#4b5563">'+clean(aud.secondarySegment)+'</div></div>' : '')+
+      '</div>'+
+      ((aud.painPoints||[]).length ? '<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#dc2626;margin-bottom:6px">&#128165; Pain Points</div><div style="display:flex;flex-direction:column;gap:4px">'+aud.painPoints.map(function(p){return '<div style="font-size:11px;color:#374151;display:flex;gap:8px"><span style="color:#dc2626;flex-shrink:0">•</span>'+clean(p)+'</div>';}).join('')+'</div></div>' : '')+
+      ((aud.whereTheySpendTime||[]).length ? '<div><div style="font-size:10px;font-weight:700;color:#f97316;margin-bottom:6px">&#128205; Where They Spend Time</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+aud.whereTheySpendTime.map(function(p){return '<span style="background:#fff7ed;border:1px solid #fed7aa;color:#c2410c;border-radius:99px;padding:3px 12px;font-size:11px">'+clean(p)+'</span>';}).join('')+'</div></div>' : '');
   }
 
-  // Key messages card
+  // Key messages
   var km = cp.keyMessages || {};
-  var msgCard = document.getElementById('campaign-messages-card');
-  if (msgCard && km.coreMessage) {
-    msgCard.classList.remove('hidden');
-    msgCard.innerHTML =
-      '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Key Messages</div>' +
-      '<div class="bg-orange-50 border-l-4 border-orange-400 pl-3 py-2 mb-3 text-sm font-semibold text-[#1a1a2e]">' + clean(km.coreMessage) + '</div>' +
-      ((km.supportingMessages||[]).length ? '<ul class="text-xs text-gray-600 list-disc pl-4 space-y-1">' + km.supportingMessages.map(function(m){return '<li>'+clean(m)+'</li>';}).join('') + '</ul>' : '');
+  var kmCard = document.getElementById('campaign-messages-card');
+  if (kmCard && km.coreMessage) {
+    kmCard.innerHTML =
+      '<div class="p-card-title">&#128172; Key Messages</div>'+
+      '<div style="background:#f0fdf4;border-left:4px solid #22c55e;border-radius:0 10px 10px 0;padding:14px 16px;margin-bottom:14px"><div style="font-size:10px;font-weight:800;color:#059669;margin-bottom:4px">CORE MESSAGE</div><div style="font-size:14px;font-weight:700;color:#1a1a2e;line-height:1.5">'+clean(km.coreMessage)+'</div></div>'+
+      ((km.supportingMessages||[]).length ? '<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#6b7280;margin-bottom:6px">SUPPORTING MESSAGES</div>'+km.supportingMessages.map(function(m){return '<div style="font-size:12px;color:#374151;padding:5px 0;border-bottom:1px solid #f3f4f6">'+clean(m)+'</div>';}).join('')+'</div>' : '')+
+      ((km.proofPoints||[]).length ? '<div><div style="font-size:10px;font-weight:700;color:#6366f1;margin-bottom:6px">PROOF POINTS</div><div style="display:flex;flex-direction:column;gap:4px">'+km.proofPoints.map(function(p){return '<div style="font-size:11px;color:#374151;display:flex;gap:8px"><span style="color:#6366f1;font-weight:700">&#10003;</span>'+clean(p)+'</div>';}).join('')+'</div>' : '');
   }
 
-  // Channel strategy
+  // Channels
   var channels = cp.channelStrategy || [];
-  if (channels.length) {
-    var chWrap = document.getElementById('campaign-channels-wrap');
-    var chGrid = document.getElementById('campaign-channels-grid');
-    if (chWrap) chWrap.classList.remove('hidden');
-    if (chGrid) chGrid.innerHTML = channels.map(function(ch) {
+  var chWrap = document.getElementById('campaign-channels-wrap');
+  var chGrid = document.getElementById('campaign-channels-grid');
+  if (chWrap && channels.length) {
+    chWrap.classList.remove('hidden');
+    chGrid.innerHTML = channels.map(function(ch) {
       var effort = (ch.effortLevel||'').toLowerCase();
-      var effortColor = effort==='high'?'#dc2626':effort==='medium'?'#f59e0b':'#16a34a';
-      return '<div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">' +
-        '<div class="flex items-center justify-between mb-2">' +
-          '<span class="font-bold text-sm text-[#1a1a2e]">' + clean(ch.channel) + '</span>' +
-          '<span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:#f3f4f6;color:' + effortColor + '">' + clean(ch.effortLevel) + '</span>' +
-        '</div>' +
-        '<p class="text-xs text-gray-500 mb-2">' + clean(ch.rationale) + '</p>' +
-        ((ch.contentFormats||[]).length ? '<div class="flex flex-wrap gap-1">' + ch.contentFormats.map(function(f){return '<span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">'+clean(f)+'</span>';}).join('') + '</div>' : '') +
+      var effortBg = effort==='high'?'#fef2f2':effort==='medium'?'#fffbeb':'#f0fdf4';
+      var effortCol = effort==='high'?'#dc2626':effort==='medium'?'#d97706':'#16a34a';
+      var formats = (ch.contentFormats||[]).filter(function(f){ return typeof f === 'string' && f.trim(); });
+      return '<div class="channel-card">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'+
+          '<div class="channel-title">'+clean(ch.channel)+'</div>'+
+          '<span style="font-size:10px;font-weight:700;background:'+effortBg+';color:'+effortCol+';border-radius:99px;padding:3px 10px;white-space:nowrap">'+clean(ch.effortLevel)+' Effort</span>'+
+        '</div>'+
+        (ch.rationale ? '<p class="channel-rationale">'+clean(ch.rationale)+'</p>' : '')+
+        (formats.length ? '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">'+formats.map(function(f){return '<span class="channel-tag">'+clean(f)+'</span>';}).join('')+'</div>' : '')+
+        (ch.budgetAllocationSuggestion ? '<div style="font-size:10px;color:#9ca3af;margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6">&#128181; '+clean(ch.budgetAllocationSuggestion)+'</div>' : '')+
       '</div>';
     }).join('');
   }
 
   // Content calendar
   var cal = cp.contentCalendar || [];
-  if (cal.length) {
-    var calWrap = document.getElementById('campaign-calendar-wrap');
-    var calRows = document.getElementById('campaign-calendar-rows');
-    if (calWrap) calWrap.classList.remove('hidden');
-    if (calRows) calRows.innerHTML = cal.map(function(row) {
-      return '<tr>' +
-        '<td class="font-bold text-[#f97316]">W' + (row.week||'') + '</td>' +
-        '<td>' + clean(row.contentPiece) + '</td>' +
-        '<td style="color:#6b7280;font-size:11px">' + clean(row.channel) + '</td>' +
-        '<td style="color:#9ca3af;font-size:11px">' + clean(row.ownerOrNotes) + '</td>' +
+  var calWrap = document.getElementById('campaign-calendar-wrap');
+  var calRows = document.getElementById('campaign-calendar-rows');
+  if (calWrap && cal.length) {
+    calWrap.classList.remove('hidden');
+    calRows.innerHTML = cal.map(function(item) {
+      return '<tr>'+
+        '<td><span class="week-pill">W'+clean(item.week)+'</span></td>'+
+        '<td style="font-weight:600">'+clean(item.contentPiece)+'</td>'+
+        '<td><span style="background:#eff6ff;color:#2563eb;border-radius:99px;padding:2px 8px;font-size:10px;font-weight:600">'+clean(item.channel)+'</span></td>'+
+        '<td style="color:#6b7280;font-size:11px">'+clean(item.ownerOrNotes||item.notes||'')+'</td>'+
       '</tr>';
     }).join('');
   }
 
   // KPIs
-  var sm = cp.successMetrics || {};
-  var kpiCard = document.getElementById('campaign-kpis-card');
-  if (kpiCard && sm.primaryKPI) {
-    kpiCard.classList.remove('hidden');
-    kpiCard.innerHTML =
-      '<div class="text-sm font-bold text-[#1a1a2e] mb-3">Success Metrics</div>' +
-      '<div class="flex items-center gap-2 mb-3"><span class="text-xs font-bold text-white bg-[#f97316] px-2 py-1 rounded">Primary KPI</span><span class="text-sm text-[#1a1a2e] font-semibold">' + clean(sm.primaryKPI) + '</span></div>' +
-      ((sm.secondaryKPIs||[]).length ? '<ul class="text-xs text-gray-600 list-disc pl-4 space-y-1">' + sm.secondaryKPIs.map(function(k){return '<li>'+clean(k)+'</li>';}).join('') + '</ul>' : '');
+  var kpis = cp.successMetrics || {};
+  var kpisCard = document.getElementById('campaign-kpis-card');
+  if (kpisCard && (kpis.primaryKPI || (kpis.secondaryKPIs||[]).length)) {
+    kpisCard.classList.remove('hidden');
+    kpisCard.innerHTML =
+      '<div class="p-card-title">&#127942; Success Metrics</div>'+
+      (kpis.primaryKPI ? '<div style="background:#fff7ed;border-left:4px solid #f97316;border-radius:0 10px 10px 0;padding:12px 16px;margin-bottom:14px"><div style="font-size:10px;font-weight:800;color:#f97316;margin-bottom:3px">PRIMARY KPI</div><div style="font-size:14px;font-weight:700;color:#1a1a2e">'+clean(kpis.primaryKPI)+'</div></div>' : '')+
+      ((kpis.secondaryKPIs||[]).length ? '<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#6b7280;margin-bottom:6px">SECONDARY KPIs</div>'+(kpis.secondaryKPIs).map(function(k){return '<div style="font-size:12px;color:#374151;padding:5px 0;border-bottom:1px solid #f3f4f6;display:flex;gap:8px"><span style="color:#f97316">&#9656;</span>'+clean(k)+'</div>';}).join('')+'</div>' : '')+
+      (kpis.reportingCadence ? '<div style="font-size:11px;color:#9ca3af">&#128197; Reporting: '+clean(kpis.reportingCadence)+'</div>' : '');
   }
 
-  // Content pieces needed
+  // Content assets needed
   var assets = cp.contentPiecesNeeded || [];
   if (assets.length) {
     var aWrap = document.getElementById('campaign-assets-wrap');
     var aList = document.getElementById('campaign-assets-list');
     if (aWrap) aWrap.classList.remove('hidden');
     if (aList) aList.innerHTML = assets.map(function(a) {
-      var pColor = a.priority && a.priority.toLowerCase().indexOf('must') !== -1 ? '#dc2626' : '#6b7280';
-      return '<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-start gap-3">' +
-        '<span style="font-size:10px;font-weight:700;color:'+pColor+';background:'+(pColor==='#dc2626'?'#fef2f2':'#f9fafb')+';padding:2px 8px;border-radius:99px;white-space:nowrap;margin-top:2px">'+clean(a.priority||'')+'</span>' +
-        '<div><div class="text-xs font-semibold text-[#1a1a2e]">'+clean(a.assetNameAndType||a.name||'')+'</div>' +
-        '<div class="text-xs text-gray-500 mt-1">'+clean(a.description||'')+'</div>' +
-        (a.timeline ? '<div class="text-xs text-gray-400 mt-1">&#128197; '+clean(a.timeline)+'</div>' : '') +
-        '</div></div>';
+      var isMust = (a.priority||'').toLowerCase().indexOf('must') !== -1;
+      return '<div style="background:white;border:1px solid #e8eaed;border-radius:12px;padding:14px;display:flex;gap:12px;align-items:flex-start">'+
+        '<span style="font-size:10px;font-weight:700;background:'+(isMust?'#fef2f2':'#f3f4f6')+';color:'+(isMust?'#dc2626':'#6b7280')+';border-radius:99px;padding:3px 10px;white-space:nowrap;flex-shrink:0;margin-top:2px">'+clean(a.priority||'')+'</span>'+
+        '<div><div style="font-size:13px;font-weight:600;color:#1a1a2e;margin-bottom:2px">'+clean(a.assetNameAndType||a.name||'')+'</div>'+
+        '<div style="font-size:11px;color:#6b7280">'+clean(a.description||'')+'</div>'+
+        (a.timeline?'<div style="font-size:10px;color:#9ca3af;margin-top:4px">&#128197; '+clean(a.timeline)+'</div>':'')+'</div>'+
+      '</div>';
     }).join('');
   }
 
-  // Budget allocation
+  // Budget
   var budget = cp.budgetAllocation || {};
   if (budget.breakdown || budget.productionVsDistribution) {
     var budWrap = document.getElementById('campaign-budget-wrap');
     var budCard = document.getElementById('campaign-budget-card');
     if (budWrap) budWrap.classList.remove('hidden');
     if (budCard) budCard.innerHTML =
-      '<div class="text-sm font-bold text-[#1a1a2e] mb-3">&#128181; Budget Allocation</div>' +
-      ((budget.breakdown||[]).length ? '<div class="space-y-2 mb-3">' + budget.breakdown.map(function(b){return '<div class="text-xs text-gray-600 flex items-center gap-2"><span class="text-[#f97316] font-bold">•</span>'+clean(b)+'</div>';}).join('') + '</div>' : '') +
-      (budget.productionVsDistribution ? '<div class="text-xs font-semibold text-gray-600 mb-1">Production vs Distribution: <span class="text-[#1a1a2e]">'+clean(budget.productionVsDistribution)+'</span></div>' : '') +
-      (budget.contingencyRecommendation ? '<div class="text-xs text-gray-400 italic mt-2">'+clean(budget.contingencyRecommendation)+'</div>' : '');
+      '<div class="p-card-title">&#128181; Budget Allocation</div>'+
+      ((budget.breakdown||[]).length ? '<div style="margin-bottom:12px">'+budget.breakdown.map(function(b){return '<div style="font-size:12px;color:#374151;padding:6px 0;border-bottom:1px solid #f3f4f6;display:flex;gap:8px"><span style="color:#f97316">&#9656;</span>'+clean(b)+'</div>';}).join('')+'</div>' : '')+
+      (budget.productionVsDistribution ? '<div style="font-size:12px;color:#4b5563;margin-bottom:8px"><span style="font-weight:600">Production vs Distribution:</span> '+clean(budget.productionVsDistribution)+'</div>' : '')+
+      (budget.contingencyRecommendation ? '<div style="font-size:11px;color:#9ca3af;font-style:italic;background:#f9fafb;border-radius:8px;padding:10px">'+clean(budget.contingencyRecommendation)+'</div>' : '');
   }
 
-  // Risks & mitigations
+  // Risks
   var risks = cp.risksAndMitigations || [];
   if (risks.length) {
     var riWrap = document.getElementById('campaign-risks-wrap');
     var riList = document.getElementById('campaign-risks-list');
     if (riWrap) riWrap.classList.remove('hidden');
     if (riList) riList.innerHTML = risks.map(function(r) {
-      return '<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">' +
-        '<div class="flex items-start gap-3">' +
-          '<span style="font-size:16px">&#9888;&#65039;</span>' +
-          '<div><div class="text-xs font-semibold text-[#1a1a2e] mb-1">'+clean(r.risk||r.title||'')+'</div>' +
-          '<div class="text-xs text-gray-500"><span class="font-semibold">Mitigation:</span> '+clean(r.mitigation||r.response||'')+'</div></div>' +
-        '</div>' +
+      return '<div style="background:white;border:1px solid #e8eaed;border-radius:12px;padding:16px">'+
+        '<div style="display:flex;gap:10px;align-items:flex-start">'+
+          '<span style="font-size:18px;flex-shrink:0">&#9888;&#65039;</span>'+
+          '<div><div style="font-size:13px;font-weight:600;color:#1a1a2e;margin-bottom:4px">'+clean(r.risk||r.title||'')+'</div>'+
+          '<div style="font-size:11px;color:#6b7280"><span style="font-weight:600;color:#059669">Mitigation: </span>'+clean(r.mitigation||r.response||'')+'</div></div>'+
+        '</div>'+
       '</div>';
     }).join('');
   }
@@ -1648,7 +1921,9 @@ function renderCampaignPlan(cp) {
     var nsWrapC = document.getElementById('campaign-nextsteps-wrap');
     var nsListC = document.getElementById('campaign-nextsteps-list');
     if (nsWrapC) nsWrapC.classList.remove('hidden');
-    if (nsListC) nsListC.innerHTML = nextS.map(function(s){return '<span style="display:inline-flex;align-items:center;gap:6px;background:white;border:1px solid #e5e7eb;border-radius:99px;padding:7px 16px;font-size:12px;color:#374151;box-shadow:0 1px 4px rgba(0,0,0,0.04)">&#8594; '+clean(typeof s==='string'?s:(s.step||''))+'</span>';}).join('');
+    if (nsListC) nsListC.innerHTML = nextS.map(function(s){
+      return '<span class="next-step-chip">&#8594; '+clean(typeof s==='string'?s:(s.step||s.action||''))+'</span>';
+    }).join('');
   }
 }
 
