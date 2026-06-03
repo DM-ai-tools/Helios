@@ -133,11 +133,11 @@ app.get('*', (req, res) => {
 });
 
 // ─── Start Server ─────────────────────────────────────────────
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`
 ╔═══════════════════════════════════════════╗
 ║   ClickTrends AI Audit Server             ║
-║   http://localhost:${PORT}                   ║
+║   http://0.0.0.0:${PORT}                     ║
 ║                                           ║
 ║   Env check:                              ║
 ║   ANTHROPIC_API_KEY: ${process.env.ANTHROPIC_API_KEY ? '✓ set' : '✗ missing'}             ║

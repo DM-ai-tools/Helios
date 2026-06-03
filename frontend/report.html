@@ -757,7 +757,7 @@
     <!-- Capture audit -->
     <div id="email-capture-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 hidden"></div>
     <!-- Sequences -->
-    <div id="email-sequences-list"></div>
+    <div id="email-sequences-wrap"></div>
     <!-- Metrics to track -->
     <div id="email-metrics-wrap" class="mb-6 hidden">
       <h3 class="text-base font-bold text-[#1a1a2e] mb-3">Metrics to Track</h3>
@@ -855,6 +855,7 @@
     <div class="grid md:grid-cols-2 gap-6 mb-6">
       <div id="cc-lp-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hidden"></div>
       <div id="cc-casestudy-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hidden"></div>
+    </div>
     <!-- Press release -->
     <div id="cc-press-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 hidden"></div>
     <!-- Category Scores -->
@@ -866,7 +867,6 @@
     <div id="cc-recs-wrap" class="hidden mb-6">
       <div class="text-xs font-bold text-[#f97316] uppercase tracking-wider mb-3">Recommendations</div>
       <div id="cc-recs-list" class="space-y-3"></div>
-    </div>
     </div>
   </div>
 
@@ -1248,65 +1248,75 @@ function renderSeoAudit(sa) {
   var tech = sa.technicalChecklist || [];
   var techCard = document.getElementById('seo-tech-card');
   if (techCard && tech.length) {
+    techCard.classList.remove('hidden');
     techCard.className = "p-card";
     techCard.innerHTML = '<div class="p-card-title">&#9881; Technical SEO</div>' +
       '<div style="display:flex;flex-direction:column;gap:8px">' + tech.map(function(t) {
         var status = (t.status||'').toLowerCase();
         var icon = status === 'pass' ? '&#10004;&#65039;' : status === 'warning' ? '&#9888;&#65039;' : '&#10060;';
-        return '<div style="display:flex;gap:10px;font-size:12px;color:#374151;padding:8px 0;border-bottom:1px solid #f3f4f6"><span style="flex-shrink:0">' + icon + '</span><span><span style="font-weight:600">' + clean(t.item) + ':</span> ' + clean(t.details) + '</span></div>';
+        // Plugin uses t.check (not t.item)
+        return '<div style="display:flex;gap:10px;font-size:12px;color:#374151;padding:8px 0;border-bottom:1px solid #f3f4f6"><span style="flex-shrink:0">' + icon + '</span><span><span style="font-weight:600">' + clean(t.check || t.item || '') + ':</span> ' + clean(t.details) + '</span></div>';
       }).join('') + '</div>';
   }
 
-  // On-page issues
+  // On-page issues — plugin produces: pageUrl, issue, severity, recommendedFix
   var onp = sa.onPageIssues || [];
   var onpCard = document.getElementById('seo-onpage-card');
   if (onpCard && onp.length) {
+    onpCard.classList.remove('hidden');
     onpCard.className = "p-card";
     onpCard.innerHTML = '<div class="p-card-title">&#128196; On-Page Issues</div>' +
       '<div style="display:flex;flex-direction:column;gap:8px">' + onp.map(function(o) {
         var sev = (o.severity||'').toLowerCase();
-        var col = sev==='high'?'#dc2626':sev==='medium'?'#f59e0b':'#3b82f6';
-        var bg = sev==='high'?'#fef2f2':sev==='medium'?'#fffbeb':'#eff6ff';
+        var col = sev==='critical'||sev==='high'?'#dc2626':sev==='medium'?'#f59e0b':'#3b82f6';
+        var bg  = sev==='critical'||sev==='high'?'#fef2f2':sev==='medium'?'#fffbeb':'#eff6ff';
         return '<div style="background:'+bg+';border-left:3px solid '+col+';padding:10px;border-radius:0 8px 8px 0">' +
           '<div style="font-size:12px;font-weight:700;color:#1a1a2e;margin-bottom:2px">' + clean(o.issue) + '</div>' +
-          '<div style="font-size:11px;color:#4b5563">URL: <span style="font-family:monospace">' + clean(o.affectedUrl) + '</span></div>' +
-          '<div style="font-size:11px;color:#1a1a2e;margin-top:6px;font-weight:600">Fix: ' + clean(o.fix) + '</div>' +
+          '<div style="font-size:11px;color:#4b5563">URL: <span style="font-family:monospace">' + clean(o.pageUrl || o.affectedUrl || '') + '</span></div>' +
+          '<div style="font-size:11px;color:#1a1a2e;margin-top:6px;font-weight:600">Fix: ' + clean(o.recommendedFix || o.fix || '') + '</div>' +
         '</div>';
       }).join('') + '</div>';
   }
 
-  // Keywords
+  // Keywords — plugin produces: keyword, estimatedDifficulty, opportunityScore, currentRanking, intent, recommendedContentType
   var kw = sa.keywordOpportunities || [];
   if (kw.length) {
     var kwWrap = document.getElementById('seo-keywords-wrap');
     var kwRows = document.getElementById('seo-keywords-rows');
     if (kwWrap) kwWrap.classList.remove('hidden');
     if (kwRows) {
-      kwWrap.querySelector('table').className = 'matrix-table';
-      kwRows.innerHTML = kw.map(function(k) {
-        var diff = k.difficulty || 0;
-        var diffCol = diff > 70 ? '#dc2626' : diff > 40 ? '#f59e0b' : '#22c55e';
+      kwRows.innerHTML = kw.slice(0,20).map(function(k) {
+        var diff = (k.estimatedDifficulty || k.difficulty || '').toLowerCase();
+        var opp  = (k.opportunityScore  || '').toLowerCase();
+        var diffCol = diff==='hard'?'#dc2626':diff==='moderate'?'#f59e0b':'#22c55e';
+        var oppCol  = opp==='high'?'#1d4ed8':opp==='medium'?'#7c3aed':'#374151';
         return '<tr>' +
           '<td><span style="font-weight:700;color:#1a1a2e">' + clean(k.keyword) + '</span></td>' +
-          '<td>' + clean(k.volume) + '</td>' +
-          '<td><span style="color:'+diffCol+';font-weight:600">' + diff + '/100</span></td>' +
+          '<td><span style="font-size:10px;font-weight:700;color:'+diffCol+'">' + clean(k.estimatedDifficulty || k.difficulty || '') + '</span></td>' +
           '<td style="color:#6b7280">' + clean(k.intent) + '</td>' +
+          '<td><span style="font-size:10px;font-weight:700;color:'+oppCol+'">' + clean(k.opportunityScore || '') + '</span></td>' +
+          '<td style="color:#6b7280;font-size:10px">' + clean(k.recommendedContentType || '') + '</td>' +
         '</tr>';
       }).join('');
     }
   }
 
-  // Content gaps
+  // Content gaps — plugin produces: topic, whyItMatters, recommendedFormat, priority, estimatedEffort
   var cg = sa.contentGaps || [];
   if (cg.length) {
     var cgWrap = document.getElementById('seo-gaps-wrap');
     var cgGrid = document.getElementById('seo-gaps-grid');
     if (cgWrap) cgWrap.classList.remove('hidden');
     if (cgGrid) cgGrid.innerHTML = cg.map(function(g) {
+      var pri = (g.priority||'').toLowerCase();
+      var priCol = pri==='high'?'#dc2626':pri==='medium'?'#d97706':'#6b7280';
       return '<div class="gap-box p-card">' +
-        '<div style="font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:4px">' + clean(g.topic) + '</div>' +
-        '<div style="font-size:12px;color:#6b7280;margin-bottom:10px">' + clean(g.competitorsCoveringIt) + '</div>' +
-        '<div style="font-size:11px;font-weight:600;color:#2563eb;background:#eff6ff;padding:6px;border-radius:6px">Action: ' + clean(g.suggestedAction) + '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">' +
+          '<div style="font-size:13px;font-weight:700;color:#1a1a2e">' + clean(g.topic) + '</div>' +
+          (g.priority ? '<span style="font-size:10px;font-weight:700;color:'+priCol+';background:#f3f4f6;border-radius:99px;padding:2px 8px;flex-shrink:0">' + clean(g.priority) + '</span>' : '') +
+        '</div>' +
+        (g.whyItMatters ? '<div style="font-size:11px;color:#6b7280;margin-bottom:8px">' + clean(g.whyItMatters) + '</div>' : '') +
+        (g.recommendedFormat ? '<div style="font-size:11px;font-weight:600;color:#2563eb;background:#eff6ff;padding:6px;border-radius:6px">Format: ' + clean(g.recommendedFormat) + '</div>' : '') +
       '</div>';
     }).join('');
   }
@@ -1318,8 +1328,8 @@ function renderSeoAudit(sa) {
     var cRows = document.getElementById('seo-comp-rows');
     if (cWrap) {
       cWrap.classList.remove('hidden');
-      cWrap.querySelector('.text-xs.font-bold').className = 'section-label';
-      cWrap.querySelector('table').className = 'matrix-table';
+      var cTable = cWrap.querySelector('table');
+      if (cTable) cTable.className = 'matrix-table';
     }
     if (cRows) cRows.innerHTML = comp.map(function(r){
       return '<tr>'+
@@ -1348,10 +1358,7 @@ function renderSeoAudit(sa) {
     var srWrap = document.getElementById('seo-recs-wrap');
     var srList = document.getElementById('seo-recs-list');
     if (srWrap) srWrap.classList.remove('hidden');
-    if (srList) {
-      srWrap.querySelector('.text-xs.font-bold').className = 'section-label';
-      srList.innerHTML = seoRecs.slice(0,8).map(buildRecCard).join('');
-    }
+    if (srList) srList.innerHTML = seoRecs.slice(0,8).map(buildRecCard).join('');
   }
 }
 
@@ -1495,10 +1502,7 @@ function renderContentCopy(cc) {
     var ccRWrap = document.getElementById('cc-recs-wrap');
     var ccRList = document.getElementById('cc-recs-list');
     if (ccRWrap) ccRWrap.classList.remove('hidden');
-    if (ccRList) {
-      ccRWrap.querySelector('.text-xs.font-bold').className = 'section-label';
-      ccRList.innerHTML = ccRecs.slice(0,6).map(buildRecCard).join('');
-    }
+    if (ccRList) ccRList.innerHTML = ccRecs.slice(0,6).map(buildRecCard).join('');
   }
 }
 
@@ -1579,28 +1583,34 @@ function renderBrandReview(bp) {
     if (bSub) bSub.innerHTML = 'Brand Score: ' + (bp.score || 'N/A') + '/100';
   }
 
-  // Legal & Compliance Flags
+  // Legal & Compliance Flags — plugin produces: issue, quote, location, riskLevel, recommendedAction
   var flags = bp.legalAndComplianceFlags || [];
   if (flags.length) {
     var fw = document.getElementById('legal-flags-wrap');
     var fc = document.getElementById('legal-flag-count');
     var fl = document.getElementById('legal-flags-list');
     if (fw) fw.classList.remove('hidden');
-    if (fc) fc.innerHTML = flags.length + ' Issues Found';
+    if (fc) fc.innerHTML = flags.length + ' Issue' + (flags.length === 1 ? '' : 's') + ' Found';
     if (fl) {
       fl.innerHTML = flags.map(function(f) {
+        var risk = (f.riskLevel||'').toLowerCase();
+        var riskCol = risk==='critical'?'#7f1d1d':risk==='high'?'#991b1b':'#92400e';
         return '<div class="rec-card" style="border-left:3px solid #dc2626">' +
           '<div class="rec-body">' +
-            '<div class="rec-title" style="color:#991b1b">' + clean(f.issue) + '</div>' +
-            '<div class="rec-rationale">' + clean(f.explanation) + '</div>' +
-            '<div style="font-size:11px;color:#166534;background:#f0fdf4;padding:6px 10px;border-radius:6px;font-weight:600">Fix: ' + clean(f.recommendedFix) + '</div>' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+              '<div class="rec-title" style="color:#991b1b">' + clean(f.issue) + '</div>' +
+              (f.riskLevel ? '<span style="font-size:10px;font-weight:700;background:#fef2f2;color:'+riskCol+';border-radius:99px;padding:2px 8px">' + clean(f.riskLevel) + '</span>' : '') +
+            '</div>' +
+            (f.quote ? '<div class="rec-rationale" style="font-style:italic;border-left:3px solid #fca5a5;padding-left:8px">"' + clean(f.quote) + '"</div>' : '') +
+            (f.location ? '<div style="font-size:10px;color:#9ca3af;margin-bottom:6px">&#128205; ' + clean(f.location) + '</div>' : '') +
+            '<div style="font-size:11px;color:#166534;background:#f0fdf4;padding:6px 10px;border-radius:6px;font-weight:600">Fix: ' + clean(f.recommendedAction || f.recommendedFix || '') + '</div>' +
           '</div>' +
         '</div>';
       }).join('');
     }
   }
 
-  // Detailed Findings
+  // Detailed Findings — plugin produces: issue, location, severity, quote, suggestion
   var df = bp.detailedFindings || [];
   if (df.length) {
     var dfw = document.getElementById('findings-wrap');
@@ -1609,53 +1619,55 @@ function renderBrandReview(bp) {
     if (dfr) {
       dfr.innerHTML = df.map(function(f) {
         var s = (f.severity||'').toLowerCase();
-        var col = s==='high'?'#dc2626':s==='medium'?'#f59e0b':'#3b82f6';
-        return '<div class="findings-row" style="display:flex;gap:12px;align-items:flex-start">' +
-          '<div class="severity-dot" style="background:'+col+'"></div>' +
-          '<div>' +
-            '<div style="font-size:13px;font-weight:600;color:#1a1a2e;margin-bottom:4px">' + clean(f.element) + '</div>' +
-            '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">Current: ' + clean(f.currentState) + '</div>' +
-            '<div style="font-size:11px;color:#059669;font-weight:600">Required: ' + clean(f.requiredChange) + '</div>' +
-          '</div>' +
-        '</div>';
+        var col = s==='high'||s==='critical'?'#dc2626':s==='medium'?'#f59e0b':'#3b82f6';
+        return '<tr>' +
+          '<td>' +
+            '<div style="font-size:12px;font-weight:700;color:#1a1a2e;margin-bottom:4px">' + clean(f.issue) + '</div>' +
+            (f.quote ? '<div style="font-size:11px;color:#6b7280;font-style:italic;border-left:2px solid #e5e7eb;padding-left:8px">"' + clean(f.quote) + '"</div>' : '') +
+          '</td>' +
+          '<td style="font-size:11px;color:#6b7280">' + clean(f.location) + '</td>' +
+          '<td><span style="font-size:10px;font-weight:700;background:' + (s==='high'||s==='critical'?'#fef2f2':s==='medium'?'#fffbeb':'#eff6ff') + ';color:'+col+';border-radius:99px;padding:2px 8px">' + clean(f.severity) + '</span></td>' +
+          '<td style="font-size:11px;color:#059669;font-weight:600">' + clean(f.suggestion || '') + '</td>' +
+        '</tr>';
       }).join('');
     }
   }
 
-  // Before & After Sections
+  // Before & After Sections — plugin produces: originalText, suggestedRevision, reason, severity
   var revs = bp.revisedSections || [];
   if (revs.length) {
     var baw = document.getElementById('before-after-wrap');
     var bal = document.getElementById('before-after-list');
     if (baw) baw.classList.remove('hidden');
     if (bal) {
-      bal.innerHTML = revs.map(function(r) {
+      bal.innerHTML = revs.map(function(r, i) {
         return '<div class="p-card">' +
-          '<div class="p-card-title">' + clean(r.sectionName) + '</div>' +
+          (r.severity ? '<div style="display:inline-block;font-size:10px;font-weight:700;background:' + (r.severity.toLowerCase()==='high'?'#fef2f2':'#fffbeb') + ';color:' + (r.severity.toLowerCase()==='high'?'#dc2626':'#d97706') + ';border-radius:99px;padding:2px 10px;margin-bottom:10px">' + clean(r.severity) + ' severity</div>' : '') +
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
             '<div style="background:#fef2f2;border-radius:8px;padding:12px"><div style="font-size:9px;font-weight:800;color:#dc2626;margin-bottom:6px">ORIGINAL</div><div style="font-size:11px;color:#7f1d1d;line-height:1.5">' + clean(r.originalText) + '</div></div>' +
-            '<div style="background:#f0fdf4;border-radius:8px;padding:12px"><div style="font-size:9px;font-weight:800;color:#059669;margin-bottom:6px">REVISED</div><div style="font-size:11px;color:#14532d;line-height:1.5;font-weight:500">' + clean(r.revisedText) + '</div></div>' +
+            '<div style="background:#f0fdf4;border-radius:8px;padding:12px"><div style="font-size:9px;font-weight:800;color:#059669;margin-bottom:6px">REVISED</div><div style="font-size:11px;color:#14532d;line-height:1.5;font-weight:500">' + clean(r.suggestedRevision || r.revisedText || '') + '</div></div>' +
           '</div>' +
-          (r.explanation ? '<div style="font-size:11px;color:#6b7280;margin-top:10px;padding-top:10px;border-top:1px dashed #e5e7eb">Why: ' + clean(r.explanation) + '</div>' : '') +
+          (r.reason || r.explanation ? '<div style="font-size:11px;color:#6b7280;margin-top:10px;padding-top:10px;border-top:1px dashed #e5e7eb">Why: ' + clean(r.reason || r.explanation) + '</div>' : '') +
         '</div>';
       }).join('');
     }
   }
 
-  // Voice & Tone
+  // Voice & Tone — plugin produces: personality, dominantTone, attributes[], spectrumPositions{}, toneAdaptations[], styleGuideSuggestions[]
   var vt = bp.voiceAndToneProfile || {};
-  if (vt.primaryTone || vt.secondaryTone || vt.vocabularyRules) {
+  if (vt.personality || vt.dominantTone || (vt.attributes||[]).length) {
     var vsw = document.getElementById('voice-summary-wrap');
     var vsc = document.getElementById('voice-summary-card');
     if (vsw) vsw.classList.remove('hidden');
     if (vsc) {
       vsc.className = "p-card mb-6";
-      vsc.innerHTML = '<div class="p-card-title">&#128172; Voice & Tone</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">' +
-          '<div><div style="font-size:9px;font-weight:800;color:#6b7280;margin-bottom:4px">PRIMARY TONE</div><div style="font-size:13px;font-weight:700;color:#1a1a2e">' + clean(vt.primaryTone) + '</div></div>' +
-          '<div><div style="font-size:9px;font-weight:800;color:#6b7280;margin-bottom:4px">SECONDARY TONE</div><div style="font-size:13px;font-weight:700;color:#1a1a2e">' + clean(vt.secondaryTone) + '</div></div>' +
-        '</div>' +
-        (vt.vocabularyRules ? '<div style="font-size:11px;color:#4b5563;background:#f9fafb;padding:10px;border-radius:8px">Rules: ' + clean(vt.vocabularyRules) + '</div>' : '');
+      var sp = vt.spectrumPositions || {};
+      vsc.innerHTML = '<div class="p-card-title">&#128172; Brand Voice Profile</div>' +
+        (vt.personality ? '<div style="font-size:13px;color:#374151;margin-bottom:12px;line-height:1.6;border-left:4px solid #f97316;padding-left:10px">' + clean(vt.personality) + '</div>' : '') +
+        (vt.dominantTone ? '<div style="margin-bottom:12px"><div style="font-size:9px;font-weight:800;color:#6b7280;margin-bottom:4px">DOMINANT TONE</div><div style="font-size:13px;font-weight:700;color:#1a1a2e">' + clean(vt.dominantTone) + '</div></div>' : '') +
+        ((vt.attributes||[]).length ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">' + vt.attributes.map(function(a){return '<span style="background:#fff7ed;border:1px solid #fed7aa;color:#c2410c;border-radius:99px;padding:3px 10px;font-size:11px">' + clean(a) + '</span>';}).join('') + '</div>' : '') +
+        (Object.keys(sp).length ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' + Object.entries(sp).map(function(e){return '<div style="background:#f9fafb;border-radius:8px;padding:8px"><div style="font-size:9px;font-weight:800;color:#9ca3af;margin-bottom:3px;text-transform:uppercase">' + clean(e[0]) + '</div><div style="font-size:11px;color:#374151">' + clean(e[1]) + '</div></div>';}).join('') + '</div>' : '') +
+        ((vt.styleGuideSuggestions||[]).length ? '<div style="font-size:11px;color:#4b5563;background:#f9fafb;padding:10px;border-radius:8px"><div style="font-size:9px;font-weight:800;color:#6b7280;margin-bottom:6px">STYLE GUIDE SUGGESTIONS</div>' + vt.styleGuideSuggestions.slice(0,4).map(function(s){return '<div style="padding:3px 0">• ' + clean(s) + '</div>';}).join('') + '</div>' : '');
     }
   }
 
@@ -1675,10 +1687,7 @@ function renderBrandReview(bp) {
     var rWrap2 = document.getElementById('brand-recs-wrap');
     var rList2 = document.getElementById('brand-recs-list');
     if (rWrap2) rWrap2.classList.remove('hidden');
-    if (rList2) {
-      rWrap2.querySelector('.text-xs.font-bold').className = 'section-label';
-      rList2.innerHTML = recs2.slice(0,6).map(buildRecCard).join('');
-    }
+    if (rList2) rList2.innerHTML = recs2.slice(0,6).map(buildRecCard).join('');
   }
 
   // After review options
@@ -1735,14 +1744,13 @@ function renderCompetitiveBrief(bp) {
     }).join('');
   }
 
-  // Messaging comparison matrix
+  // Messaging comparison matrix — plugin produces: dimension, yourCompany, competitorA, competitorB
   var matrix = bp.messagingComparisonMatrix || [];
   if (matrix.length) {
     var mWrap = document.getElementById('comp-matrix-wrap');
     var mRows = document.getElementById('comp-matrix-rows');
     if (mWrap) mWrap.classList.remove('hidden');
     if (mRows) {
-      mWrap.querySelector('table').className = 'matrix-table';
       mRows.innerHTML = matrix.map(function(r) {
         return '<tr>' +
           '<td><span style="font-weight:700">' + clean(r.dimension) + '</span></td>' +
@@ -1824,21 +1832,26 @@ function renderCampaignPlan(cp) {
   if (!section || !cp) return;
   section.classList.remove('hidden');
 
-  // Campaign overview
+  // Campaign overview — campaignName, summary, primaryObjective, secondaryObjectives
   var ov = cp.campaignOverview || {};
   var ovCard = document.getElementById('campaign-overview-card');
-  if (ovCard && (ov.campaignName || cp.summary)) {
-    ovCard.innerHTML =
-      (ov.campaignName ? '<div style="font-size:20px;font-weight:900;color:#1a1a2e;margin-bottom:6px">'+clean(ov.campaignName)+'</div>' : '')+
-      (cp.summary ? '<p style="font-size:13px;color:#4b5563;line-height:1.7;margin-bottom:14px">'+clean(cp.summary)+'</p>' : '')+
-      (ov.primaryObjective ? '<div style="background:#fff7ed;border-left:4px solid #f97316;border-radius:0 10px 10px 0;padding:12px 16px;margin-bottom:10px"><div style="font-size:10px;font-weight:800;color:#f97316;margin-bottom:4px;letter-spacing:.08em">PRIMARY OBJECTIVE</div><div style="font-size:13px;color:#1a1a2e;font-weight:600">'+clean(ov.primaryObjective)+'</div></div>' : '')+
-      ((ov.secondaryObjectives||[]).length ? '<div style="display:flex;flex-wrap:wrap;gap:8px">'+(ov.secondaryObjectives).map(function(s){return '<span style="background:#f3f4f6;color:#374151;border-radius:99px;padding:4px 12px;font-size:11px">'+clean(s)+'</span>';}).join('')+'</div>' : '');
+  if (ovCard) {
+    if (ov.campaignName || cp.summary) {
+      ovCard.innerHTML =
+        (ov.campaignName ? '<div style="font-size:20px;font-weight:900;color:#1a1a2e;margin-bottom:6px">'+clean(ov.campaignName)+'</div>' : '')+
+        (cp.summary ? '<p style="font-size:13px;color:#4b5563;line-height:1.7;margin-bottom:14px">'+clean(cp.summary)+'</p>' : '')+
+        (ov.primaryObjective ? '<div style="background:#fff7ed;border-left:4px solid #f97316;border-radius:0 10px 10px 0;padding:12px 16px;margin-bottom:10px"><div style="font-size:10px;font-weight:800;color:#f97316;margin-bottom:4px;letter-spacing:.08em">PRIMARY OBJECTIVE</div><div style="font-size:13px;color:#1a1a2e;font-weight:600">'+clean(ov.primaryObjective)+'</div></div>' : '')+
+        ((ov.secondaryObjectives||[]).length ? '<div style="display:flex;flex-wrap:wrap;gap:8px">'+(ov.secondaryObjectives).map(function(s){return '<span style="background:#f3f4f6;color:#374151;border-radius:99px;padding:4px 12px;font-size:11px">'+clean(s)+'</span>';}).join('')+'</div>' : '');
+    } else {
+      ovCard.style.display = 'none';
+    }
   }
 
   // Target audience
   var aud = cp.targetAudience || {};
   var audCard = document.getElementById('campaign-audience-card');
   if (audCard && aud.primarySegment) {
+    audCard.classList.remove('hidden');
     audCard.innerHTML =
       '<div class="p-card-title">&#127919; Target Audience</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">'+
@@ -1853,6 +1866,7 @@ function renderCampaignPlan(cp) {
   var km = cp.keyMessages || {};
   var kmCard = document.getElementById('campaign-messages-card');
   if (kmCard && km.coreMessage) {
+    kmCard.classList.remove('hidden');
     kmCard.innerHTML =
       '<div class="p-card-title">&#128172; Key Messages</div>'+
       '<div style="background:#f0fdf4;border-left:4px solid #22c55e;border-radius:0 10px 10px 0;padding:14px 16px;margin-bottom:14px"><div style="font-size:10px;font-weight:800;color:#059669;margin-bottom:4px">CORE MESSAGE</div><div style="font-size:14px;font-weight:700;color:#1a1a2e;line-height:1.5">'+clean(km.coreMessage)+'</div></div>'+
@@ -2091,13 +2105,13 @@ function renderEmailSequence(es) {
   if (!section || !es) return;
   section.classList.remove('hidden');
 
-  // Category scores
-  var catLabels = { sequenceLogic:'Sequence Logic', personalization:'Personalization', subjectLines:'Subject Lines', conversionFocus:'Conversion' };
+  // Category scores — plugin produces: emailCapture, leadMagnet, contentForNurture, conversionPath
+  var emailCatLabels = { emailCapture:'Email Capture', leadMagnet:'Lead Magnet', contentForNurture:'Nurture Content', conversionPath:'Conversion Path' };
   var catScores = es.categoryScores || {};
   var catWrap = document.getElementById('email-category-scores');
   if (catWrap && Object.keys(catScores).length) {
     catWrap.classList.remove('hidden');
-    catWrap.innerHTML = '<div class="grid grid-cols-2 md:grid-cols-4 gap-3">' + buildCatScores(catScores, catLabels) + '</div>';
+    catWrap.innerHTML = '<div class="grid grid-cols-2 md:grid-cols-4 gap-3">' + buildCatScores(catScores, emailCatLabels) + '</div>';
   }
 
   // Summary
@@ -2113,18 +2127,18 @@ function renderEmailSequence(es) {
   var seqs = es.sequences || [];
   var seqWrap = document.getElementById('email-sequences-wrap');
   if (seqWrap && seqs.length) {
-    seqWrap.classList.remove('hidden');
     seqWrap.innerHTML = seqs.map(function(seq) {
       return '<div class="p-card" style="margin-bottom:24px">' +
-        '<div style="font-size:18px;font-weight:800;color:#1a1a2e;margin-bottom:4px">' + clean(seq.sequenceName) + '</div>' +
+        '<div style="font-size:18px;font-weight:800;color:#1a1a2e;margin-bottom:4px">' + clean(seq.sequenceName || seq.sequenceType || '') + '</div>' +
         '<div style="font-size:12px;color:#6b7280;margin-bottom:16px">' + clean(seq.goal) + '</div>' +
         (seq.emails||[]).map(function(email, idx) {
+          var subjectLine = (email.subjectLineOptions && email.subjectLineOptions.length) ? email.subjectLineOptions[0] : (email.subjectLine || '');
           return '<div class="email-card">' +
             '<div class="email-header">' +
               '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
                 '<div>' +
-                  '<div class="email-num">EMAIL ' + (idx+1) + '</div>' +
-                  '<div class="email-subject">' + clean(email.subjectLine) + '</div>' +
+                  '<div class="email-num">EMAIL ' + (email.emailNumber || idx+1) + '</div>' +
+                  '<div class="email-subject">' + clean(subjectLine) + '</div>' +
                 '</div>' +
                 '<span style="background:rgba(255,255,255,.1);border-radius:99px;padding:4px 10px;font-size:10px;font-weight:700;color:#fff;white-space:nowrap">&#128336; ' + clean(email.timing) + '</span>' +
               '</div>' +
@@ -2132,7 +2146,7 @@ function renderEmailSequence(es) {
             '<div class="email-body">' +
               '<div style="font-size:11px;font-weight:700;color:#9ca3af;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">PURPOSE: ' + clean(email.purpose) + '</div>' +
               '<div class="email-copy">' + clean(email.bodyCopy) + '</div>' +
-              (email.cta ? '<div class="email-cta">' + clean(email.cta) + '</div>' : '') +
+              (email.primaryCTA ? '<div class="email-cta">' + clean(email.primaryCTA) + '</div>' : '') +
             '</div>' +
           '</div>';
         }).join('') +
@@ -2143,10 +2157,69 @@ function renderEmailSequence(es) {
   // Recommendations
   var recs = es.recommendations || [];
   var recsWrap = document.getElementById('email-recs-wrap');
+  var recsList = document.getElementById('email-recs-list');
   if (recsWrap && recs.length) {
     recsWrap.classList.remove('hidden');
-    recsWrap.innerHTML = '<div class="section-label">Recommendations</div>' +
-      '<div>' + recs.slice(0,6).map(buildRecCard).join('') + '</div>';
+    if (recsList) recsList.innerHTML = recs.slice(0,6).map(buildRecCard).join('');
+  }
+
+  // A/B Tests
+  var abTests = es.abTestSuggestions || [];
+  var abWrap = document.getElementById('email-abtests-wrap');
+  var abList = document.getElementById('email-abtests-list');
+  if (abWrap && abTests.length) {
+    abWrap.classList.remove('hidden');
+    if (abList) abList.innerHTML = abTests.map(function(t) {
+      return '<div class="rec-card">' +
+        '<div class="rec-num">&#9883;</div>' +
+        '<div class="rec-body">' +
+          '<div class="rec-title">' + clean(t.whatToTest) + '</div>' +
+          '<div class="rec-rationale" style="margin-bottom:8px">' +
+            '<span style="font-weight:600">A: </span>' + clean(t.variantA) + '<br>' +
+            '<span style="font-weight:600">B: </span>' + clean(t.variantB) +
+          '</div>' +
+          '<div class="rec-badges">' +
+            (t.expectedLift ? '<span class="badge badge-quick">&#128200; ' + clean(t.expectedLift) + '</span>' : '') +
+            (t.howToMeasure ? '<span class="badge badge-time">' + clean(t.howToMeasure) + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Email capture audit
+  var captureAudit = es.captureAudit || {};
+  var captureCard = document.getElementById('email-capture-card');
+  if (captureCard && (captureAudit.formsFound || captureAudit.leadMagnets || captureAudit.gaps)) {
+    captureCard.classList.remove('hidden');
+    captureCard.className = 'p-card mb-6';
+    captureCard.innerHTML = '<div class="p-card-title">&#128274; Email Capture Audit</div>' +
+      ((captureAudit.formsFound||[]).length ? '<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:#059669;margin-bottom:4px">FORMS FOUND</div>' + captureAudit.formsFound.map(function(f){return '<div style="font-size:12px;color:#374151;padding:3px 0">&#10003; ' + clean(f) + '</div>';}).join('') + '</div>' : '') +
+      ((captureAudit.leadMagnets||[]).length ? '<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:#2563eb;margin-bottom:4px">LEAD MAGNETS</div>' + captureAudit.leadMagnets.map(function(m){return '<div style="font-size:12px;color:#374151;padding:3px 0">&#127775; ' + clean(m) + '</div>';}).join('') + '</div>' : '') +
+      ((captureAudit.gaps||[]).length ? '<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:#dc2626;margin-bottom:4px">GAPS</div>' + captureAudit.gaps.map(function(g){return '<div style="font-size:12px;color:#374151;padding:3px 0">&#9888; ' + clean(g) + '</div>';}).join('') + '</div>' : '');
+  }
+
+  // Metrics to track
+  var mtrx = es.metricsToTrack || {};
+  var mWrap = document.getElementById('email-metrics-wrap');
+  var mCard = document.getElementById('email-metrics-card');
+  if (mWrap && (mtrx.primaryConversionMetric || (mtrx.perEmailMetrics||[]).length)) {
+    mWrap.classList.remove('hidden');
+    if (mCard) mCard.innerHTML =
+      (mtrx.primaryConversionMetric ? '<div style="background:#fff7ed;border-left:4px solid #f97316;border-radius:0 10px 10px 0;padding:10px 14px;margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#f97316;margin-bottom:3px">PRIMARY METRIC</div><div style="font-size:13px;font-weight:700;color:#1a1a2e">' + clean(mtrx.primaryConversionMetric) + '</div></div>' : '') +
+      ((mtrx.perEmailMetrics||[]).length ? '<div style="margin-bottom:8px"><div style="font-size:10px;font-weight:700;color:#6b7280;margin-bottom:4px">PER-EMAIL METRICS</div>' + mtrx.perEmailMetrics.map(function(m){return '<div style="font-size:11px;color:#374151;padding:3px 0">&#9656; ' + clean(m) + '</div>';}).join('') + '</div>' : '') +
+      (mtrx.reviewCadence ? '<div style="font-size:11px;color:#9ca3af">&#128197; Review: ' + clean(mtrx.reviewCadence) + '</div>' : '');
+  }
+
+  // After-sequence next steps
+  var nextStepsE = es.afterSequenceOptions || [];
+  var nsWrapE = document.getElementById('email-nextsteps-wrap');
+  var nsListE = document.getElementById('email-nextsteps-list');
+  if (nsWrapE && nextStepsE.length) {
+    nsWrapE.classList.remove('hidden');
+    if (nsListE) nsListE.innerHTML = nextStepsE.map(function(s){
+      return '<span class="next-step-chip">&#8594; ' + clean(typeof s==='string'?s:(s.step||s.action||'')) + '</span>';
+    }).join('');
   }
 }
 

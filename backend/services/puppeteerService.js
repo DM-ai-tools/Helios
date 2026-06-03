@@ -5,10 +5,12 @@
 // Container runs as root (no USER in Dockerfile), so
 // @sparticuz/chromium can extract its binary to /tmp/chromium
 // at first launch without any permission issues.
+//
+// @sparticuz/chromium is dynamically imported (not static) so
+// the local Windows dev server starts without it installed.
 // ============================================================
 
 import puppeteer from 'puppeteer-core';
-import chromium from '@sparticuz/chromium';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -23,20 +25,41 @@ if (!fs.existsSync(REPORTS_DIR)) {
 // ─── Resolve Chromium executable ──────────────────────────────
 // Production (Railway/Docker — root): @sparticuz/chromium extracts
 //   its crashpad-free binary to /tmp/chromium and returns the path.
-// Windows dev: use local Chrome if available.
+// Windows dev: use local Chrome or Edge.
 async function resolveChromiumPath() {
   if (process.platform === 'win32') {
-    const localChrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-    if (fs.existsSync(localChrome)) {
-      console.log(`[Puppeteer] Using local Chrome: ${localChrome}`);
-      return localChrome;
+    const candidates = [
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    ];
+    for (const p of candidates) {
+      if (fs.existsSync(p)) {
+        console.log(`[Puppeteer] Using local browser: ${p}`);
+        return p;
+      }
     }
+    throw new Error('[Puppeteer] No Chrome/Edge found on Windows. Install Chrome.');
   }
 
-  // Linux/container: runtime extraction to /tmp/chromium (root can always write /tmp)
+  // Linux/container: dynamic import so it does not crash on Windows
+  const { default: chromium } = await import('@sparticuz/chromium');
   const execPath = await chromium.executablePath();
   console.log(`[Puppeteer] Using @sparticuz/chromium: ${execPath}`);
   return execPath;
+}
+
+// Helper to get chromium-specific launch args (Linux only)
+async function getChromiumLaunchConfig() {
+  if (process.platform !== 'win32') {
+    const { default: chromium } = await import('@sparticuz/chromium');
+    return {
+      headless: chromium.headless,
+      defaultViewport: chromium.defaultViewport,
+      extraArgs: chromium.args,
+    };
+  }
+  return { headless: true, defaultViewport: null, extraArgs: [] };
 }
 
 /**
@@ -55,14 +78,15 @@ export async function generateReportPDF(auditId) {
   console.log(`[Puppeteer] Starting PDF generation for audit: ${auditId}`);
 
   const executablePath = await resolveChromiumPath();
+  const { headless, defaultViewport, extraArgs } = await getChromiumLaunchConfig();
 
   const browser = await puppeteer.launch({
     executablePath,
-    headless: chromium.headless,
-    defaultViewport: chromium.defaultViewport,
+    headless,
+    defaultViewport,
     protocolTimeout: 120_000,
     args: [
-      ...chromium.args,
+      ...extraArgs,
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-crash-reporter',
