@@ -317,12 +317,12 @@ Return a synthesis in this exact JSON shape:
     console.log(`[Claude:synthesis] ── Sending synthesis prompt to ${SYNTHESIS_MODEL} ──`);
     console.log(`[Claude:synthesis]   system prompt : ${systemPrompt.length} chars`);
     console.log(`[Claude:synthesis]   user prompt   : ${userPrompt.length} chars`);
-    console.log(`[Claude:synthesis]   max_tokens    : 3000`);
+    console.log(`[Claude:synthesis]   max_tokens    : ${MAX_TOKENS}`);
     // ─────────────────────────────────────────────────────────
 
     const message = await anthropic.messages.create({
       model: SYNTHESIS_MODEL,
-      max_tokens: 3000,
+      max_tokens: MAX_TOKENS,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     });
