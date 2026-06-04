@@ -24,10 +24,18 @@ const URL_CATEGORIES = [
   { pattern: /career|job/i, name: 'Careers', score: 20, cost: 1, limit: 1 },
 ];
 
+function getBaseHostname(urlStr) {
+  try {
+    return new URL(urlStr).hostname.replace(/^www\./i, '');
+  } catch (_) {
+    return '';
+  }
+}
+
 function categorizeUrl(url, baseUrl) {
   try {
     const parsed = new URL(url);
-    if (parsed.hostname !== new URL(baseUrl).hostname) return null;
+    if (getBaseHostname(url) !== getBaseHostname(baseUrl)) return null;
     let pathname = parsed.pathname;
     if (pathname === '/') return URL_CATEGORIES[0];
     
@@ -347,7 +355,7 @@ async function crawlPage(url) {
   });
 
   // Links
-  const baseHost = new URL(url).hostname;
+  const baseHost = getBaseHostname(url);
   $('a[href]').each((_, el) => {
     const href = $(el).attr('href');
     if (!href) return;
@@ -356,7 +364,7 @@ async function crawlPage(url) {
 
     if (/linkedin|twitter|facebook|instagram|youtube|tiktok/i.test(absolute)) {
       page.socialLinks.push(absolute);
-    } else if (new URL(absolute).hostname === baseHost) {
+    } else if (getBaseHostname(absolute) === baseHost) {
       page.internalLinks.push(absolute);
     } else {
       page.externalLinks.push(absolute);
@@ -412,11 +420,7 @@ function toAbsolute(href, base) {
 }
 
 function isInternalLink(link, base) {
-  try {
-    return new URL(link).hostname === new URL(base).hostname;
-  } catch (_) {
-    return false;
-  }
+  return getBaseHostname(link) === getBaseHostname(base) && getBaseHostname(link) !== '';
 }
 
 function extractMetaSignals(pages) {
