@@ -7,6 +7,117 @@ import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
 import { enrichWithPerplexity } from './perplexity.js';
 
+const URL_CATEGORIES = [
+  { pattern: /^\/$/, name: 'Homepage', score: 100, cost: 10, limit: 1 },
+  { pattern: /pricing|plans|packages/i, name: 'Pricing', score: 95, cost: 10, limit: 1 },
+  { pattern: /product|item|buy/i, name: 'Products', score: 90, cost: 5, limit: 5 },
+  { pattern: /service|what-we-do/i, name: 'Services', score: 90, cost: 5, limit: 5 },
+  { pattern: /solution/i, name: 'Solutions', score: 90, cost: 5, limit: 3 },
+  { pattern: /feature/i, name: 'Features', score: 85, cost: 5, limit: 3 },
+  { pattern: /case-stud|success/i, name: 'Case Studies', score: 80, cost: 5, limit: 3 },
+  { pattern: /portfolio|work/i, name: 'Portfolio', score: 80, cost: 5, limit: 3 },
+  { pattern: /about|our-story|who-we-are|team/i, name: 'About', score: 75, cost: 10, limit: 1 },
+  { pattern: /contact|get-in-touch/i, name: 'Contact', score: 70, cost: 5, limit: 1 },
+  { pattern: /resource|guide|whitepaper/i, name: 'Resources', score: 60, cost: 1, limit: 3 },
+  { pattern: /blog|article|post|news/i, name: 'Blog', score: 50, cost: 1, limit: 3 },
+  { pattern: /doc|help|support/i, name: 'Documentation', score: 40, cost: 1, limit: 2 },
+  { pattern: /career|job/i, name: 'Careers', score: 20, cost: 1, limit: 1 },
+];
+
+function categorizeUrl(url, baseUrl) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== new URL(baseUrl).hostname) return null;
+    let pathname = parsed.pathname;
+    if (pathname === '/') return URL_CATEGORIES[0];
+    
+    for (let i = 1; i < URL_CATEGORIES.length; i++) {
+      if (URL_CATEGORIES[i].pattern.test(pathname)) {
+        return URL_CATEGORIES[i];
+      }
+    }
+  } catch (e) {}
+  
+  return { name: 'Other', score: 10, cost: 2, limit: 5 }; // default category
+}
+
+function normalizeUrl(url) {
+  try {
+    const parsed = new URL(url);
+    // remove hash and standard query params
+    parsed.hash = '';
+    // Optional: remove tracking params
+    const paramsToRemove = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'ref', 'fbclid', 'gclid'];
+    for (const p of paramsToRemove) parsed.searchParams.delete(p);
+    
+    let normalized = parsed.toString();
+    // remove trailing slash if not root
+    if (normalized.endsWith('/') && parsed.pathname !== '/') {
+        normalized = normalized.slice(0, -1);
+    }
+    return normalized;
+  } catch (e) {
+    return url;
+  }
+}
+
+async function fetchSitemap(url) {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return [];
+    const text = await res.text();
+    const $ = cheerio.load(text, { xmlMode: true });
+    
+    let urls = [];
+    $('url loc').each((_, el) => {
+      urls.push($(el).text().trim());
+    });
+    
+    // Also handle sitemap index
+    let sitemaps = [];
+    $('sitemap loc').each((_, el) => {
+        sitemaps.push($(el).text().trim());
+    });
+    
+    // If it's an index, try fetching the first 2 sitemaps to prevent hanging on massive indexes
+    if (sitemaps.length > 0) {
+        for (const sitemap of sitemaps.slice(0, 2)) {
+            const nestedUrls = await fetchSitemap(sitemap);
+            urls.push(...nestedUrls);
+        }
+    }
+    
+    return urls;
+  } catch (e) {
+    return [];
+  }
+}
+
+async function discoverUrls(baseUrl) {
+    const urls = new Set();
+    const sitemapsToTry = [`${baseUrl}/sitemap.xml`, `${baseUrl}/sitemap_index.xml`];
+    
+    // Check robots.txt for explicit sitemap declarations
+    try {
+        const robotsRes = await fetch(`${baseUrl}/robots.txt`, { signal: AbortSignal.timeout(3000) });
+        if (robotsRes.ok) {
+            const robotsText = await robotsRes.text();
+            const sitemapMatch = robotsText.match(/Sitemap:\s*(.+)/i);
+            if (sitemapMatch && sitemapMatch[1]) {
+                sitemapsToTry.unshift(sitemapMatch[1].trim());
+            }
+        }
+    } catch (e) {}
+
+    for (const smUrl of sitemapsToTry) {
+        const smUrls = await fetchSitemap(smUrl);
+        if (smUrls.length > 0) {
+            smUrls.forEach(u => urls.add(normalizeUrl(u)));
+            break; // found a valid sitemap, stop trying others
+        }
+    }
+    return Array.from(urls);
+}
 
 /**
  * Main crawler entry point.
@@ -42,10 +153,14 @@ export async function crawlWebsite(url, onProgress = () => {}) {
     allCopy: {},
     geography: 'Australia',
     brandVoice: null,
+    auditDataset: [], // Optimized dataset for Claude
   };
 
   try {
-    onProgress('Fetching homepage…');
+    onProgress('Phase 1: Discovering URLs (sitemaps & robots.txt)…');
+    const discoveredFromSitemap = await discoverUrls(normalised);
+    
+    onProgress('Phase 2: Analysing Homepage…');
     const homepageData = await crawlPage(normalised);
     crawledData.homepage = homepageData;
     crawledData.pages.push(homepageData);
@@ -53,52 +168,109 @@ export async function crawlWebsite(url, onProgress = () => {}) {
     crawledData.ctaText.push(...(homepageData.ctaText || []));
     crawledData.socialLinks.push(...(homepageData.socialLinks || []));
     crawledData.schema.push(...(homepageData.schema || []));
-
-    // Extract internal links to crawl
-    const internalLinks = (homepageData.internalLinks || [])
-      .filter(link => isInternalLink(link, normalised))
-      .slice(0, 20); // Cap at 20 pages
-
-    onProgress(`Found ${internalLinks.length} internal pages — crawling…`);
-
-    // Crawl internal pages in parallel (cap at 10 for performance, batch of 5)
-    const pagesToCrawl = internalLinks.slice(0, 10);
     
-    // Batch processing to avoid overwhelming the target server
+    const homepageNormalized = normalizeUrl(normalised);
+    crawledData.auditDataset.push({
+        url: homepageData.url,
+        title: homepageData.title,
+        category: 'Homepage',
+        priority: 100,
+        bodySnippet: (homepageData.bodyText || '').slice(0, 2000)
+    });
+
+    // Merge homepage internal links with sitemap links
+    const allInternalLinks = new Set([
+        ...discoveredFromSitemap,
+        ...(homepageData.internalLinks || []).map(normalizeUrl)
+    ]);
+    
+    // Remove homepage from pool to avoid re-crawling
+    allInternalLinks.delete(homepageNormalized);
+
+    // Phase 3 & 4: Classification & Prioritization
+    let urlPool = Array.from(allInternalLinks)
+        .filter(link => isInternalLink(link, normalised))
+        .map(link => {
+            const category = categorizeUrl(link, normalised);
+            return { link, category };
+        })
+        .filter(item => item.category !== null)
+        .sort((a, b) => b.category.score - a.category.score); // Highest priority first
+
+    onProgress(`Discovered ${urlPool.length} internal pages. Prioritising…`);
+
+    // Phase 5: Adaptive Crawl Limits
+    let crawlBudget = 200; // Small site
+    if (urlPool.length > 100) crawlBudget = 500; // Large site
+    else if (urlPool.length > 20) crawlBudget = 300; // Medium site
+
+    // Deduct homepage cost
+    crawlBudget -= URL_CATEGORIES[0].cost;
+
+    // Phase 6: Content Sampling
+    const categoryCounts = {};
+    const pagesToCrawl = [];
+    
+    for (const item of urlPool) {
+        const catName = item.category.name;
+        if (!categoryCounts[catName]) categoryCounts[catName] = 0;
+        
+        if (categoryCounts[catName] < item.category.limit) {
+            pagesToCrawl.push(item);
+            categoryCounts[catName]++;
+        }
+    }
+
+    onProgress(`Selected ${pagesToCrawl.length} high-value pages for crawling (Budget: ${crawlBudget})…`);
+
+    // Phase 7 & 8: Crawl Budget & Business Guarantee
     const batchSize = 5;
     for (let i = 0; i < pagesToCrawl.length; i += batchSize) {
+      if (crawlBudget <= 0) {
+          onProgress(`Crawl budget exhausted. Stopping early to save tokens and time.`);
+          break;
+      }
+      
       const batch = pagesToCrawl.slice(i, i + batchSize);
-      const results = await Promise.all(batch.map(async (pageUrl) => {
+      const results = await Promise.all(batch.map(async (item) => {
         try {
-          return await crawlPage(pageUrl);
+          // Deduct budget immediately for attempted crawls
+          crawlBudget -= item.category.cost;
+          const data = await crawlPage(item.link);
+          return { data, category: item.category };
         } catch (err) {
-          console.warn(`[Crawler] Skipping ${pageUrl}: ${err.message}`);
+          console.warn(`[Crawler] Skipping ${item.link}: ${err.message}`);
           return null;
         }
       }));
 
-      for (const pageData of results) {
-        if (!pageData) continue;
+      for (const result of results) {
+        if (!result || !result.data) continue;
+        const pageData = result.data;
         const pageUrl = pageData.url;
+        const category = result.category;
+        
         crawledData.pages.push(pageData);
         crawledData.headings.push(...(pageData.headings || []));
         crawledData.ctaText.push(...(pageData.ctaText || []));
         crawledData.schema.push(...(pageData.schema || []));
 
-        // Classify special pages
-        if (/about|our-story|who-we-are/i.test(pageUrl)) {
-          crawledData.aboutPage = pageData;
-        }
-        if (/pricing|plans|packages/i.test(pageUrl)) {
-          crawledData.pricingCopy.push(pageData.bodyText || '');
-        }
-        if (/testimonial|reviews|case-stud/i.test(pageUrl)) {
-          crawledData.testimonials.push(...(pageData.testimonials || []));
-        }
+        // Phase 10: Audit Dataset
+        crawledData.auditDataset.push({
+            url: pageUrl,
+            title: pageData.title,
+            category: category.name,
+            priority: category.score,
+            bodySnippet: (pageData.bodyText || '').slice(0, 2000)
+        });
+
+        if (category.name === 'About') crawledData.aboutPage = pageData;
+        if (category.name === 'Pricing') crawledData.pricingCopy.push(pageData.bodyText || '');
+        if (category.name === 'Case Studies') crawledData.testimonials.push(...(pageData.testimonials || []));
       }
     }
 
-    // Extract signals from all pages
+    // Extract signals
     crawledData.metaSignals = extractMetaSignals(crawledData.pages);
     crawledData.emailForms = extractEmailForms(crawledData.pages);
     crawledData.claims = extractClaims(crawledData.pages);
@@ -106,27 +278,17 @@ export async function crawlWebsite(url, onProgress = () => {}) {
     crawledData.businessSummary = buildBusinessSummary(crawledData);
     crawledData.allCopy = buildAllCopy(crawledData.pages);
 
-    // Social links dedup
     crawledData.socialLinks = [...new Set(crawledData.socialLinks)];
 
-    onProgress(`Crawl complete — ${crawledData.pages.length} pages analysed`);
+    onProgress(`Crawl complete — ${crawledData.pages.length} high-value pages analysed.`);
 
-    // ── Perplexity web research ───────────────────────────────
-    // Uses live web search (via OpenRouter) to gather competitor
-    // intelligence, business reputation, and industry trends.
-    // Runs ONLY with OPENROUTER_API_KEY set. Falls back silently.
+    // Perplexity research
     await enrichWithPerplexity(crawledData, onProgress);
-
-    // NOTE: Keyword research (enrichWithDataForSEO) runs separately
-    // in the init pipeline after crawling, so keywords are stored
-    // to the DB and available for all subsequent plugin analyze runs.
 
     return crawledData;
 
-
   } catch (err) {
     console.error(`[Crawler] Fatal error: ${err.message}`);
-    // Return partial data rather than throwing
     crawledData.error = err.message;
     return crawledData;
   }
@@ -138,7 +300,6 @@ async function crawlPage(url) {
     headers: {
       'User-Agent': 'ClickTrends-AI-Audit/1.0 (+https://clicktrends.com.au/audit-bot)',
     },
-    // node-fetch v3 dropped the timeout option — use AbortSignal instead
     signal: AbortSignal.timeout(10000),
   });
 

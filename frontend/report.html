@@ -892,7 +892,7 @@
       <table class="priority-table w-full">
         <thead>
           <tr>
-            <th>Priority</th>
+            <th>Time Interval</th>
             <th>Action</th>
             <th>Expected Impact</th>
             <th>Effort</th>
@@ -1054,28 +1054,53 @@ function buildOpportunities(synthesis, pluginOutputs) {
 }
 
 function buildActionPlan(synthesis, pluginOutputs) {
-  var rows = [];
+  var allTasks = [];
   var topPris = (synthesis && synthesis.topPriorities) ? synthesis.topPriorities : [];
-  topPris.forEach(function(tp, i) {
-    var isQuick = /week|day|hour/i.test(tp.timeframe||'');
-    rows.push({ priority: i===0?'P0':i<=2?'P1':'P2',
-      action: tp.action||'', impact: tp.impact||tp.timeframe||'', effort: isQuick?'SMALL':'MED' });
+  topPris.forEach(function(tp) {
+    allTasks.push({ action: tp.action||'', impact: tp.impact||'', effort: (tp.effort||'MED').toUpperCase() });
   });
+
   var quickWins = (synthesis && synthesis.quickWins) ? synthesis.quickWins : [];
   quickWins.filter(function(qw){ return typeof qw==='string'; }).forEach(function(qw) {
-    if (!rows.some(function(r){ return r.action===qw; }))
-      rows.push({ priority:'P1', action:qw, impact:'Quick win', effort:'SMALL' });
+    if (!allTasks.some(function(r){ return r.action===qw; }))
+      allTasks.push({ action:qw, impact:'Quick win', effort:'SMALL' });
   });
+
   if (pluginOutputs) {
     Object.entries(pluginOutputs).forEach(function(entry) {
       var out = entry[1];
       (out.recommendations||[]).filter(function(r){ return r.effort==='Strategic Investment'; }).slice(0,2).forEach(function(r) {
-        if (!rows.some(function(row){ return row.action===r.action; }))
-          rows.push({ priority:'P2', action:r.action||'', impact:r.expectedImpact||'', effort:'ONGOING' });
+        if (!allTasks.some(function(row){ return row.action===r.action; }))
+          allTasks.push({ action:r.action||'', impact:r.expectedImpact||'', effort:'LARGE' });
       });
     });
   }
-  return rows.slice(0, 15);
+
+  var effortMap = { 'SMALL': 3, 'MED': 6, 'MEDIUM': 6, 'LARGE': 12, 'ONGOING': 12 };
+  var totalEffort = 0;
+  allTasks.forEach(function(t) { totalEffort += (effortMap[t.effort] || 6); });
+
+  var scale = 90 / Math.max(totalEffort, 1);
+  var scaledDays = allTasks.map(function(t) {
+    return Math.max(1, Math.round((effortMap[t.effort] || 6) * scale));
+  });
+
+  var totalDays = scaledDays.reduce(function(a,b){return a+b}, 0);
+  if (scaledDays.length > 0) {
+    scaledDays[scaledDays.length - 1] += (90 - totalDays);
+    if (scaledDays[scaledDays.length - 1] < 1) scaledDays[scaledDays.length - 1] = 1;
+  }
+
+  var currentDay = 1;
+  var rows = allTasks.map(function(t, i) {
+    var nextDay = currentDay + scaledDays[i];
+    if (nextDay > 90 || i === allTasks.length - 1) nextDay = 90;
+    var intervalStr = 'Day ' + currentDay + ' to ' + nextDay;
+    currentDay = nextDay;
+    return { interval: intervalStr, action: t.action, impact: t.impact, effort: t.effort };
+  });
+
+  return rows.slice(0, 30);
 }
 
 var observer = new IntersectionObserver(function(entries) {
@@ -1161,15 +1186,14 @@ function populateReport(data) {
   }).join('') : '<p style="color:#9ca3af;font-size:14px;padding:16px">Opportunities will appear once the audit completes.</p>';
 
   var plan      = buildActionPlan(synthesis, pluginOutputs);
-  var effortMap = { SMALL:'effort-small', MED:'effort-med', LARGE:'effort-large', ONGOING:'effort-med' };
-  var priMap    = { P0:'p-p0', P1:'p-p1', P2:'p-p2' };
+  var effortMap = { SMALL:'effort-small', MED:'effort-med', MEDIUM:'effort-med', LARGE:'effort-large', ONGOING:'effort-med' };
   document.getElementById('action-plan-rows').innerHTML = plan.length > 0
     ? plan.map(function(row) {
         return '<tr>' +
-          '<td class="' + (priMap[row.priority]||'') + '">' + row.priority + '</td>' +
+          '<td style="font-weight:700;color:#1a1a2e;white-space:nowrap;">' + row.interval + '</td>' +
           '<td>' + row.action + '</td>' +
           '<td style="color:#6b7280">' + row.impact + '</td>' +
-          '<td><span class="effort-badge ' + (effortMap[row.effort]||'') + '">' + row.effort + '</span></td>' +
+          '<td><span class="effort-badge ' + (effortMap[row.effort]||'effort-med') + '">' + row.effort + '</span></td>' +
         '</tr>';
       }).join('')
     : '<tr><td colspan="4" style="color:#9ca3af;padding:16px;font-size:14px">Action plan will appear once the audit completes.</td></tr>';

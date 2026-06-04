@@ -288,7 +288,7 @@ CRITICAL OUTPUT RULES:
 1. Respond ONLY with raw, valid JSON — no markdown, no prose, no explanation.
 2. The root JSON object MUST directly contain exactly these keys:
    - executiveSummary (string, 3-4 paragraphs)
-   - topPriorities (array of {priority, action, impact, timeframe})
+   - topPriorities (array of {action, impact, effort}) - A comprehensive 90-day action plan. You MUST provide AT LEAST 20 detailed tasks.
    - quickWins (array of strings)
    - strategicThemes (array of strings)
    - overallInsight (one powerful sentence)`;
@@ -304,7 +304,7 @@ ${pluginSummaries}
 Return a synthesis in this exact JSON shape:
 {
   "executiveSummary": "3-4 paragraph narrative...",
-  "topPriorities": [{"priority": 1, "action": "...", "impact": "High/Medium/Low", "timeframe": "..."}],
+  "topPriorities": [{"action": "Detailed action...", "impact": "High/Medium/Low", "effort": "Small/Medium/Large"}],
   "quickWins": ["string"],
   "strategicThemes": ["string"],
   "overallInsight": "one powerful sentence"
@@ -343,7 +343,7 @@ Return a synthesis in this exact JSON shape:
 
     return {
       executiveSummary: `This audit analysed ${crawledData.url} across ${pluginResults.length} dimensions, achieving an overall score of ${overallScore}/100.\n\n${pluginSummaries.slice(0, 800)}`,
-      topPriorities: topRecs.slice(0, 3).map((a, i) => ({ priority: i + 1, action: a, impact: 'High', timeframe: 'This month' })),
+      topPriorities: topRecs.slice(0, 15).map((a, i) => ({ interval: `Day ${i*5+1} to Day ${i*5+5}`, action: a, impact: 'High', effort: 'Small' })),
       quickWins: topRecs.slice(0, 5),
       strategicThemes: ['SEO & Content', 'Brand Consistency', 'Conversion Optimisation'],
       overallInsight: `Overall audit score: ${overallScore}/100 — targeted improvements will significantly lift digital performance.`,

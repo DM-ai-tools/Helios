@@ -83,14 +83,55 @@ function generateHTMLReport(auditData, pluginResults, synthesis, overallScore) {
     </div>
   `).join('');
 
-  const topPriorities = (synthesis.topPriorities || []).slice(0, 5).map((p, i) => `
+  let allTasks = [];
+  const topPris = synthesis.topPriorities || [];
+  topPris.forEach(tp => {
+    allTasks.push({ action: tp.action || '', impact: tp.impact || '', effort: (tp.effort || 'MED').toUpperCase() });
+  });
+
+  const quickWins = synthesis.quickWins || [];
+  quickWins.filter(qw => typeof qw === 'string').forEach(qw => {
+    if (!allTasks.some(r => r.action === qw)) {
+      allTasks.push({ action: qw, impact: 'Quick win', effort: 'SMALL' });
+    }
+  });
+
+  pluginResults.forEach(r => {
+    (r.recommendations || []).filter(rec => rec.effort === 'Strategic Investment').slice(0, 2).forEach(rec => {
+      if (!allTasks.some(row => row.action === rec.action)) {
+        allTasks.push({ action: rec.action || '', impact: rec.expectedImpact || '', effort: 'LARGE' });
+      }
+    });
+  });
+
+  const effortDays = { 'SMALL': 3, 'MED': 6, 'MEDIUM': 6, 'LARGE': 12, 'ONGOING': 12 };
+  let totalEffort = 0;
+  allTasks.forEach(t => { totalEffort += (effortDays[t.effort] || 6); });
+
+  const scale = 90 / Math.max(totalEffort, 1);
+  const scaledDays = allTasks.map(t => Math.max(1, Math.round((effortDays[t.effort] || 6) * scale)));
+  
+  const totalDays = scaledDays.reduce((a,b) => a+b, 0);
+  if (scaledDays.length > 0) {
+    scaledDays[scaledDays.length - 1] += (90 - totalDays);
+    if (scaledDays[scaledDays.length - 1] < 1) scaledDays[scaledDays.length - 1] = 1;
+  }
+
+  let currentDay = 1;
+  const topPriorities = allTasks.map((t, i) => {
+    let nextDay = currentDay + scaledDays[i];
+    if (nextDay > 90 || i === allTasks.length - 1) nextDay = 90;
+    const intervalStr = `Day ${currentDay} to ${nextDay}`;
+    currentDay = nextDay;
+    return `
     <tr>
-      <td class="priority-num p${Math.min(i + 1, 3)}">P${i + 1}</td>
-      <td>${p.action || p}</td>
-      <td>${p.impact || '—'}</td>
-      <td><span class="effort-badge">${p.timeframe || '—'}</span></td>
+      <td style="font-weight:700;color:#1a1a2e;white-space:nowrap;">${intervalStr}</td>
+      <td>${t.action}</td>
+      <td>${t.impact || '—'}</td>
+      <td><span class="effort-badge">${t.effort}</span></td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -219,7 +260,7 @@ function generateHTMLReport(auditData, pluginResults, synthesis, overallScore) {
   <table class="priorities-table">
     <thead>
       <tr>
-        <th>Priority</th>
+        <th>Time Interval</th>
         <th>Action</th>
         <th>Expected Impact</th>
         <th>Effort</th>
@@ -272,7 +313,7 @@ async function generateDOCX(auditData, pluginResults, synthesis, overallScore) {
         ]),
         new Paragraph({ text: '90-Day Action Plan', heading: HeadingLevel.HEADING_1 }),
         ...(synthesis.topPriorities || []).map((p, i) =>
-          new Paragraph({ text: `${i + 1}. ${p.action || p} — ${p.impact || ''}` })
+          new Paragraph({ text: `${p.interval || `Task ${i + 1}`}: ${p.action || p} — ${p.impact || ''}` })
         ),
       ],
     }],
