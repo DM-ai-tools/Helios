@@ -73,31 +73,15 @@ router.post('/init', async (req, res) => {
  * POST /api/audit/:id/analyze
  * Body: { selectedPlugins: string[], email: string }
  */
-router.post('/:id/analyze', async (req, res) => {
+// NOTE: Express truncates route params at '.' by default (treats them as file extensions).
+// Using a regex suffix :id([^/]+) forces Express to capture the full UUID including any dots.
+router.post('/:id([^/]+)/analyze', async (req, res) => {
   const auditId = req.params.id;
   const { selectedPlugins = [], email } = req.body;
 
   const audit = await getAuditById(auditId);
   if (!audit) {
     return res.status(404).json({ error: 'Audit not found' });
-  }
-
-  // If crawled_data isn't ready yet (init pipeline still running),
-  // wait up to 3 minutes for it to finish before starting analyze.
-  let resolvedAudit = audit;
-  if (!resolvedAudit.crawled_data) {
-    const MAX_WAIT_MS   = 3 * 60 * 1000; // 3 minutes
-    const POLL_INTERVAL = 3000;           // check every 3s
-    const deadline      = Date.now() + MAX_WAIT_MS;
-
-    while (!resolvedAudit.crawled_data && Date.now() < deadline) {
-      await new Promise(r => setTimeout(r, POLL_INTERVAL));
-      resolvedAudit = await getAuditById(auditId).catch(() => resolvedAudit);
-    }
-
-    if (!resolvedAudit.crawled_data) {
-      return res.status(400).json({ error: 'Crawl timed out — please try again.' });
-    }
   }
 
   // ── Reset audit state so plugin-scanning.html always waits for the new run ──
@@ -112,8 +96,38 @@ router.post('/:id/analyze', async (req, res) => {
     statusUrl: `/api/audit/${auditId}/status`,
   });
 
-  const crawledData = typeof resolvedAudit.crawled_data === 'string' ? JSON.parse(resolvedAudit.crawled_data) : resolvedAudit.crawled_data;
-  runAnalyzePipeline({ auditId, crawledData, url: resolvedAudit.url, industry: resolvedAudit.industry, email, selectedPlugins });
+  // Run the wait and pipeline in the background
+  (async () => {
+    try {
+      // If crawled_data isn't ready yet (init pipeline still running),
+      // wait up to 3 minutes for it to finish before starting analyze.
+      let resolvedAudit = audit;
+      if (!resolvedAudit.crawled_data) {
+        emit(auditId, 'step', { step: 'waiting', message: 'Waiting for website crawl to finish…', progress: 48 });
+        const MAX_WAIT_MS   = 3 * 60 * 1000; // 3 minutes
+        const POLL_INTERVAL = 3000;           // check every 3s
+        const deadline      = Date.now() + MAX_WAIT_MS;
+
+        while (!resolvedAudit.crawled_data && Date.now() < deadline) {
+          await new Promise(r => setTimeout(r, POLL_INTERVAL));
+          resolvedAudit = await getAuditById(auditId).catch(() => resolvedAudit);
+        }
+
+        if (!resolvedAudit.crawled_data) {
+          emit(auditId, 'error', { message: 'Crawl timed out before analysis could start.' });
+          await updateAuditStatus(auditId, 'failed');
+          return;
+        }
+      }
+
+      const crawledData = typeof resolvedAudit.crawled_data === 'string' ? JSON.parse(resolvedAudit.crawled_data) : resolvedAudit.crawled_data;
+      runAnalyzePipeline({ auditId, crawledData, url: resolvedAudit.url, industry: resolvedAudit.industry, email, selectedPlugins });
+    } catch (err) {
+      console.error(`[Analyze Queue] Error for ${auditId}:`, err);
+      emit(auditId, 'error', { message: `Analyze setup failed: ${err.message}` });
+      await updateAuditStatus(auditId, 'failed');
+    }
+  })();
 });
 
 
@@ -357,6 +371,7 @@ async function runAnalyzePipeline({ auditId, crawledData, url, industry, email, 
     }
 
     // Run all plugins in parallel — each fires its own running/complete SSE events
+    crawledData._auditId = auditId; // allow aiRunner to save implementationChanges per plugin
     const pluginResults = await runAllPlugins(
       plugins,
       crawledData,

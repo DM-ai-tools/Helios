@@ -35,7 +35,15 @@ IMPORTANT RULES:
 - Flag any vague or generic messaging ("quality service", "trusted experts") as weaknesses.
 - Use Australian English spelling and tone.
 - Split your Prioritized Action Plan (Recommendations) into Quick Wins (do this week, < 2 hours) and Strategic Investments.
-- OUTPUT FORMAT: Respond ONLY with valid JSON matching the exact structure specified.`,
+- OUTPUT FORMAT: Respond ONLY with valid JSON matching the exact structure specified.
+
+════════════════════════════════════════════════════════
+IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
+════════════════════════════════════════════════════════
+You MUST include an "implementationChanges" array with 6–12 ready-to-execute competitive actions.
+- "proposedChange" must be EXACT rewritten copy, battlecard text, positioning statement, or response script
+- "currentState" must reference actual language found on the website (exact quotes)
+- No vague suggestions — write the finished deliverable`,
 
   scoringPrompt: `Score this brand's competitive positioning from 0–100:
 
@@ -115,6 +123,17 @@ Categories (each 0–100):
         action: 'string',
         expectedImpact: 'string (High/Medium/Low)',
         effort: 'string (Quick Win / Strategic Investment)'
+      }
+    ],
+    implementationChanges: [
+      {
+        title: 'string — e.g. "Rewrite Homepage Tagline to Differentiate from Competitor A"',
+        priority: 'string — High / Medium / Low',
+        impactScore: 'number 1-100',
+        description: 'string — competitive rationale for this change',
+        currentState: 'string — EXACT current headline, tagline, or copy from the site',
+        proposedChange: 'string — EXACT new copy, ready to publish with no edits required',
+        changeType: 'string — one of: messaging / content / positioning / battlecard'
       }
     ],
   },

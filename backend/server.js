@@ -26,6 +26,7 @@ process.on('uncaughtException', (err) => {
 import auditRouter from './routes/audit.js';
 import statusRouter from './routes/status.js';
 import initialAuditRouter from './routes/initialAudit.js';
+import implementationRouter from './routes/implementation.js';
 import redisClient from './services/redisClient.js';
 import { generateReportPDF } from './services/puppeteerService.js';
 import fs from 'fs';
@@ -37,7 +38,7 @@ const PORT = process.env.PORT || 3000;
 // ─── Middleware ───────────────────────────────────────────────
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -49,6 +50,7 @@ app.use(express.static(resolve(__dirname, '../frontend')));
 app.use('/api/audit', initialAuditRouter);   // initial quick audit (pre-score)
 app.use('/api/audit', auditRouter);
 app.use('/api/audit', statusRouter);
+app.use('/api/implementation', implementationRouter);  // implementation approval workflow
 
 // Serve cached HTML reports
 app.get('/reports/:auditId', async (req, res) => {
@@ -125,6 +127,17 @@ app.get('/health', (req, res) => {
       hasEmailKey: !!(process.env.RESEND_API_KEY || process.env.SMTP_HOST),
     },
   });
+});
+
+// Email Sequence Campaign Builder — /audit/:auditId/email-sequence/implementation
+// Must be registered BEFORE the generic implementation route and catch-all
+app.get('/audit/:auditId/email-sequence/implementation', (req, res) => {
+  res.sendFile(resolve(__dirname, '../frontend/email-sequence-builder.html'));
+});
+
+// Implementation dashboard — /audit/:auditId/plugin/:pluginId/implementation
+app.get('/audit/:auditId/plugin/:pluginId/implementation', (req, res) => {
+  res.sendFile(resolve(__dirname, '../frontend/implementation.html'));
 });
 
 // Catch-all: serve frontend index

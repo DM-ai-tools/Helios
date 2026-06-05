@@ -917,13 +917,22 @@
       const data = await r.json();
       if (data.error) throw new Error(data.error);
       console.log('[plugin-select] Analyze triggered:', data.message);
+      
+      // Navigate to plugin scanning page only if successful
+      window.location.href = `plugin-scanning.html?auditId=${auditId}&from=select`;
     } catch (err) {
       console.warn('[plugin-select] Analyze trigger failed:', err.message);
+      alert('Failed to start audit: ' + err.message + '\n\nPlease try again.');
+      
+      // Restore button state
+      const btn = event?.currentTarget || document.getElementById('run-btn');
+      if (btn) {
+        btn.textContent = 'Run AI Plugins →'; // Will be updated by updateUI anyway
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        updateUI();
+      }
     }
-
-    // Navigate to plugin scanning page; it shows a progress bar and
-    // only redirects to report.html when the audit is complete
-    window.location.href = `plugin-scanning.html?auditId=${auditId}&from=select`;
 
   }
 

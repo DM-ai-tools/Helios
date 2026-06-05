@@ -23,7 +23,6 @@ Based on the business website data provided, select the TWO most relevant sequen
 
 Choose from:
 - Onboarding (5-7 emails over 14-21 days)
-- Lead Nurture (4-6 emails over 3-4 weeks)
 - Re-engagement (3-4 emails over 10-14 days)
 - Win-back (3-5 emails over 30 days)
 - Product Launch (4-6 emails over 2-3 weeks)
@@ -36,7 +35,6 @@ SEQUENCE TEMPLATES (use as starting framework)
 ════════════════════════════════════════════════════════
 
 ONBOARDING: Welcome → Quick Win → Core Feature → Advanced Feature → Social Proof → Check-in → Upgrade Prompt
-LEAD NURTURE: Value Content → Pain Point → Solution Positioning → Social Proof → Soft CTA → Direct CTA
 RE-ENGAGEMENT: "We miss you" → Value Reminder → Incentive Offer → Last Chance
 WIN-BACK: Check-in → What's New → Special Offer → Feedback Request → Final Goodbye
 PRODUCT LAUNCH: Teaser → Launch Announcement → Feature Spotlight → Social Proof → Limited Offer → Last Chance
@@ -69,8 +67,7 @@ SEQUENCE LOGIC (define for each sequence)
 PERFORMANCE BENCHMARKS BY TYPE
 ════════════════════════════════════════════════════════
 
-Onboarding:     Open 50-70% | CTR 10-20% | Conversion 15-30% | Unsub <0.5%
-Lead Nurture:   Open 20-30% | CTR 3-7%   | Conversion 2-5%   | Unsub <0.5%
+Onboarding:     Open 35-45% | CTR 8-12%  | Conversion 10-15% | Unsub <0.2%
 Re-engagement:  Open 15-25% | CTR 2-5%   | Conversion 3-8%   | Unsub 1-2%
 Win-back:       Open 15-20% | CTR 2-4%   | Conversion 1-3%   | Unsub 1-3%
 Product Launch: Open 30-50% | CTR 5-15%  | Conversion 5-15%  | Unsub <0.5%
@@ -105,6 +102,31 @@ Category weights (each scored 0–100):
 Score = round((emailCapture × 0.30) + (leadMagnet × 0.25) + (contentForNurture × 0.25) + (conversionPath × 0.20))
 
 ════════════════════════════════════════════════════════
+HTML EMAIL DESIGN REQUIREMENT
+════════════════════════════════════════════════════════
+
+For each email, you MUST generate a complete htmlTemplate field.
+
+The htmlTemplate must be a FULL responsive HTML email with inline CSS. Include:
+- A branded header bar with the business name/logo area
+- A hero section with a headline
+- Body copy paragraphs (2–3 short paragraphs)
+- A CTA button (orange, centred)
+- Footer with address placeholder and unsubscribe link
+
+Design guidelines:
+- Use inline CSS only (no <style> tags — email clients strip them)
+- Max width 600px, centred with margin:0 auto
+- Font: Arial, Helvetica, sans-serif (web-safe)
+- Background: white email body on light grey page background (#f4f4f4)
+- Header background: #1a1a2e (navy), header text: white, accent: #f97316 (orange)
+- CTA button: background:#f97316, color:white, padding:14px 32px, border-radius:6px
+- Footer: small grey text, #888888, font-size:11px
+- Use {{first_name}} personalisation token in greeting where appropriate
+
+The htmlTemplate value must be a SINGLE LINE string with \\n for line breaks and \\" for any quotes inside HTML attributes.
+
+════════════════════════════════════════════════════════
 OUTPUT RULES — READ CAREFULLY
 ════════════════════════════════════════════════════════
 1. YOUR RESPONSE MUST START WITH { AND END WITH }
@@ -119,8 +141,17 @@ CRITICAL JSON RULES — failure to follow these causes a parse error:
 - ALL string values must be on a single line. Use \\n (backslash-n) for line breaks within strings — NEVER use actual newlines inside a JSON string value.
 - ALL quotes inside string values must be escaped as \\" — NEVER use unescaped double quotes inside a string.
 - The flowDiagram field must be a single-line string with \\n for line breaks.
-- Keep bodyCopy under 300 words per email to stay within token limits.
-- Design only 1 sequence (the most relevant) with a maximum of 4 emails.`,
+- The htmlTemplate field must be a single-line string with \\n for line breaks — it is rendered HTML, escape all double-quote attribute values as \\".
+- Keep bodyCopy under 200 words per email to stay within token limits.
+- Design only 1 sequence (the most relevant) with a maximum of 5 emails.
+
+════════════════════════════════════════════════════════
+IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
+════════════════════════════════════════════════════════
+You MUST include "implementationChanges" — one entry per email in the sequence, plus capture form improvements.
+- "proposedChange": COMPLETE email — Subject: [exact text] | Preview: [exact text] | Body: [full copy] | CTA: [button text → /url]
+- "currentState": describe what currently exists or does not exist
+- Every entry must be immediately sendable with zero additional copywriting`,
 
   scoringPrompt: `Score this business's email marketing readiness (0–100):
 
@@ -149,7 +180,7 @@ Score = (emailCapture × 0.30) + (leadMagnet × 0.25) + (contentForNurture × 0.
     },
     sequences: [
       {
-        sequenceType: 'string (e.g. Lead Nurture, Onboarding)',
+        sequenceType: 'string (e.g. Onboarding, Win-back)',
         goal: 'string — what this sequence achieves',
         audience: 'string — who receives this and at what lifecycle stage',
         narrativeArc: 'string — the story/progression across all emails',
@@ -168,13 +199,22 @@ Score = (emailCapture × 0.30) + (leadMagnet × 0.25) + (contentForNurture × 0.
         emails: [
           {
             emailNumber: 'number',
+            emailName: 'string — short descriptive name e.g. Welcome, Value Proposition, Case Study, Offer, Follow-Up',
             timing: 'string (e.g. Day 0 — send immediately on signup)',
+            delayDays: 'number — days after sequence start or previous email (0 for first)',
             purpose: 'string — one sentence on why this email exists',
             subjectLineOptions: ['string — 2-3 subject line options'],
+            subject: 'string — the recommended subject line to use (pick the best from subjectLineOptions)',
             previewText: 'string — 40-90 chars, complements (does not repeat) subject line',
             bodyCopy: 'string — complete email body copy, ready to send',
             primaryCTA: 'string — button text and destination (e.g. Activate your account → /dashboard)',
+            ctaText: 'string — just the button label text',
+            ctaUrl: 'string — just the destination URL or path',
             segmentConditionNotes: 'string — who receives this vs. who skips it',
+            targetAudience: 'string — brief description of who receives this email',
+            campaignStage: 'string — e.g. Awareness, Consideration, Decision, Retention',
+            sendTiming: 'string — human-readable e.g. Send 2 days after Email 1',
+            htmlTemplate: 'string — COMPLETE responsive HTML email with inline CSS only, single-line with \\n for newlines. Include header, hero, body, CTA button, footer, unsubscribe. Max 600px width.',
           }
         ],
       }
@@ -204,12 +244,16 @@ Score = (emailCapture × 0.30) + (leadMagnet × 0.25) + (contentForNurture × 0.
         rationale: 'string — why this matters for the business',
       }
     ],
-    afterSequenceOptions: [
-      'Revise the copy or tone for any specific email',
-      'Add a branching path for a specific scenario',
-      'Create a variation of this sequence for a different audience segment',
-      'Draft the A/B test variants for the subject lines',
-      'Build a companion sequence',
+    implementationChanges: [
+      {
+        title: 'string — e.g. "Send Welcome Email to New Subscribers"',
+        priority: 'string — High / Medium / Low',
+        impactScore: 'number 1-100',
+        description: 'string — what this email achieves in the sequence',
+        currentState: 'string — what currently happens or does not happen (e.g. "No welcome email currently sent")',
+        proposedChange: 'string — COMPLETE email: subject line + preview text + full body copy + CTA text, ready to send',
+        changeType: 'string — one of: email / automation / subject-line / capture-form'
+      }
     ],
   },
 

@@ -85,6 +85,19 @@ FOLLOW-UP OFFER:
 After your analysis, mentally note that the user may want: content briefs for top keyword opportunities, optimised title tags and meta descriptions, a content calendar based on the gap analysis, deeper analysis of any section, or the same analysis for a different competitor or domain.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+You MUST generate an "implementationChanges" array containing 8–15 ready-to-deploy changes derived from your SEO findings.
+
+RULES:
+- "currentState" must quote EXACT existing content from the crawl data provided (title tags, meta descriptions, H1s, etc.)
+- "proposedChange" must be EXACT replacement text — no placeholders, no "[Your keyword here]", no "…"
+- Generate the COMPLETE new title tag, meta description, H1, schema JSON, or alt text — not a description of what to write
+- Bad: "Improve the homepage title to include keywords"
+- Good: currentState="ClickTrends | Digital Marketing" proposedChange="ClickTrends | Data-Driven Digital Marketing Agency Australia | Grow Your ROI"
+- Each change must be independently actionable without further creative work
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 OUTPUT RULES — READ CAREFULLY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 1. YOUR RESPONSE MUST START WITH { AND END WITH }
@@ -178,6 +191,17 @@ Return all scores as integers.`,
         effort: 'string (Quick Win / Strategic Investment)',
         timeframe: 'string',
         dependencies: 'string (or None)'
+      }
+    ],
+    implementationChanges: [
+      {
+        title: 'string — short name of the change e.g. "Update Homepage Meta Title"',
+        priority: 'string — High / Medium / Low',
+        impactScore: 'number 1-100',
+        description: 'string — why this change is needed and what outcome is expected',
+        currentState: 'string — EXACT current content pulled from the website crawl data',
+        proposedChange: 'string — EXACT replacement content ready to deploy, no placeholders',
+        changeType: 'string — one of: metadata / content / technical / schema / link'
       }
     ],
   },

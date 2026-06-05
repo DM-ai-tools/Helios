@@ -15,7 +15,8 @@ const router = Router();
  * Opens an SSE connection. Frontend listens for progress events.
  * Events: step | plugin-queued | plugin-running | plugin-complete | complete | error
  */
-router.get('/:id/status', async (req, res) => {
+// NOTE: :id([^/]+) allows dots in UUIDs — Express strips everything after '.' by default.
+router.get('/:id([^/]+)/status', async (req, res) => {
   const { id: auditId } = req.params;
 
   // Validate audit exists
@@ -70,7 +71,7 @@ router.get('/:id/status', async (req, res) => {
 /**
  * GET /api/audit/:id — Get audit state (polling fallback)
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id([^/]+)', async (req, res) => {
   const auditId = req.params.id;
 
   try {
@@ -170,7 +171,7 @@ router.get('/:id', async (req, res) => {
 /**
  * GET /api/audit/:id/debug — Full audit data dump (dev only)
  */
-router.get('/:id/debug', async (req, res) => {
+router.get('/:id([^/]+)/debug', async (req, res) => {
   const audit = await getAuditById(req.params.id).catch(() => null);
   if (!audit) return res.status(404).json({ error: 'Audit not found' });
   const crawled = audit.crawled_data ? (typeof audit.crawled_data === 'string' ? JSON.parse(audit.crawled_data) : audit.crawled_data) : {};

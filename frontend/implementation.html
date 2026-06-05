@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Implementation Dashboard — ClickTrends AI Audit</title>
+  <meta name="description" content="Review and approve AI-generated implementation changes for your website audit." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #f8fafc;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    /* ── TOP NAV ─────────────────────────────────────────────── */
+    .nav {
+      background: #1a1a2e;
+      border-bottom: 1px solid #2d2d4e;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo {
+      font-size: 18px;
+      font-weight: 800;
+      color: #f97316;
+      letter-spacing: -0.04em;
+    }
+    .nav-logo span { color: #fff; }
+    .nav-back {
+      font-size: 13px;
+      color: #9ca3af;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color .2s;
+    }
+    .nav-back:hover { color: #f97316; }
+
+    /* ── HEADER ──────────────────────────────────────────────── */
+    .header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      padding: 40px 24px 32px;
+      text-align: center;
+      border-bottom: 1px solid rgba(249,115,22,.15);
+    }
+    .plugin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(249,115,22,.12);
+      border: 1px solid rgba(249,115,22,.25);
+      border-radius: 99px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #f97316;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -0.04em;
+      margin-bottom: 8px;
+    }
+    .header p {
+      font-size: 14px;
+      color: #9ca3af;
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ── STATS BAR ───────────────────────────────────────────── */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      padding: 20px 24px;
+      background: #fff;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 2px solid;
+    }
+    .stat-pill.total   { background: #f8fafc; border-color: #e5e7eb; color: #374151; }
+    .stat-pill.pending { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+    .stat-pill.approved{ background: #f0fdf4; border-color: #bbf7d0; color: #065f46; }
+    .stat-pill.rejected{ background: #fff1f2; border-color: #fecdd3; color: #9f1239; }
+    .stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .stat-dot.pending  { background: #f59e0b; }
+    .stat-dot.approved { background: #22c55e; }
+    .stat-dot.rejected { background: #ef4444; }
+    .stat-dot.total    { background: #6b7280; }
+
+    /* ── ACTION BAR ──────────────────────────────────────────── */
+    .action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 16px 24px;
+      background: #fff;
+      border-bottom: 1px solid #f3f4f6;
+      position: sticky;
+      top: 57px;
+      z-index: 90;
+    }
+    .filter-tabs {
+      display: flex;
+      gap: 4px;
+      background: #f3f4f6;
+      border-radius: 10px;
+      padding: 4px;
+    }
+    .filter-tab {
+      padding: 6px 16px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: all .2s;
+      color: #6b7280;
+      background: transparent;
+    }
+    .filter-tab.active {
+      background: #fff;
+      color: #1a1a2e;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .bulk-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .btn {
+      padding: 9px 18px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .btn-approve {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(34,197,94,.3);
+    }
+    .btn-approve:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(34,197,94,.4); }
+    .btn-reject {
+      background: #fff;
+      color: #ef4444;
+      border-color: #fecdd3;
+    }
+    .btn-reject:hover { background: #fff1f2; }
+    .btn-deploy {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(249,115,22,.3);
+      padding: 10px 24px;
+    }
+    .btn-deploy:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(249,115,22,.4); }
+    .btn-deploy:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 11px;
+      border-radius: 7px;
+    }
+
+    /* ── MAIN LAYOUT ─────────────────────────────────────────── */
+    .main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* ── CHANGE CARD ─────────────────────────────────────────── */
+    .change-card {
+      background: #fff;
+      border-radius: 16px;
+      border: 1.5px solid #f3f4f6;
+      box-shadow: 0 2px 12px rgba(0,0,0,.04);
+      margin-bottom: 16px;
+      overflow: hidden;
+      transition: all .2s;
+    }
+    .change-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.08); }
+    .change-card.approved { border-color: #bbf7d0; background: #f0fdf4; }
+    .change-card.rejected { border-color: #fecdd3; background: #fff1f2; opacity: .75; }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 18px 20px 16px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .card-checkbox {
+      margin-top: 3px;
+      width: 18px;
+      height: 18px;
+      accent-color: #f97316;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .card-meta { flex: 1; min-width: 0; }
+    .card-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #1a1a2e;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+    .card-badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .badge-high    { background: #fef2f2; color: #dc2626; }
+    .badge-medium  { background: #fffbeb; color: #d97706; }
+    .badge-low     { background: #f8fafc; color: #6b7280; }
+    .badge-type    { background: #eff6ff; color: #2563eb; }
+    .badge-impact  { background: #fdf4ff; color: #7e22ce; }
+    .badge-status-approved { background: #f0fdf4; color: #065f46; }
+    .badge-status-rejected { background: #fff1f2; color: #9f1239; }
+    .badge-status-pending  { background: #fffbeb; color: #92400e; }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      padding-left: 32px;
+    }
+
+    /* ── BEFORE / AFTER ──────────────────────────────────────── */
+    .card-body { padding: 16px 20px 20px; }
+    .card-description {
+      font-size: 13px;
+      color: #4b5563;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .before-after {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 640px) {
+      .before-after { grid-template-columns: 1fr; }
+    }
+    .ba-panel {
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .ba-panel.before {
+      background: #fef2f2;
+      border: 1px solid #fecdd3;
+    }
+    .ba-panel.after {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+    .ba-label {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ba-label.before { color: #dc2626; }
+    .ba-label.after  { color: #16a34a; }
+    .ba-content {
+      color: #374151;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* ── EDIT FIELD ──────────────────────────────────────────── */
+    .edit-section { margin-top: 12px; }
+    .edit-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 6px;
+    }
+    .edit-area {
+      width: 100%;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 9px;
+      padding: 10px 12px;
+      font-size: 12px;
+      font-family: inherit;
+      color: #374151;
+      resize: vertical;
+      min-height: 80px;
+      transition: border-color .2s;
+      background: #fff;
+      line-height: 1.6;
+    }
+    .edit-area:focus {
+      outline: none;
+      border-color: #f97316;
+      box-shadow: 0 0 0 3px rgba(249,115,22,.1);
+    }
+    .edit-save-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+    .btn-save-edit {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 7px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-save-edit:hover { background: #f97316; }
+
+    /* ── EMPTY STATE ─────────────────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 24px;
+      color: #9ca3af;
+    }
+    .empty-state svg { margin-bottom: 16px; opacity: .4; }
+    .empty-state h3 { font-size: 18px; font-weight: 700; color: #6b7280; margin-bottom: 8px; }
+    .empty-state p { font-size: 13px; line-height: 1.6; }
+
+    /* ── DEPLOY PANEL ────────────────────────────────────────── */
+    .deploy-panel {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border-radius: 20px;
+      padding: 32px;
+      text-align: center;
+      margin-top: 32px;
+      border: 1px solid rgba(249,115,22,.2);
+    }
+    .deploy-panel h3 { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    .deploy-panel p  { font-size: 13px; color: #9ca3af; margin-bottom: 24px; line-height: 1.6; }
+    .deploy-note {
+      display: inline-block;
+      background: rgba(249,115,22,.1);
+      border: 1px solid rgba(249,115,22,.25);
+      color: #f97316;
+      border-radius: 99px;
+      padding: 6px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    /* ── TOAST ───────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s;
+      z-index: 999;
+      max-width: 320px;
+    }
+    #toast.show { opacity: 1; }
+    #toast.success { background: linear-gradient(135deg, #22c55e, #16a34a); box-shadow: 0 4px 20px rgba(34,197,94,.4); }
+    #toast.error   { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 20px rgba(239,68,68,.4); }
+    #toast.info    { background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 4px 20px rgba(59,130,246,.4); }
+
+    /* ── LOADING ─────────────────────────────────────────────── */
+    #loading-overlay {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px;
+      gap: 16px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #f3f4f6;
+      border-top-color: #f97316;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .section-select {
+      padding: 8px 14px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      background: #fff;
+      cursor: pointer;
+      transition: border-color .2s;
+      min-width: 180px;
+    }
+    .section-select:focus { outline: none; border-color: #f97316; }
+
+    .impact-bar {
+      height: 4px;
+      background: #f3f4f6;
+      border-radius: 99px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .impact-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width .6s ease;
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo">Click<span>Trends</span></div>
+  <a id="back-link" href="javascript:history.back()" class="nav-back">
+    ← Back to Report
+  </a>
+</nav>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="plugin-badge" id="plugin-badge">🚀 Implementation Dashboard</div>
+  <h1 id="page-title">Review &amp; Approve Changes</h1>
+  <p id="page-subtitle">Review each proposed change, optionally edit the copy, then approve before deploying.</p>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar" id="stats-bar">
+  <div class="stat-pill total"><span class="stat-dot total"></span><span id="stat-total">0</span> Total</div>
+  <div class="stat-pill pending"><span class="stat-dot pending"></span><span id="stat-pending">0</span> Pending</div>
+  <div class="stat-pill approved"><span class="stat-dot approved"></span><span id="stat-approved">0</span> Approved</div>
+  <div class="stat-pill rejected"><span class="stat-dot rejected"></span><span id="stat-rejected">0</span> Rejected</div>
+</div>
+
+<!-- ACTION BAR -->
+<div class="action-bar">
+  <div class="filter-tabs">
+    <button class="filter-tab active" data-filter="all" onclick="setFilter('all',this)">All</button>
+    <button class="filter-tab" data-filter="pending"  onclick="setFilter('pending',this)">Pending</button>
+    <button class="filter-tab" data-filter="approved" onclick="setFilter('approved',this)">Approved</button>
+    <button class="filter-tab" data-filter="rejected" onclick="setFilter('rejected',this)">Rejected</button>
+  </div>
+  <div class="bulk-actions">
+    <button class="btn btn-approve btn-sm" onclick="bulkAction('approved')">✓ Approve Selected</button>
+    <button class="btn btn-reject btn-sm" onclick="bulkAction('rejected')">✗ Reject Selected</button>
+    <button class="btn btn-deploy" id="deploy-btn" onclick="deployChanges()" disabled>
+      🚀 Deploy Approved
+    </button>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p style="font-size:14px;color:#6b7280;font-weight:600;">Loading implementation changes…</p>
+  </div>
+
+  <div id="changes-container" style="display:none;"></div>
+  <div id="empty-state" style="display:none;" class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5">
+      <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
+    </svg>
+    <h3>No changes found</h3>
+    <p>This plugin hasn't generated any implementation changes yet.<br>Run a new audit to generate changes.</p>
+  </div>
+
+  <div id="deploy-panel" class="deploy-panel" style="display:none;">
+    <div class="deploy-note" id="deploy-note">Bot Connection: Pending</div>
+    <h3>Ready to Deploy</h3>
+    <p id="deploy-description">
+      Approve the changes above, then click "Deploy Approved" to send them to the implementation bot.
+      Once connected, changes will be implemented automatically.
+    </p>
+    <button class="btn btn-deploy" id="deploy-btn-2" onclick="deployChanges()" disabled>
+      🚀 Deploy Approved Changes
+    </button>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ── URL params ──────────────────────────────────────────────────
+var parts   = window.location.pathname.split('/');
+var auditId = parts[2] || '';
+var pluginId= parts[4] || '';
+
+// ── Plugin name map ─────────────────────────────────────────────
+var PLUGIN_NAMES = {
+  'seo-audit':        '🔍 SEO Audit',
+  'brand-review':     '🎨 Brand Review',
+  'content-copy':     '✍️ Content & Copy',
+  'competitive-brief':'⚔️ Competitive Brief',
+  'campaign-plan':    '📅 Campaign Plan',
+  'email-sequence':   '📧 Email Sequence',
+};
+
+var allChanges  = [];
+var activeFilter= 'all';
+
+// ── Init ────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async function() {
+  var name = PLUGIN_NAMES[pluginId] || pluginId;
+  document.getElementById('plugin-badge').textContent = name;
+  document.getElementById('page-title').textContent   = 'Implement Changes — ' + name;
+  document.getElementById('back-link').href = '/report.html?auditId=' + auditId;
+  document.title = 'Implement Changes — ' + name + ' | ClickTrends AI Audit';
+
+  await loadChanges();
+});
+
+// ── Load changes from API ────────────────────────────────────────
+async function loadChanges() {
+  try {
+    var res  = await fetch('/api/implementation/' + auditId + '/' + pluginId);
+    var data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'Failed to load changes');
+
+    allChanges = data.changes || [];
+    renderAll();
+  } catch (err) {
+    document.getElementById('loading-overlay').innerHTML =
+      '<div style="text-align:center;color:#dc2626;padding:40px">' +
+      '<p style="font-size:16px;font-weight:700;">Failed to load changes</p>' +
+      '<p style="font-size:13px;color:#6b7280;margin-top:8px;">' + err.message + '</p>' +
+      '<button class="btn" style="margin-top:20px;background:#f97316;color:#fff;border:none;" onclick="loadChanges()">Retry</button>' +
+      '</div>';
+  }
+}
+
+// ── Render all cards ─────────────────────────────────────────────
+function renderAll() {
+  document.getElementById('loading-overlay').style.display  = 'none';
+  document.getElementById('changes-container').style.display = 'block';
+
+  updateStats();
+  renderCards();
+  updateDeployButton();
+}
+
+function updateStats() {
+  var total    = allChanges.length;
+  var pending  = allChanges.filter(c => c.status === 'pending').length;
+  var approved = allChanges.filter(c => c.status === 'approved').length;
+  var rejected = allChanges.filter(c => c.status === 'rejected').length;
+
+  document.getElementById('stat-total').textContent    = total;
+  document.getElementById('stat-pending').textContent  = pending;
+  document.getElementById('stat-approved').textContent = approved;
+  document.getElementById('stat-rejected').textContent = rejected;
+
+  if (total > 0) {
+    document.getElementById('deploy-panel').style.display = 'block';
+  }
+}
+
+function updateDeployButton() {
+  var approved = allChanges.filter(c => c.status === 'approved').length;
+  var d1 = document.getElementById('deploy-btn');
+  var d2 = document.getElementById('deploy-btn-2');
+  var txt = approved > 0 ? '🚀 Deploy ' + approved + ' Change' + (approved === 1 ? '' : 's') : '🚀 Deploy Approved';
+  if (d1) { d1.disabled = approved === 0; d1.textContent = txt; }
+  if (d2) { d2.disabled = approved === 0; d2.textContent = txt; }
+}
+
+function getFiltered() {
+  if (activeFilter === 'all') return allChanges;
+  return allChanges.filter(c => c.status === activeFilter);
+}
+
+function renderCards() {
+  var filtered = getFiltered();
+  var container = document.getElementById('changes-container');
+  var empty = document.getElementById('empty-state');
+
+  if (allChanges.length === 0) {
+    container.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-state" style="background:#fff;border-radius:16px;border:1.5px solid #f3f4f6;"><p style="font-size:14px;color:#6b7280;font-weight:600;">No ' + activeFilter + ' changes.</p></div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(function(c, idx) {
+    return buildCard(c, idx);
+  }).join('');
+}
+
+function buildCard(c, idx) {
+  var statusClass = c.status || 'pending';
+  var priorityBadge = c.priority === 'High'   ? 'badge-high'   :
+                      c.priority === 'Medium' ? 'badge-medium' : 'badge-low';
+  var impactScore = parseInt(c.impactScore) || 0;
+  var impactColor = impactScore >= 70 ? '#22c55e' : impactScore >= 40 ? '#f59e0b' : '#ef4444';
+
+  var currentState  = (c.currentState  || 'Not specified').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  var proposedChange= (c.userEdit || c.proposedChange || 'Not specified').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  var statusBadge = c.status === 'approved' ? '<span class="badge badge-status-approved">✓ Approved</span>' :
+                    c.status === 'rejected'  ? '<span class="badge badge-status-rejected">✗ Rejected</span>' :
+                    '<span class="badge badge-status-pending">Pending Review</span>';
+
+  return '<div class="change-card ' + statusClass + '" id="card-' + c.id + '">' +
+    '<div class="card-header">' +
+      '<input type="checkbox" class="card-checkbox" id="chk-' + c.id + '" onchange="onCheckChange()" />' +
+      '<div class="card-meta">' +
+        '<div class="card-title">' + escHtml(c.title || 'Untitled Change') + '</div>' +
+        '<div class="card-badges">' +
+          statusBadge +
+          '<span class="badge ' + priorityBadge + '">' + (c.priority||'—') + ' Priority</span>' +
+          (c.changeType ? '<span class="badge badge-type">' + escHtml(c.changeType) + '</span>' : '') +
+          (impactScore > 0 ? '<span class="badge badge-impact">⚡ Impact ' + impactScore + '/100</span>' : '') +
+        '</div>' +
+        (impactScore > 0 ? '<div class="impact-bar" style="max-width:200px;margin-top:8px;"><div class="impact-bar-fill" style="width:' + impactScore + '%;background:' + impactColor + ';"></div></div>' : '') +
+      '</div>' +
+      '<div class="card-actions">' +
+        (c.status !== 'approved' ? '<button class="btn btn-approve btn-sm" onclick="setStatus(\'' + c.id + '\',\'approved\')">✓</button>' : '') +
+        (c.status !== 'rejected' ? '<button class="btn btn-reject btn-sm" onclick="setStatus(\'' + c.id + '\',\'rejected\')">✗</button>' : '') +
+        (c.status !== 'pending'  ? '<button class="btn btn-sm" style="background:#f3f4f6;color:#6b7280;border:none;" onclick="setStatus(\'' + c.id + '\',\'pending\')">↺</button>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="card-body">' +
+      (c.description ? '<p class="card-description">' + escHtml(c.description) + '</p>' : '') +
+      '<div class="before-after">' +
+        '<div class="ba-panel before">' +
+          '<div class="ba-label before">✕ Current State</div>' +
+          '<div class="ba-content">' + currentState + '</div>' +
+        '</div>' +
+        '<div class="ba-panel after">' +
+          '<div class="ba-label after">✓ Proposed Change' + (c.userEdit ? ' (Edited)' : '') + '</div>' +
+          '<div class="ba-content">' + proposedChange + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="edit-section">' +
+        '<div class="edit-label">✏️ Edit proposed change (optional — your version will be used)</div>' +
+        '<textarea class="edit-area" id="edit-' + c.id + '" placeholder="Paste your edited version here…">' + escHtml(c.userEdit || c.proposedChange || '') + '</textarea>' +
+        '<div class="edit-save-row">' +
+          '<button class="btn-save-edit" onclick="saveEdit(\'' + c.id + '\')">Save Edit</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Filter tabs ──────────────────────────────────────────────────
+function setFilter(filter, el) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+  renderCards();
+}
+
+// ── Checkbox logic ───────────────────────────────────────────────
+function onCheckChange() { /* selection tracking happens inline */ }
+function getSelectedIds() {
+  var ids = [];
+  document.querySelectorAll('.card-checkbox:checked').forEach(function(chk) {
+    ids.push(chk.id.replace('chk-', ''));
+  });
+  return ids;
+}
+
+// ── Set single status ────────────────────────────────────────────
+async function setStatus(changeId, status) {
+  try {
+    var res  = await fetch('/api/implementation/' + auditId + '/' + pluginId + '/' + changeId, {
+      method:  'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({ status }),
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    // Update local state
+    var idx = allChanges.findIndex(c => c.id === changeId);
+    if (idx !== -1) allChanges[idx] = data.change;
+    renderAll();
+    toast(status === 'approved' ? '✓ Change approved!' : status === 'rejected' ? '✗ Change rejected' : '↺ Reset to pending', status === 'approved' ? 'success' : 'info');
+  } catch(err) {
+    toast('Error: ' + err.message, 'error');
+  }
+}
+
+// ── Bulk action ──────────────────────────────────────────────────
+async function bulkAction(status) {
+  var ids = getSelectedIds();
+  if (ids.length === 0) { toast('Select at least one change first', 'info'); return; }
+
+  try {
+    var res  = await fetch('/api/implementation/' + auditId + '/' + pluginId + '/bulk', {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({ changeIds: ids, status }),
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    // Update local state
+    data.changes.forEach(function(updated) {
+      var idx = allChanges.findIndex(c => c.id === updated.id);
+      if (idx !== -1) allChanges[idx] = updated;
+    });
+    renderAll();
+    toast(data.updated + ' changes ' + status + '!', status === 'approved' ? 'success' : 'info');
+  } catch(err) {
+    toast('Bulk action failed: ' + err.message, 'error');
+  }
+}
+
+// ── Save edit ────────────────────────────────────────────────────
+async function saveEdit(changeId) {
+  var ta = document.getElementById('edit-' + changeId);
+  if (!ta) return;
+  var userEdit = ta.value.trim();
+
+  try {
+    var res  = await fetch('/api/implementation/' + auditId + '/' + pluginId + '/' + changeId, {
+      method:  'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({ userEdit }),
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    var idx = allChanges.findIndex(c => c.id === changeId);
+    if (idx !== -1) allChanges[idx] = data.change;
+    renderAll();
+    toast('✓ Edit saved!', 'success');
+  } catch(err) {
+    toast('Save failed: ' + err.message, 'error');
+  }
+}
+
+// ── Deploy ───────────────────────────────────────────────────────
+async function deployChanges() {
+  var approved = allChanges.filter(c => c.status === 'approved').length;
+  if (approved === 0) { toast('Approve at least one change first', 'info'); return; }
+
+  try {
+    var d1 = document.getElementById('deploy-btn');
+    var d2 = document.getElementById('deploy-btn-2');
+    if (d1) { d1.disabled = true; d1.textContent = 'Sending…'; }
+    if (d2) { d2.disabled = true; d2.textContent = 'Sending…'; }
+
+    var res  = await fetch('/api/implementation/' + auditId + '/' + pluginId + '/execute', {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    toast('🚀 ' + data.message, 'success');
+
+    // Show bot result inline
+    var panel = document.getElementById('deploy-panel');
+    if (panel && data.botResult) {
+      var note = data.botResult.note || '';
+      document.getElementById('deploy-note').textContent = note || 'Dispatched';
+      document.getElementById('deploy-description').textContent =
+        note || ('Job #' + data.jobId + ' created. ' + data.message);
+    }
+  } catch(err) {
+    toast('Deploy failed: ' + err.message, 'error');
+  } finally {
+    updateDeployButton();
+  }
+}
+
+// ── Toast ────────────────────────────────────────────────────────
+function toast(msg, type) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className   = 'show ' + (type || 'info');
+  clearTimeout(el._t);
+  el._t = setTimeout(function() { el.className = ''; }, 3000);
+}
+</script>
+</body>
+</html>

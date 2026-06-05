@@ -49,7 +49,15 @@ OUTPUT RULES — READ CAREFULLY
 
 CRITICAL JSON RULES — failure to follow these causes a parse error:
 - ALL string values must be on a single line. Use \\n (backslash-n) for line breaks within strings — NEVER use actual newlines inside a JSON string value.
-- ALL quotes inside string values must be escaped as \\" — NEVER use unescaped double quotes inside a string.`,
+- ALL quotes inside string values must be escaped as \\" — NEVER use unescaped double quotes inside a string.
+
+════════════════════════════════════════════════════════
+IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
+════════════════════════════════════════════════════════
+You MUST include "implementationChanges" with 8–15 copy-and-paste-ready content pieces.
+- "proposedChange" must be the COMPLETE finished piece of content — full social post, full headline+subheadline+CTA, full email subject line + preview text + body opening
+- "currentState" must quote the EXACT existing copy from the website (not a description of it)
+- No ellipsis, no [brackets], no "to be written later" — write the entire content piece`,
 
   scoringPrompt: `Score this business's content and copy quality (0–100):
 
@@ -131,6 +139,17 @@ Categories (each 0–100):
         action: 'string',
         expectedImpact: 'string (High/Medium/Low)',
         effort: 'string (Quick Win / Strategic Investment)'
+      }
+    ],
+    implementationChanges: [
+      {
+        title: 'string — e.g. "Replace Homepage Hero Headline"',
+        priority: 'string — High / Medium / Low',
+        impactScore: 'number 1-100',
+        description: 'string — why this copy change is needed',
+        currentState: 'string — EXACT current copy from the website',
+        proposedChange: 'string — COMPLETE replacement copy, ready to publish as-is',
+        changeType: 'string — one of: headline / cta / body / social / email / meta'
       }
     ]
   },

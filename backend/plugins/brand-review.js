@@ -93,7 +93,16 @@ OUTPUT RULES — READ CAREFULLY
 5. Quote EXACT text from the website for every finding.
 6. Include the page URL for every finding.
 7. Use Australian English throughout.
-8. Do NOT invent data — only reference what is in the crawl provided.`,
+8. Do NOT invent data — only reference what is in the crawl provided.
+
+════════════════════════════════════════════════════════
+IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
+════════════════════════════════════════════════════════
+You MUST include an "implementationChanges" array with 6–12 copy-paste-ready fixes.
+- "currentState": EXACT quote of the problematic text as it appears on the site
+- "proposedChange": COMPLETE rewritten version — no placeholders, no "...", fully finished
+- Bad: "Rewrite the hero headline to be clearer"
+- Good: currentState="We help businesses grow" proposedChange="Data-driven digital marketing that generates measurable ROI — for Australian businesses ready to scale"`,
 
   scoringPrompt: `Score this business's brand safety and consistency from 0–100 using these weighted categories:
 - Legal Compliance (35%): Are claims substantiated? Any ACL/ACCC risks?
@@ -161,11 +170,16 @@ OUTPUT RULES — READ CAREFULLY
         rationale:      'string — why this matters for brand safety or voice',
       }
     ],
-    afterReviewOptions: [
-      'Revise the full content with these suggestions applied',
-      'Focus on fixing just the high-severity issues',
-      'Review additional content against the same guidelines',
-      'Help document your brand voice for future reviews',
+    implementationChanges: [
+      {
+        title: 'string — short name e.g. "Remove Unsubstantiated Claim on Homepage"',
+        priority: 'string — High / Medium / Low',
+        impactScore: 'number 1-100',
+        description: 'string — why this change is needed',
+        currentState: 'string — EXACT current text from the website',
+        proposedChange: 'string — EXACT rewritten replacement text, ready to publish',
+        changeType: 'string — one of: content / legal / voice / metadata'
+      }
     ],
   },
 

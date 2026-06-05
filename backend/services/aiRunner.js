@@ -5,6 +5,7 @@
 // ============================================================
 
 import Anthropic from '@anthropic-ai/sdk';
+import { saveImplementationChanges } from '../db/queries.js';
 
 // Per-plugin API key map — read lazily inside getClient() after dotenv loads
 const PLUGIN_KEY_VARS = {
@@ -199,6 +200,16 @@ ${JSON.stringify(plugin.outputFormat, null, 2)}
     console.log(`[Claude] ✓ Plugin ${plugin.id} complete. Score: ${score}`);
     onProgress(`${plugin.name} complete — score: ${score}/100`);
 
+    // ── Persist implementation changes to Redis ───────────────
+    if (parsed.implementationChanges?.length && crawledData._auditId) {
+      try {
+        await saveImplementationChanges(crawledData._auditId, plugin.id, parsed.implementationChanges);
+        console.log(`[Claude] Saved ${parsed.implementationChanges.length} implementation changes for ${plugin.id}`);
+      } catch (saveErr) {
+        console.warn(`[Claude] Could not save implementation changes for ${plugin.id}: ${saveErr.message}`);
+      }
+    }
+
     return {
       output: parsed,
       score,
@@ -367,18 +378,58 @@ export function calculateOverallScore(pluginResults) {
 // ─────────────────────────────────────────────────────────────
 // parseJSON — Robust JSON extractor for Claude responses
 // ─────────────────────────────────────────────────────────────
+function escapeNewlinesInJSON(jsonString) {
+  let inString = false;
+  let isEscaped = false;
+  let result = '';
+
+  for (let i = 0; i < jsonString.length; i++) {
+    const char = jsonString[i];
+    
+    if (inString) {
+      if (char === '\\') {
+        isEscaped = !isEscaped;
+        result += char;
+      } else if (char === '"' && !isEscaped) {
+        inString = false;
+        result += char;
+      } else {
+        isEscaped = false;
+        if (char === '\n') {
+          result += '\\n';
+        } else if (char === '\r') {
+          result += '\\r';
+        } else if (char === '\t') {
+          result += '\\t';
+        } else {
+          result += char;
+        }
+      }
+    } else {
+      if (char === '"') {
+        inString = true;
+      }
+      result += char;
+    }
+  }
+  return result;
+}
+
 function parseJSON(text, context = 'plugin') {
+  // Sanitize actual newlines inside strings (which Claude frequently writes for email bodies)
+  const sanitizedText = escapeNewlinesInJSON(text);
+
   // 1. Direct parse (fastest — works when model obeys rules)
-  try { return JSON.parse(text.trim()); } catch (_) {}
+  try { return JSON.parse(sanitizedText.trim()); } catch (_) {}
 
   // 2. Strip markdown fences — handles complete ``` ... ``` blocks
-  const fenceMatch = text.match(/```(?:json|JSON)?\s*([\s\S]*?)\s*```/);
+  const fenceMatch = sanitizedText.match(/```(?:json|JSON)?\s*([\s\S]*?)\s*```/);
   if (fenceMatch) {
     try { return JSON.parse(fenceMatch[1].trim()); } catch (_) {}
   }
 
   // 3. Opening fence only (truncated response) — extract everything after the fence
-  const openFence = text.match(/```(?:json|JSON)?\s*([\s\S]*)/);
+  const openFence = sanitizedText.match(/```(?:json|JSON)?\s*([\s\S]*)/);
   if (openFence) {
     // Try to parse as-is (might be valid JSON even without closing fence)
     try { return JSON.parse(openFence[1].trim()); } catch (_) {}
@@ -387,14 +438,14 @@ function parseJSON(text, context = 'plugin') {
   // 4. Bracket-depth scan — finds the outermost valid JSON object
   //    Catches partial fences, leading prose, trailing commentary
   let depth = 0, start = -1;
-  for (let i = 0; i < text.length; i++) {
-    if (text[i] === '{') {
+  for (let i = 0; i < sanitizedText.length; i++) {
+    if (sanitizedText[i] === '{') {
       if (depth === 0) start = i;
       depth++;
-    } else if (text[i] === '}') {
+    } else if (sanitizedText[i] === '}') {
       depth--;
       if (depth === 0 && start !== -1) {
-        try { return JSON.parse(text.slice(start, i + 1)); } catch (_) {}
+        try { return JSON.parse(sanitizedText.slice(start, i + 1)); } catch (_) {}
         start = -1;
       }
     }
@@ -402,12 +453,12 @@ function parseJSON(text, context = 'plugin') {
 
   // 5. Truncation recovery — response was cut off mid-JSON; try to close it
   //    Find the last complete top-level key-value pair and close the object
-  const lastBrace = text.lastIndexOf(',');
+  const lastBrace = sanitizedText.lastIndexOf(',');
   if (lastBrace > 0) {
-    const candidate = text.slice(0, lastBrace) + '}';
+    const candidate = sanitizedText.slice(0, lastBrace) + '}';
     try { return JSON.parse(candidate.includes('{') ? candidate.slice(candidate.indexOf('{')) : candidate); } catch (_) {}
   }
 
-  console.warn(`[Claude] Could not parse JSON for "${context}". Raw preview:`, text.slice(0, 200));
-  return { score: 0, summary: text.slice(0, 500), parseError: true };
+  console.warn(`[Claude] Could not parse JSON for "${context}". Raw preview:`, sanitizedText.slice(0, 200));
+  return { score: 0, summary: sanitizedText.slice(0, 500), parseError: true };
 }

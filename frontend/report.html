@@ -1254,6 +1254,24 @@ function priorityBadge(p) {
   return '<span style="font-size:10px;font-weight:600;color:'+c+'">'+clean(p)+'</span>';
 }
 
+// ─── Implement Changes Button Helper ─────────────────────────
+function addImplButton(sectionEl, pluginId) {
+  if (!auditId) return;
+  if (sectionEl.querySelector('.impl-cta-row')) return;
+  var row = document.createElement('div');
+  row.className = 'impl-cta-row';
+  row.style.cssText = 'display:flex;gap:12px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid #f3f4f6;';
+  var btn = document.createElement('button');
+  btn.id = 'impl-btn-' + pluginId;
+  btn.innerHTML = '&#128640;&nbsp; Implement Changes';
+  btn.style.cssText = 'background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;font-size:13px;font-weight:700;padding:10px 22px;border-radius:10px;border:none;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 2px 12px rgba(249,115,22,.35);transition:all .2s;';
+  btn.onmouseover = function() { this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 24px rgba(249,115,22,.5)'; };
+  btn.onmouseout  = function() { this.style.transform=''; this.style.boxShadow='0 2px 12px rgba(249,115,22,.35)'; };
+  btn.onclick     = function() { window.location.href = '/audit/' + auditId + '/plugin/' + pluginId + '/implementation'; };
+  row.appendChild(btn);
+  sectionEl.appendChild(row);
+}
+
 // ─── SEO Audit Render ────────────────────────────────────────
 function renderSeoAudit(sa) {
   var section = document.getElementById('seo-audit-section');
@@ -1384,6 +1402,7 @@ function renderSeoAudit(sa) {
     if (srWrap) srWrap.classList.remove('hidden');
     if (srList) srList.innerHTML = seoRecs.slice(0,8).map(buildRecCard).join('');
   }
+  addImplButton(section, 'seo-audit');
 }
 
 // ─── Content & Copy Render ───────────────────────────────────
@@ -1528,6 +1547,7 @@ function renderContentCopy(cc) {
     if (ccRWrap) ccRWrap.classList.remove('hidden');
     if (ccRList) ccRList.innerHTML = ccRecs.slice(0,6).map(buildRecCard).join('');
   }
+  addImplButton(section, 'content-copy');
 }
 
 // clean() — sanitizes Claude output strings before injecting into the DOM.
@@ -1722,6 +1742,7 @@ function renderBrandReview(bp) {
     if (nsWrap) nsWrap.classList.remove('hidden');
     if (nsList) nsList.innerHTML = opts.map(function(o){return '<span class="next-step-chip">&#8594; '+clean(typeof o==='string'?o:(o.option||''))+'</span>';}).join('');
   }
+  addImplButton(section, 'brand-review');
 }
 
 function renderCompetitiveBrief(bp) {
@@ -1849,6 +1870,7 @@ function renderCompetitiveBrief(bp) {
     if (rWrap) rWrap.classList.remove('hidden');
     if (rList) rList.innerHTML = recs.slice(0,6).map(buildRecCard).join('');
   }
+  addImplButton(section, 'competitive-brief');
 }
 
 function renderCampaignPlan(cp) {
@@ -2015,6 +2037,7 @@ function renderCampaignPlan(cp) {
       return '<span class="next-step-chip">&#8594; '+clean(typeof s==='string'?s:(s.step||s.action||''))+'</span>';
     }).join('');
   }
+  addImplButton(section, 'campaign-plan');
 }
 
 // ─── SVG Email Sequence Flowchart ────────────────────────────
@@ -2129,7 +2152,7 @@ function renderEmailSequence(es) {
   if (!section || !es) return;
   section.classList.remove('hidden');
 
-  // Category scores — plugin produces: emailCapture, leadMagnet, contentForNurture, conversionPath
+  // ── Category scores (compact pills) ───────────────────────────
   var emailCatLabels = { emailCapture:'Email Capture', leadMagnet:'Lead Magnet', contentForNurture:'Nurture Content', conversionPath:'Conversion Path' };
   var catScores = es.categoryScores || {};
   var catWrap = document.getElementById('email-category-scores');
@@ -2138,124 +2161,216 @@ function renderEmailSequence(es) {
     catWrap.innerHTML = '<div class="grid grid-cols-2 md:grid-cols-4 gap-3">' + buildCatScores(catScores, emailCatLabels) + '</div>';
   }
 
-  // Summary
+  // ── Summary ───────────────────────────────────────────────────
   var sumCard = document.getElementById('email-summary-card');
   if (sumCard && es.summary) {
     sumCard.classList.remove('hidden');
-    sumCard.className = "p-card mb-6";
+    sumCard.className = 'p-card mb-6';
     sumCard.innerHTML = '<div class="p-card-title">&#128203; Strategy Overview</div>' +
       '<p style="font-size:13px;color:#4b5563;line-height:1.7;">' + clean(es.summary) + '</p>';
   }
 
-  // Sequences
+  // ── Key Findings (top 3 recommendations as bullets) ───────────
+  var recs = es.recommendations || [];
+  var captureAudit = es.captureAudit || {};
+  if (recs.length || (captureAudit.gaps||[]).length) {
+    var findingsHtml = '<div class="p-card mb-6">' +
+      '<div class="p-card-title">&#128269; Key Findings</div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px">';
+    recs.slice(0,3).forEach(function(r) {
+      var imp = (r.expectedImpact||'').toLowerCase();
+      var col = imp==='high'?'#dc2626':imp==='medium'?'#d97706':'#6b7280';
+      var bg  = imp==='high'?'#fef2f2':imp==='medium'?'#fffbeb':'#f8fafc';
+      findingsHtml += '<div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:'+bg+';border-radius:10px">' +
+        '<span style="font-size:10px;font-weight:700;color:'+col+';background:white;border:1px solid '+col+';border-radius:99px;padding:2px 8px;white-space:nowrap;flex-shrink:0;margin-top:1px">' + clean(r.expectedImpact||'') + '</span>' +
+        '<span style="font-size:12px;color:#374151;line-height:1.5">' + clean(r.action||r.title||'') + '</span>' +
+      '</div>';
+    });
+    (captureAudit.gaps||[]).slice(0,2).forEach(function(g) {
+      findingsHtml += '<div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:#fff7ed;border-radius:10px">' +
+        '<span style="font-size:18px;flex-shrink:0">&#9888;</span>' +
+        '<span style="font-size:12px;color:#374151;line-height:1.5">' + clean(g) + '</span>' +
+      '</div>';
+    });
+    findingsHtml += '</div></div>';
+    var captureCard = document.getElementById('email-capture-card');
+    if (captureCard) { captureCard.classList.remove('hidden'); captureCard.className=''; captureCard.innerHTML = findingsHtml; }
+  }
+
+  // ── Recommended Email Strategy + Example Previews ──────────────
   var seqs = es.sequences || [];
   var seqWrap = document.getElementById('email-sequences-wrap');
   if (seqWrap && seqs.length) {
-    seqWrap.innerHTML = seqs.map(function(seq) {
-      return '<div class="p-card" style="margin-bottom:24px">' +
-        '<div style="font-size:18px;font-weight:800;color:#1a1a2e;margin-bottom:4px">' + clean(seq.sequenceName || seq.sequenceType || '') + '</div>' +
-        '<div style="font-size:12px;color:#6b7280;margin-bottom:16px">' + clean(seq.goal) + '</div>' +
-        (seq.emails||[]).map(function(email, idx) {
-          var subjectLine = (email.subjectLineOptions && email.subjectLineOptions.length) ? email.subjectLineOptions[0] : (email.subjectLine || '');
-          return '<div class="email-card">' +
-            '<div class="email-header">' +
-              '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-                '<div>' +
-                  '<div class="email-num">EMAIL ' + (email.emailNumber || idx+1) + '</div>' +
-                  '<div class="email-subject">' + clean(subjectLine) + '</div>' +
-                '</div>' +
-                '<span style="background:rgba(255,255,255,.1);border-radius:99px;padding:4px 10px;font-size:10px;font-weight:700;color:#fff;white-space:nowrap">&#128336; ' + clean(email.timing) + '</span>' +
-              '</div>' +
-            '</div>' +
-            '<div class="email-body">' +
-              '<div style="font-size:11px;font-weight:700;color:#9ca3af;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">PURPOSE: ' + clean(email.purpose) + '</div>' +
-              '<div class="email-copy">' + clean(email.bodyCopy) + '</div>' +
-              (email.primaryCTA ? '<div class="email-cta">' + clean(email.primaryCTA) + '</div>' : '') +
-            '</div>' +
-          '</div>';
-        }).join('') +
-      '</div>';
-    }).join('');
-  }
-
-  // Recommendations
-  var recs = es.recommendations || [];
-  var recsWrap = document.getElementById('email-recs-wrap');
-  var recsList = document.getElementById('email-recs-list');
-  if (recsWrap && recs.length) {
-    recsWrap.classList.remove('hidden');
-    if (recsList) recsList.innerHTML = recs.slice(0,6).map(buildRecCard).join('');
-  }
-
-  // A/B Tests
-  var abTests = es.abTestSuggestions || [];
-  var abWrap = document.getElementById('email-abtests-wrap');
-  var abList = document.getElementById('email-abtests-list');
-  if (abWrap && abTests.length) {
-    abWrap.classList.remove('hidden');
-    if (abList) abList.innerHTML = abTests.map(function(t) {
-      return '<div class="rec-card">' +
-        '<div class="rec-num">&#9883;</div>' +
-        '<div class="rec-body">' +
-          '<div class="rec-title">' + clean(t.whatToTest) + '</div>' +
-          '<div class="rec-rationale" style="margin-bottom:8px">' +
-            '<span style="font-weight:600">A: </span>' + clean(t.variantA) + '<br>' +
-            '<span style="font-weight:600">B: </span>' + clean(t.variantB) +
-          '</div>' +
-          '<div class="rec-badges">' +
-            (t.expectedLift ? '<span class="badge badge-quick">&#128200; ' + clean(t.expectedLift) + '</span>' : '') +
-            (t.howToMeasure ? '<span class="badge badge-time">' + clean(t.howToMeasure) + '</span>' : '') +
-          '</div>' +
+    var seq = seqs[0]; // show first (most relevant) sequence
+    var emails = seq.emails || [];
+    var seqHtml = '<div class="p-card mb-6">' +
+      '<div class="p-card-title">&#128231; Recommended Email Strategy</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px">' +
+        '<div style="background:#fff7ed;border-radius:10px;padding:10px 16px;flex:1;min-width:140px">' +
+          '<div style="font-size:9px;font-weight:800;color:#f97316;margin-bottom:3px;letter-spacing:.06em">SEQUENCE TYPE</div>' +
+          '<div style="font-size:13px;font-weight:700;color:#1a1a2e">' + clean(seq.sequenceType||seq.sequenceName||'') + '</div>' +
         '</div>' +
+        '<div style="background:#f0fdf4;border-radius:10px;padding:10px 16px;flex:2;min-width:200px">' +
+          '<div style="font-size:9px;font-weight:800;color:#059669;margin-bottom:3px;letter-spacing:.06em">GOAL</div>' +
+          '<div style="font-size:12px;color:#374151;line-height:1.5">' + clean(seq.goal||'') + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="font-size:10px;font-weight:800;color:#6b7280;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">' + emails.length + '-Email Sequence Preview</div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px">';
+
+    emails.forEach(function(em, idx) {
+      var subjectLine = em.subject || (em.subjectLineOptions && em.subjectLineOptions[0]) || '';
+      var name = em.emailName || ('Email ' + (em.emailNumber||idx+1));
+      var timing = em.sendTiming || em.timing || '';
+      seqHtml += '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#f8f9fa;border-radius:10px;border:1px solid #e8eaed">' +
+        '<div style="width:32px;height:32px;background:linear-gradient(135deg,#1a1a2e,#2d2d4e);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#f97316;flex-shrink:0">' + (idx+1) + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:12px;font-weight:700;color:#1a1a2e;margin-bottom:1px">' + clean(name) + '</div>' +
+          '<div style="font-size:11px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + clean(subjectLine) + '</div>' +
+        '</div>' +
+        (timing ? '<span style="font-size:10px;color:#f97316;background:#fff7ed;border:1px solid #fed7aa;border-radius:99px;padding:3px 10px;white-space:nowrap;flex-shrink:0">' + clean(timing) + '</span>' : '') +
       '</div>';
-    }).join('');
+    });
+
+    seqHtml += '</div></div>';
+    seqWrap.innerHTML = seqHtml;
   }
 
-  // Email capture audit
-  var captureAudit = es.captureAudit || {};
-  var captureCard = document.getElementById('email-capture-card');
-  if (captureCard && (captureAudit.formsFound || captureAudit.leadMagnets || captureAudit.gaps)) {
-    captureCard.classList.remove('hidden');
-    captureCard.className = 'p-card mb-6';
-    captureCard.innerHTML = '<div class="p-card-title">&#128274; Email Capture Audit</div>' +
-      ((captureAudit.formsFound||[]).length ? '<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:#059669;margin-bottom:4px">FORMS FOUND</div>' + captureAudit.formsFound.map(function(f){return '<div style="font-size:12px;color:#374151;padding:3px 0">&#10003; ' + clean(f) + '</div>';}).join('') + '</div>' : '') +
-      ((captureAudit.leadMagnets||[]).length ? '<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:#2563eb;margin-bottom:4px">LEAD MAGNETS</div>' + captureAudit.leadMagnets.map(function(m){return '<div style="font-size:12px;color:#374151;padding:3px 0">&#127775; ' + clean(m) + '</div>';}).join('') + '</div>' : '') +
-      ((captureAudit.gaps||[]).length ? '<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:#dc2626;margin-bottom:4px">GAPS</div>' + captureAudit.gaps.map(function(g){return '<div style="font-size:12px;color:#374151;padding:3px 0">&#9888; ' + clean(g) + '</div>';}).join('') + '</div>' : '');
-  }
+  // ── Custom "Implement Email Sequence" CTA ─────────────────────
+  if (!section.querySelector('.email-impl-cta')) {
+    var ctaWrap = document.createElement('div');
+    ctaWrap.className = 'email-impl-cta';
+    ctaWrap.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin-top:20px;padding:24px;background:linear-gradient(135deg,#0f172a,#1a1a2e);border-radius:16px;border:1px solid rgba(249,115,22,.2);';
+    ctaWrap.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">' +
+        '<span style="font-size:22px">&#128231;</span>' +
+        '<div>' +
+          '<div style="font-size:16px;font-weight:800;color:white;line-height:1.2">Ready to Build Your Email Campaign?</div>' +
+          '<div style="font-size:12px;color:#9ca3af;margin-top:2px">Review rendered email designs, approve each email, and send to your implementation bot</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+        (seqs[0] ? '<span style="font-size:11px;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);color:#f97316;border-radius:99px;padding:4px 12px">' + ((seqs[0].emails||[]).length) + ' Emails</span>' : '') +
+        (seqs[0] && seqs[0].sequenceType ? '<span style="font-size:11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:#e2e8f0;border-radius:99px;padding:4px 12px">' + clean(seqs[0].sequenceType) + '</span>' : '') +
+      '</div>';
 
-  // Metrics to track
-  var mtrx = es.metricsToTrack || {};
-  var mWrap = document.getElementById('email-metrics-wrap');
-  var mCard = document.getElementById('email-metrics-card');
-  if (mWrap && (mtrx.primaryConversionMetric || (mtrx.perEmailMetrics||[]).length)) {
-    mWrap.classList.remove('hidden');
-    if (mCard) mCard.innerHTML =
-      (mtrx.primaryConversionMetric ? '<div style="background:#fff7ed;border-left:4px solid #f97316;border-radius:0 10px 10px 0;padding:10px 14px;margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#f97316;margin-bottom:3px">PRIMARY METRIC</div><div style="font-size:13px;font-weight:700;color:#1a1a2e">' + clean(mtrx.primaryConversionMetric) + '</div></div>' : '') +
-      ((mtrx.perEmailMetrics||[]).length ? '<div style="margin-bottom:8px"><div style="font-size:10px;font-weight:700;color:#6b7280;margin-bottom:4px">PER-EMAIL METRICS</div>' + mtrx.perEmailMetrics.map(function(m){return '<div style="font-size:11px;color:#374151;padding:3px 0">&#9656; ' + clean(m) + '</div>';}).join('') + '</div>' : '') +
-      (mtrx.reviewCadence ? '<div style="font-size:11px;color:#9ca3af">&#128197; Review: ' + clean(mtrx.reviewCadence) + '</div>' : '');
-  }
-
-  // After-sequence next steps
-  var nextStepsE = es.afterSequenceOptions || [];
-  var nsWrapE = document.getElementById('email-nextsteps-wrap');
-  var nsListE = document.getElementById('email-nextsteps-list');
-  if (nsWrapE && nextStepsE.length) {
-    nsWrapE.classList.remove('hidden');
-    if (nsListE) nsListE.innerHTML = nextStepsE.map(function(s){
-      return '<span class="next-step-chip">&#8594; ' + clean(typeof s==='string'?s:(s.step||s.action||'')) + '</span>';
-    }).join('');
+    if (auditId) {
+      var implBtn = document.createElement('button');
+      implBtn.id = 'email-impl-btn';
+      implBtn.innerHTML = '&#9993;&nbsp;&nbsp;Implement Email Sequence &rarr;';
+      implBtn.style.cssText = 'background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;font-size:14px;font-weight:700;padding:12px 28px;border-radius:10px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(249,115,22,.4);transition:all .2s;display:flex;align-items:center;gap:8px;';
+      implBtn.onmouseover = function(){ this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(249,115,22,.55)'; };
+      implBtn.onmouseout  = function(){ this.style.transform=''; this.style.boxShadow='0 4px 20px rgba(249,115,22,.4)'; };
+      implBtn.onclick = function(){ window.location.href = '/audit/' + auditId + '/email-sequence/implementation'; };
+      ctaWrap.appendChild(implBtn);
+    }
+    section.appendChild(ctaWrap);
   }
 }
+
 
 
 // ── Load report (called once — report page is only shown after audit completes) ──
 async function loadReport() {
   if (isDemo) {
     populateReport({
-      url: session.url||'yourbusiness.com.au', industry: session.industry||'General',
-      overallScore: session.overallScore||session.preScore||0,
-      executiveSummary: 'Run a full audit to see your personalised executive summary here.',
-      plugins: [], pluginOutputs: {}, synthesis: { topPriorities: [], quickWins: [], overallInsight: 'Complete the audit to see your insight.' },
+      url: session.url||'yourbusiness.com.au', industry: session.industry||'Professional Services',
+      overallScore: session.overallScore||session.preScore||72,
+      executiveSummary: "Your digital presence shows solid technical foundations but significant opportunities remain to dominate your local market. While your site is secure (HTTPS) and mobile-responsive, critical gaps in schema markup, internal linking, and search intent targeting are limiting your organic traffic. Addressing these high-impact technical and content optimization areas over the next 90 days will improve search result visibility and drive more qualified leads.",
+      plugins: [
+        { id: 'seo-audit', name: 'SEO Audit', score: 68, summary: 'Foundational SEO is solid with secure HTTPS and clean URLs, but missing meta descriptions and thin content on service pages are hurting keyword visibility. Adding structured schema and optimizing title tags will drive immediate click-through improvements.' },
+        { id: 'brand-review', name: 'Brand Review', score: 78, summary: 'The brand voice is highly professional, but there are a few legal risks regarding unqualified performance guarantees that should be removed. Simplifying technical industry jargon will also make the service pages much more approachable to prospects.' },
+        { id: 'content-copy', name: 'Content & Copy', score: 70, summary: 'Homepage headings are company-focused rather than customer-benefit focused. Rewriting top banners and optimizing CTAs for higher intent will increase conversion rates and decrease bounce rates.' },
+        { id: 'competitive-brief', name: 'Competitive Brief', score: 65, summary: 'Your competitors are aggressively publishing case studies and customer stories. Highlighting your unique dedicated strategist model on pricing pages will create a strong commercial differentiator.' },
+        { id: 'campaign-plan', name: 'Campaign Plan', score: 75, summary: '90-day campaign calendar targeting high-value decision makers on LinkedIn and via retargeting ads. Aligning week-by-week copy with direct customer pain-points.' },
+        { id: 'email-sequence', name: 'Email Sequence', score: 80, summary: 'A complete 3-step welcome and nurture sequence to convert inbound audit requests. Open rates can be optimized by shifting to high-value, benefit-driven subject lines.' }
+      ],
+      pluginOutputs: {
+        'seo-audit': {
+          summary: 'Foundational SEO is solid with secure HTTPS and clean URLs, but missing meta descriptions and thin content on service pages are hurting keyword visibility.',
+          technicalChecklist: [
+            { check: 'Page Speed', status: 'Warning', details: 'LCP is 3.4s due to unoptimized hero image assets.' },
+            { check: 'Mobile Friendliness', status: 'Pass', details: 'Sizing and tap targets pass responsive checks.' },
+            { check: 'Structured Data', status: 'Fail', details: 'No schema.org markup detected on homepage.' },
+            { check: 'Canonical Tags', status: 'Pass', details: 'Canonical self-references exist on all crawled pages.' }
+          ],
+          keywordOpportunities: [
+            { keyword: 'digital marketing agency melbourne', estimatedDifficulty: 'hard', opportunityScore: 'high', currentRanking: '12', intent: 'commercial', recommendedContentType: 'Service Page' },
+            { keyword: 'data driven seo services', estimatedDifficulty: 'moderate', opportunityScore: 'high', currentRanking: 'N/A', intent: 'transactional', recommendedContentType: 'Landing Page' }
+          ],
+          onPageIssues: [
+            { pageUrl: 'https://yourbusiness.com.au/', issue: 'Homepage title tag is missing target keywords.', severity: 'High', recommendedFix: 'Update title to focus on primary service offering.' }
+          ],
+          contentGaps: [
+            { topic: 'Data-driven marketing case studies', whyItMatters: 'Builds authority and trust with corporate decision makers.', recommendedFormat: 'Case Study PDF', priority: 'High', estimatedEffort: 'Moderate' }
+          ],
+          competitorComparison: [
+            { dimension: 'Domain Authority', yourSite: '32', competitorA: '45', competitorB: '52', winner: 'Competitor B' },
+            { dimension: 'Organic Keywords', yourSite: '120', competitorA: '1,400', competitorB: '3,100', winner: 'Competitor B' }
+          ],
+          recommendations: [
+            { priority: 1, action: 'Optimize meta titles for top keyword opportunities.', expectedImpact: 'High', effort: 'Quick Win', timeframe: 'Day 1 to Day 5', dependencies: 'None' },
+            { priority: 2, action: 'Inject LocalBusiness and FAQ schema.', expectedImpact: 'High', effort: 'Strategic Investment', timeframe: 'Day 5 to Day 10', dependencies: 'None' }
+          ]
+        },
+        'brand-review': {
+          summary: 'The brand voice is highly professional, but there are a few legal risks regarding unqualified performance guarantees that should be removed.',
+          toneConsistency: { score: 78, findings: [{ page: 'Services', issue: 'Jargon usage', suggestion: 'Simplify copy' }] },
+          jargonCompliance: { findings: [{ term: 'CTR optimizations', replacement: 'getting more clicks', reason: 'Industry jargon' }] },
+          legalClaimsCheck: { findings: [{ claim: '100% Guaranteed Results', riskLevel: 'High', citation: 'ACCC ACL', recommendedAction: 'Soften guarantee language' }] },
+          recommendations: [
+            { priority: 1, action: 'ACCC claims mitigation review.', expectedImpact: 'High', effort: 'Quick Win', timeframe: 'Day 1 to Day 5', dependencies: 'None' }
+          ]
+        },
+        'content-copy': {
+          summary: 'Homepage headings are company-focused rather than customer-benefit focused.',
+          voiceAndTone: { current: 'Corporate & technical', recommended: 'Benefit-driven & professional', adjectives: ['Clear', 'Direct', 'Authoritative'] },
+          contentDrafts: { blogPost: { headline: 'How Data-Driven Marketing Can Double Your Lead Quality', outline: '1. Introduction...', bodyExcerpt: 'Many businesses make marketing choices based on gut feel rather than hard data...' } },
+          recommendations: [
+            { priority: 1, action: 'Rewrite main homepage heading and copy.', expectedImpact: 'High', effort: 'Quick Win', timeframe: 'Day 1 to Day 5', dependencies: 'None' }
+          ]
+        },
+        'competitive-brief': {
+          summary: 'Your competitors are aggressively publishing case studies and customer stories.',
+          competitors: [{ name: 'Competitor A', url: 'comp-a.com.au', strengths: 'Large team, established brand', weaknesses: 'Automated dashboards, impersonal service' }],
+          recommendations: [
+            { priority: 1, action: 'Emphasize direct senior strategist model.', expectedImpact: 'High', effort: 'Strategic Investment', timeframe: 'Day 5 to Day 10', dependencies: 'None' }
+          ]
+        },
+        'campaign-plan': {
+          summary: '90-day campaign calendar targeting high-value decision makers on LinkedIn.',
+          targetAudience: { segments: [{ name: 'Marketing Managers', demographics: 'Ages 30-50, Melbourne-based', paintPoints: 'Low lead quality', channels: 'LinkedIn, Email' }] },
+          recommendations: [
+            { priority: 1, action: 'Launch Facebook retargeting campaign with pain-point matching copy.', expectedImpact: 'High', effort: 'Strategic Investment', timeframe: 'Day 5 to Day 10', dependencies: 'None' }
+          ]
+        },
+        'email-sequence': {
+          summary: 'A complete 3-step welcome and nurture sequence to convert inbound audit requests.',
+          emails: [{ subject: '🎁 Your Free SEO Audit is inside', body: 'Hi, thanks for requesting your audit...', delayDays: 0, type: 'Welcome' }],
+          metricsToTrack: { primaryConversionMetric: 'Booked Calls', perEmailMetrics: ['Open Rate', 'Click Rate'], reviewCadence: 'Weekly' },
+          recommendations: [
+            { priority: 1, action: 'Update sequence subject lines and add direct booking CTA.', expectedImpact: 'High', effort: 'Quick Win', timeframe: 'Day 1 to Day 5', dependencies: 'None' }
+          ]
+        }
+      },
+      synthesis: {
+        executiveSummary: "Your digital presence shows solid technical foundations but significant opportunities remain to dominate your local market. While your site is secure (HTTPS) and mobile-responsive, critical gaps in schema markup, internal linking, and search intent targeting are limiting your organic traffic. Addressing these high-impact technical and content optimization areas over the next 90 days will improve search result visibility and drive more qualified leads.",
+        topPriorities: [
+          { action: "Optimize meta titles for top keyword opportunities", impact: "High", effort: "Small" },
+          { action: "ACCC legal risk mitigation review for guarantees", impact: "High", effort: "Small" },
+          { action: "Rewrite homepage hero heading and copy", impact: "High", effort: "Small" },
+          { action: "Inject LocalBusiness and FAQ schema", impact: "High", effort: "Medium" },
+          { action: "Launch Facebook retargeting campaigns for leads", impact: "High", effort: "Medium" },
+          { action: "Update email nurture sequence subject lines", impact: "Medium", effort: "Small" }
+        ],
+        quickWins: [
+          "Optimize homepage meta title",
+          "Mitigate ACCC risk wording",
+          "Update email sequence subjects"
+        ],
+        strategicThemes: ["SEO Optimization", "ACCC Compliance", "Copy Conversion", "Lead Generation"],
+        overallInsight: "Closing technical and content gaps will yield immediate search visibility improvements."
+      }
     });
     return;
   }

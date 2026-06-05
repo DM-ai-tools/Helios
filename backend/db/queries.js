@@ -135,3 +135,82 @@ export async function getAuditPlugins(auditId) {
   const pluginsObj = await redisGet(`audit_plugins:${auditId}`);
   return pluginsObj ? Object.values(pluginsObj) : [];
 }
+
+// ─── Implementation Changes ───────────────────────────────────
+const IMPL_TTL = 60 * 60 * 24 * 30; // 30 days
+
+export async function saveImplementationChanges(auditId, pluginId, changes) {
+  const key = `impl_changes:${auditId}:${pluginId}`;
+  const records = changes.map((c, i) => ({
+    id:                `${auditId}-${pluginId}-${i}`,
+    auditId,
+    pluginId,
+    title:             c.title             || 'Untitled Change',
+    priority:          c.priority          || 'Medium',
+    impactScore:       c.impactScore       || 50,
+    description:       c.description       || '',
+    currentState:      c.currentState      || '',
+    proposedChange:    c.proposedChange    || '',
+    changeType:        c.changeType        || 'general',
+    status:            'pending',
+    userEdit:          null,
+    createdAt:         new Date().toISOString(),
+  }));
+  await redisSet(key, records, IMPL_TTL);
+  return records;
+}
+
+export async function getImplementationChanges(auditId, pluginId) {
+  const key = `impl_changes:${auditId}:${pluginId}`;
+  return (await redisGet(key)) || [];
+}
+
+export async function updateImplementationChange(auditId, pluginId, changeId, { status, userEdit }) {
+  const key = `impl_changes:${auditId}:${pluginId}`;
+  const records = (await redisGet(key)) || [];
+  const idx = records.findIndex(r => r.id === changeId);
+  if (idx === -1) return null;
+  if (status   !== undefined) records[idx].status   = status;
+  if (userEdit !== undefined) records[idx].userEdit = userEdit;
+  records[idx].updatedAt = new Date().toISOString();
+  await redisSet(key, records, IMPL_TTL);
+  return records[idx];
+}
+
+// ─── Implementation Jobs ──────────────────────────────────────
+export async function createImplementationJob(auditId, pluginId, approvedChanges) {
+  const jobId = uuidv4();
+  const job = {
+    id:              jobId,
+    auditId,
+    pluginId,
+    status:          'queued',
+    approvedChanges,
+    botResponse:     null,
+    dispatchedAt:    new Date().toISOString(),
+    completedAt:     null,
+  };
+  const listKey = `impl_jobs:${auditId}`;
+  const existing = (await redisGet(listKey)) || [];
+  existing.push(job);
+  await redisSet(listKey, existing, IMPL_TTL);
+  await redisSet(`impl_job:${jobId}`, job, IMPL_TTL);
+  return job;
+}
+
+export async function getImplementationJobs(auditId) {
+  return (await redisGet(`impl_jobs:${auditId}`)) || [];
+}
+
+export async function updateImplementationJob(jobId, updates) {
+  const job = await redisGet(`impl_job:${jobId}`);
+  if (!job) return null;
+  Object.assign(job, updates, { updatedAt: new Date().toISOString() });
+  await redisSet(`impl_job:${jobId}`, job, IMPL_TTL);
+  // update in list too
+  const listKey = `impl_jobs:${job.auditId}`;
+  const list = (await redisGet(listKey)) || [];
+  const idx = list.findIndex(j => j.id === jobId);
+  if (idx !== -1) { list[idx] = job; await redisSet(listKey, list, IMPL_TTL); }
+  return job;
+}

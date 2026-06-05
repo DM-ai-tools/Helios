@@ -33,7 +33,15 @@ IMPORTANT RULES:
 - Be specific with KPIs — avoid vanity metrics unless justified for awareness.
 - Calendar must have specific week numbers and action items.
 - Split your Prioritized Action Plan (Recommendations) into Quick Wins (do this week, < 2 hours) and Strategic Investments.
-- OUTPUT FORMAT: Respond ONLY with valid JSON matching the exact structure specified.`,
+- OUTPUT FORMAT: Respond ONLY with valid JSON matching the exact structure specified.
+
+════════════════════════════════════════════════════════
+IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
+════════════════════════════════════════════════════════
+You MUST include an "implementationChanges" array with 6–12 deployment-ready campaign assets.
+- "proposedChange" must be COMPLETE, ready-to-publish content — actual LinkedIn post copy, actual email subject line + body, actual ad headline + description
+- "currentState" describes what the business currently does (or lacks) in that area
+- No placeholders. No [INSERT NAME]. No lorem ipsum. Write the actual copy.`,
 
   scoringPrompt: `Assess the business's current marketing readiness and campaign potential (0–100):
 
@@ -125,6 +133,17 @@ Categories (each 0–100):
         action: 'string',
         expectedImpact: 'string (High/Medium/Low)',
         effort: 'string (Quick Win / Strategic Investment)'
+      }
+    ],
+    implementationChanges: [
+      {
+        title: 'string — e.g. "Launch LinkedIn Thought Leadership Series"',
+        priority: 'string — High / Medium / Low',
+        impactScore: 'number 1-100',
+        description: 'string — what this achieves and why now',
+        currentState: 'string — what the business currently does or does not do in this area',
+        proposedChange: 'string — EXACT campaign brief, post copy, email draft, or ad copy ready to use',
+        changeType: 'string — one of: social / email / paid / content / seo / event'
       }
     ]
   },

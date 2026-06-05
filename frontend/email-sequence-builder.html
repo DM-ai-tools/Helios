@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email Campaign Builder — ClickTrends AI Audit</title>
+  <meta name="description" content="Review, edit and approve your AI-generated email campaign before launching." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:   #1a1a2e;
+      --navy2:  #16213e;
+      --orange: #f97316;
+      --orange2:#ea580c;
+      --green:  #22c55e;
+      --red:    #ef4444;
+      --border: #e8eaed;
+      --bg:     #f4f6f9;
+      --card:   #ffffff;
+      --text:   #1f2937;
+      --muted:  #6b7280;
+      --sidebar-w: 260px;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOP NAV ─────────────────────────────────────────────── */
+    .nav {
+      background: var(--navy);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      flex-shrink: 0;
+    }
+    .nav-logo { font-size: 17px; font-weight: 900; color: var(--orange); letter-spacing: -.03em; }
+    .nav-logo span { color: #fff; }
+    .nav-center {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 13px; color: #94a3b8;
+    }
+    .nav-tag {
+      background: rgba(249,115,22,.15); border: 1px solid rgba(249,115,22,.3);
+      color: var(--orange); border-radius: 99px; padding: 3px 12px;
+      font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+    }
+    .nav-back {
+      font-size: 12px; color: #9ca3af; text-decoration: none;
+      display: flex; align-items: center; gap: 5px; transition: color .2s;
+    }
+    .nav-back:hover { color: var(--orange); }
+
+    /* ── CAMPAIGN HEADER ──────────────────────────────────────── */
+    .campaign-header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+      padding: 20px 28px;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      flex-shrink: 0;
+    }
+    .campaign-header-inner {
+      max-width: 1400px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .campaign-title { font-size: 20px; font-weight: 900; color: #fff; margin-bottom: 6px; }
+    .campaign-meta { display: flex; flex-wrap: wrap; gap: 10px; }
+    .campaign-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+      border-radius: 99px; padding: 4px 14px;
+      font-size: 11px; color: #e2e8f0; font-weight: 600;
+    }
+    .campaign-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); }
+
+    /* ── WORKSPACE LAYOUT ─────────────────────────────────────── */
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr 320px;
+      min-height: 0;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    /* ── LEFT SIDEBAR — EMAIL LIST ───────────────────────────── */
+    .sidebar {
+      background: #1e2433;
+      border-right: 1px solid rgba(255,255,255,.07);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-header {
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      flex-shrink: 0;
+    }
+    .sidebar-title {
+      font-size: 10px; font-weight: 800; letter-spacing: .1em;
+      text-transform: uppercase; color: #64748b; margin-bottom: 8px;
+    }
+    .sidebar-stats {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .sidebar-stat {
+      font-size: 10px; font-weight: 700; border-radius: 99px;
+      padding: 2px 8px; border: 1px solid;
+    }
+    .sidebar-stat.pending  { color: #f59e0b; border-color: rgba(245,158,11,.3); background: rgba(245,158,11,.1); }
+    .sidebar-stat.approved { color: #22c55e; border-color: rgba(34,197,94,.3);  background: rgba(34,197,94,.1); }
+    .sidebar-stat.rejected { color: #ef4444; border-color: rgba(239,68,68,.3);  background: rgba(239,68,68,.1); }
+
+    .email-list { flex: 1; overflow-y: auto; padding: 8px; }
+    .email-list::-webkit-scrollbar { width: 4px; }
+    .email-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
+
+    .email-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 12px; border-radius: 10px; cursor: pointer;
+      transition: all .18s; margin-bottom: 4px;
+      border: 1.5px solid transparent; position: relative;
+    }
+    .email-item:hover { background: rgba(255,255,255,.05); }
+    .email-item.active {
+      background: rgba(249,115,22,.12);
+      border-color: rgba(249,115,22,.3);
+    }
+    .email-item.approved { border-color: rgba(34,197,94,.25); }
+    .email-item.rejected { opacity: .55; }
+
+    .email-num-badge {
+      width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 900; color: var(--orange);
+      background: linear-gradient(135deg, rgba(249,115,22,.18), rgba(234,88,12,.08));
+      border: 1px solid rgba(249,115,22,.2);
+    }
+    .email-item-info { flex: 1; min-width: 0; }
+    .email-item-name {
+      font-size: 12px; font-weight: 700; color: #e2e8f0; margin-bottom: 1px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .email-item-subject {
+      font-size: 10px; color: #64748b; line-height: 1.3;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .email-status-icon {
+      width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 900;
+    }
+    .email-status-icon.pending  { background: rgba(245,158,11,.15); color: #f59e0b; border: 1px solid rgba(245,158,11,.3); }
+    .email-status-icon.approved { background: rgba(34,197,94,.15);  color: #22c55e; border: 1px solid rgba(34,197,94,.3); }
+    .email-status-icon.rejected { background: rgba(239,68,68,.15);  color: #ef4444; border: 1px solid rgba(239,68,68,.3); }
+
+    /* ── MAIN PREVIEW AREA ───────────────────────────────────── */
+    .preview-area {
+      display: flex; flex-direction: column; overflow: hidden;
+      background: var(--bg);
+    }
+
+    .preview-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px; background: var(--card);
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .preview-email-name {
+      font-size: 14px; font-weight: 800; color: var(--navy); flex: 1; min-width: 0;
+    }
+    .view-toggle {
+      display: flex; background: #f3f4f6; border-radius: 8px; padding: 3px; gap: 2px;
+    }
+    .view-btn {
+      padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer;
+      font-size: 12px; font-weight: 700; color: #6b7280; background: transparent;
+      transition: all .18s; display: flex; align-items: center; gap: 5px;
+    }
+    .view-btn.active { background: #fff; color: var(--navy); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+
+    .preview-frame-wrap {
+      flex: 1; overflow: auto; padding: 24px;
+      display: flex; justify-content: center;
+      background: #dde1e7;
+    }
+    .preview-frame-outer {
+      transition: width .3s ease;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,.18);
+      height: fit-content;
+      min-height: 600px;
+    }
+    .preview-frame-outer.desktop { width: 100%; max-width: 640px; }
+    .preview-frame-outer.mobile  { width: 375px; }
+
+    #email-preview-iframe {
+      width: 100%; border: none; display: block;
+      min-height: 600px;
+    }
+
+    .preview-empty {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px; color: var(--muted); padding: 40px;
+    }
+    .preview-empty-icon { font-size: 56px; opacity: .25; }
+    .preview-empty-text { font-size: 15px; font-weight: 600; color: #9ca3af; }
+    .preview-empty-sub { font-size: 13px; color: #c4c4c4; }
+
+    /* ── RIGHT PANEL — EMAIL DETAILS ────────────────────────── */
+    .details-panel {
+      background: var(--card);
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .details-inner { flex: 1; overflow-y: auto; padding: 20px; }
+    .details-inner::-webkit-scrollbar { width: 4px; }
+    .details-inner::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
+
+    .detail-label {
+      font-size: 9px; font-weight: 800; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 5px;
+    }
+    .detail-value {
+      font-size: 12px; color: var(--text); line-height: 1.6; margin-bottom: 14px;
+      background: #f8f9fa; border-radius: 8px; padding: 9px 12px;
+    }
+    .detail-value.subject { font-weight: 700; font-size: 13px; }
+
+    .section-divider {
+      border: none; border-top: 1px solid var(--border); margin: 16px 0;
+    }
+    .section-title {
+      font-size: 11px; font-weight: 800; color: var(--navy); margin-bottom: 12px;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    /* Editable fields */
+    .edit-field {
+      width: 100%; border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 9px 12px; font-size: 12px; font-family: inherit;
+      color: var(--text); background: #fff; margin-bottom: 10px;
+      transition: border-color .2s; resize: vertical; line-height: 1.6;
+    }
+    .edit-field:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(249,115,22,.1); }
+    .edit-field-label {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; display: block;
+    }
+
+    /* Action buttons */
+    .action-row {
+      display: flex; gap: 8px; flex-wrap: wrap; padding: 16px 20px;
+      border-top: 1px solid var(--border); flex-shrink: 0; background: var(--card);
+    }
+    .btn {
+      padding: 9px 18px; border-radius: 9px; font-size: 12px; font-weight: 700;
+      border: 1.5px solid transparent; cursor: pointer; transition: all .18s;
+      display: flex; align-items: center; gap: 6px; white-space: nowrap;
+    }
+    .btn-approve {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #fff; box-shadow: 0 2px 10px rgba(34,197,94,.3);
+      flex: 1;
+    }
+    .btn-approve:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(34,197,94,.45); }
+    .btn-reject  {
+      background: #fff; color: #ef4444; border-color: #fecdd3;
+    }
+    .btn-reject:hover  { background: #fff1f2; }
+    .btn-undo {
+      background: #f3f4f6; color: #6b7280; border-color: #e5e7eb;
+    }
+    .btn-undo:hover { background: #e9ecef; }
+    .btn-save-edit {
+      background: var(--navy); color: #fff; width: 100%;
+      justify-content: center; margin-top: 4px;
+    }
+    .btn-save-edit:hover { background: var(--orange); }
+
+    /* ── BOTTOM CAMPAIGN BAR ─────────────────────────────────── */
+    .campaign-bar {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+      border-top: 1px solid rgba(255,255,255,.07);
+      padding: 14px 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap; flex-shrink: 0;
+    }
+    .campaign-bar-stats { display: flex; gap: 12px; align-items: center; }
+    .cbar-stat { font-size: 12px; color: #94a3b8; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+    .cbar-stat strong { color: #e2e8f0; }
+    .cbar-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+    .btn-bulk-approve {
+      background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.3);
+      color: #22c55e; padding: 8px 18px; border-radius: 9px;
+      font-size: 12px; font-weight: 700; cursor: pointer; transition: all .18s;
+    }
+    .btn-bulk-approve:hover { background: rgba(34,197,94,.25); }
+    .btn-bulk-reject {
+      background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.25);
+      color: #ef4444; padding: 8px 18px; border-radius: 9px;
+      font-size: 12px; font-weight: 700; cursor: pointer; transition: all .18s;
+    }
+    .btn-bulk-reject:hover { background: rgba(239,68,68,.2); }
+    .btn-dispatch {
+      background: linear-gradient(135deg, var(--orange), var(--orange2));
+      color: #fff; padding: 11px 28px; border-radius: 11px;
+      font-size: 13px; font-weight: 800; cursor: pointer; border: none;
+      box-shadow: 0 4px 20px rgba(249,115,22,.45); transition: all .2s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .btn-dispatch:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(249,115,22,.6); }
+    .btn-dispatch:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* ── TOAST ───────────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 80px; right: 24px;
+      padding: 13px 20px; border-radius: 12px; font-size: 13px; font-weight: 700;
+      color: #fff; opacity: 0; pointer-events: none; transition: opacity .3s;
+      z-index: 9999; max-width: 340px; display: flex; align-items: center; gap: 8px;
+    }
+    #toast.show { opacity: 1; }
+    #toast.success { background: linear-gradient(135deg,#22c55e,#16a34a); box-shadow: 0 4px 20px rgba(34,197,94,.4); }
+    #toast.error   { background: linear-gradient(135deg,#ef4444,#dc2626); box-shadow: 0 4px 20px rgba(239,68,68,.4); }
+    #toast.info    { background: linear-gradient(135deg,#3b82f6,#2563eb); box-shadow: 0 4px 20px rgba(59,130,246,.4); }
+
+    /* ── LOADING ─────────────────────────────────────────────── */
+    #loading-screen {
+      position: fixed; inset: 0; background: var(--navy);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 20px; z-index: 9998;
+    }
+    .loading-logo { font-size: 22px; font-weight: 900; color: var(--orange); letter-spacing: -.03em; }
+    .loading-logo span { color: #fff; }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 3px solid rgba(255,255,255,.1);
+      border-top-color: var(--orange);
+      border-radius: 50%; animation: spin .75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 14px; color: #64748b; font-weight: 500; }
+
+    /* ── MODAL (payload preview) ─────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.65);
+      z-index: 999; align-items: center; justify-content: center; padding: 24px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: 20px; max-width: 700px; width: 100%;
+      max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;
+      box-shadow: 0 24px 80px rgba(0,0,0,.35);
+    }
+    .modal-header {
+      padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-title { font-size: 16px; font-weight: 800; color: var(--navy); }
+    .modal-close {
+      width: 30px; height: 30px; border-radius: 50%; border: none;
+      background: #f3f4f6; cursor: pointer; font-size: 16px; color: #6b7280;
+      display: flex; align-items: center; justify-content: center; transition: all .18s;
+    }
+    .modal-close:hover { background: #e5e7eb; color: var(--navy); }
+    .modal-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+    .modal-footer {
+      padding: 16px 24px; border-top: 1px solid var(--border);
+      display: flex; gap: 10px; justify-content: flex-end;
+    }
+    .code-block {
+      background: #0f172a; border-radius: 10px; padding: 16px;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-size: 11px; color: #94a3b8; line-height: 1.7;
+      overflow: auto; max-height: 400px; white-space: pre-wrap;
+    }
+
+    /* ── RESPONSIVE ──────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .workspace { grid-template-columns: 220px 1fr; }
+      .details-panel { display: none; }
+    }
+    @media (max-width: 640px) {
+      .workspace { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+      .sidebar { max-height: 200px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loading-screen">
+  <div class="loading-logo">Click<span>Trends</span></div>
+  <div class="spinner"></div>
+  <div class="loading-text">Loading campaign builder…</div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo">Click<span>Trends</span></div>
+  <div class="nav-center">
+    <span class="nav-tag">✉ Campaign Builder</span>
+    <span id="nav-campaign-name" style="color:#e2e8f0;font-weight:600"></span>
+  </div>
+  <a id="back-link" href="javascript:history.back()" class="nav-back">← Back to Report</a>
+</nav>
+
+<!-- CAMPAIGN HEADER -->
+<div class="campaign-header">
+  <div class="campaign-header-inner">
+    <div>
+      <div class="campaign-title" id="header-campaign-name">Loading Campaign…</div>
+      <div class="campaign-meta" id="header-campaign-meta"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="text-align:right;">
+        <div style="font-size:10px;color:#64748b;margin-bottom:2px;font-weight:600;letter-spacing:.06em">OPEN RATE PREDICTION</div>
+        <div id="header-open-rate" style="font-size:22px;font-weight:900;color:var(--orange)">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WORKSPACE -->
+<div class="workspace" id="workspace" style="display:none">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Emails in Sequence</div>
+      <div class="sidebar-stats" id="sidebar-stats"></div>
+    </div>
+    <div class="email-list" id="email-list"></div>
+  </aside>
+
+  <!-- PREVIEW AREA -->
+  <section class="preview-area">
+    <div class="preview-toolbar" id="preview-toolbar" style="display:none">
+      <div class="preview-email-name" id="preview-email-name">Select an email</div>
+      <div class="view-toggle">
+        <button class="view-btn active" id="btn-desktop" onclick="setView('desktop')">🖥 Desktop</button>
+        <button class="view-btn" id="btn-mobile" onclick="setView('mobile')">📱 Mobile</button>
+      </div>
+    </div>
+    <div class="preview-frame-wrap" id="preview-frame-wrap">
+      <div class="preview-empty" id="preview-empty">
+        <div class="preview-empty-icon">✉</div>
+        <div class="preview-empty-text">Select an email to preview</div>
+        <div class="preview-empty-sub">Click any email in the sidebar to see its full design</div>
+      </div>
+      <div class="preview-frame-outer desktop" id="frame-outer" style="display:none">
+        <iframe id="email-preview-iframe" title="Email Preview" sandbox="allow-same-origin"></iframe>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT DETAILS PANEL -->
+  <aside class="details-panel" id="details-panel">
+    <div class="details-inner" id="details-inner">
+      <div style="text-align:center;padding:40px 20px;color:#9ca3af">
+        <div style="font-size:40px;margin-bottom:12px;opacity:.3">✉</div>
+        <div style="font-size:13px;font-weight:600">Select an email to see details</div>
+      </div>
+    </div>
+    <div class="action-row" id="action-row" style="display:none">
+      <button class="btn btn-approve" id="btn-approve" onclick="approveEmail()">✓ Approve</button>
+      <button class="btn btn-reject"  id="btn-reject"  onclick="rejectEmail()">✗ Reject</button>
+      <button class="btn btn-undo"    id="btn-undo"    onclick="undoEmail()">↺</button>
+    </div>
+  </aside>
+</div>
+
+<!-- CAMPAIGN BAR -->
+<div class="campaign-bar" id="campaign-bar" style="display:none">
+  <div class="campaign-bar-stats" id="campaign-bar-stats"></div>
+  <div class="cbar-actions">
+    <button class="btn-bulk-approve" onclick="bulkApprove()">✓ Approve All</button>
+    <button class="btn-bulk-reject"  onclick="bulkReject()">✗ Reject All</button>
+    <button class="btn-dispatch" id="dispatch-btn" onclick="openPayloadModal()" disabled>
+      🚀 Send Approved Sequence To Implementation Bot
+    </button>
+  </div>
+</div>
+
+<!-- PAYLOAD MODAL -->
+<div class="modal-overlay" id="payload-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📦 Campaign Payload Preview</div>
+      <button class="modal-close" onclick="closePayloadModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px;line-height:1.6">
+        The following JSON payload will be sent to your implementation bot. Only <strong>approved</strong> emails are included.
+        Your bot will upload the HTML emails, configure the sequence delays, and publish the campaign.
+      </p>
+      <pre class="code-block" id="payload-preview"></pre>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-undo" style="background:#f3f4f6;border:none;color:#374151" onclick="closePayloadModal()">Cancel</button>
+      <button class="btn btn-dispatch" id="confirm-dispatch-btn" onclick="dispatchCampaign()" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;font-size:13px;font-weight:800;padding:10px 24px;border-radius:10px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(249,115,22,.4)">
+        🚀 Confirm &amp; Dispatch
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── URL params ──────────────────────────────────────────────────
+var parts   = window.location.pathname.split('/');
+var auditId = parts[2] || '';
+var isDemo  = auditId === 'demo' || auditId.startsWith('demo-') || !auditId;
+var session = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
+
+// ── State ───────────────────────────────────────────────────────
+var emails      = [];   // enriched email objects
+var activeIdx   = -1;
+var editPending = {};   // {idx: {subject, previewText, html, ctaText, ctaUrl}}
+var campaignMeta = {};
+
+// ── Boot ────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async function() {
+  document.getElementById('back-link').href = '/report.html?auditId=' + auditId;
+  await loadCampaignData();
+});
+
+// ── Load Data ───────────────────────────────────────────────────
+async function loadCampaignData() {
+  try {
+    if (isDemo) {
+      await loadDemoData();
+    } else {
+      var res  = await fetch('/api/audit/' + auditId);
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load audit');
+
+      var es = (data.pluginOutputs || {})['email-sequence'];
+      if (!es || !es.sequences || !es.sequences.length) {
+        throw new Error('No email sequence data found in audit. Please re-run the audit with the Email Sequence plugin.');
+      }
+      buildFromAuditData(es);
+    }
+    renderUI();
+  } catch (err) {
+    document.getElementById('loading-screen').innerHTML =
+      '<div style="text-align:center;padding:40px;color:#94a3b8">' +
+      '<div style="font-size:50px;margin-bottom:20px">⚠</div>' +
+      '<div style="font-size:18px;font-weight:700;color:#e2e8f0;margin-bottom:8px">Failed to load campaign</div>' +
+      '<div style="font-size:14px;margin-bottom:24px">' + err.message + '</div>' +
+      '<a href="javascript:history.back()" style="background:var(--orange);color:#fff;font-weight:700;padding:10px 24px;border-radius:10px;text-decoration:none">← Go Back</a>' +
+      '</div>';
+  }
+}
+
+function buildFromAuditData(es) {
+  var seq = es.sequences[0];
+  campaignMeta = {
+    name:         seq.sequenceType || seq.sequenceName || 'Email Campaign',
+    emailCount:   (seq.emails||[]).length,
+    goal:         seq.goal || '',
+    sequenceType: seq.sequenceType || 'email_sequence',
+    openRate:     (seq.performanceBenchmarks || {}).expectedOpenRate || '',
+    duration:     seq.narrativeArc ? ('~' + (seq.emails||[]).length * 3 + ' Days') : '',
+    exitCondition: seq.exitCondition || '',
+  };
+
+  emails = (seq.emails || []).map(function(em, idx) {
+    return {
+      idx:         idx,
+      emailNumber: em.emailNumber || idx + 1,
+      emailName:   em.emailName || ('Email ' + (em.emailNumber || idx+1)),
+      subject:     em.subject || (em.subjectLineOptions && em.subjectLineOptions[0]) || '',
+      previewText: em.previewText || '',
+      bodyCopy:    em.bodyCopy || '',
+      primaryCTA:  em.primaryCTA || '',
+      ctaText:     em.ctaText || '',
+      ctaUrl:      em.ctaUrl || '',
+      timing:      em.timing || '',
+      sendTiming:  em.sendTiming || em.timing || '',
+      delayDays:   em.delayDays != null ? em.delayDays : idx * 2,
+      targetAudience: em.targetAudience || em.segmentConditionNotes || '',
+      campaignStage:  em.campaignStage || '',
+      purpose:        em.purpose || '',
+      htmlTemplate:   em.htmlTemplate || '',
+      status:      'pending',  // pending | approved | rejected
+      userSubject: null,
+      userPreviewText: null,
+      userHtml:    null,
+      userCtaText: null,
+      userCtaUrl:  null,
+    };
+  });
+}
+
+async function loadDemoData() {
+  campaignMeta = {
+    name:         'Email Campaign',
+    emailCount:   5,
+    goal:         'Convert prospects into booked strategy calls',
+    sequenceType: 'email_sequence',
+    openRate:     '28–35%',
+    duration:     '14 Day Campaign',
+    exitCondition: 'Books a strategy call',
+  };
+
+  var demoEmails = [
+    { emailName: 'Welcome',          subject: '🎁 Your free SEO audit is ready (plus 3 quick wins)', timing: 'Day 0 – Immediately', delayDays: 0,  stage: 'Awareness',     cta: 'View Your Audit Results', ctaUrl: '/results' },
+    { emailName: 'Value Proposition',subject: 'The #1 reason most businesses are invisible on Google', timing: 'Day 3',            delayDays: 3,  stage: 'Consideration', cta: 'Get Your Growth Plan', ctaUrl: '/growth' },
+    { emailName: 'Case Study',       subject: 'How we got a local plumber 150% more leads in 90 days', timing: 'Day 7',           delayDays: 7,  stage: 'Consideration', cta: 'See Our Results', ctaUrl: '/case-studies' },
+    { emailName: 'Offer',            subject: '⏰ Your free strategy call expires Friday', timing: 'Day 10',                      delayDays: 10, stage: 'Decision',      cta: 'Book Your Free Call', ctaUrl: '/book' },
+    { emailName: 'Follow-Up',        subject: 'One last thing before I close your file…', timing: 'Day 14',                      delayDays: 14, stage: 'Decision',      cta: 'Claim Your Spot', ctaUrl: '/book' },
+  ];
+
+  var brandColour = '#f97316';
+  var brandName   = (session.url || 'ClickTrends').replace(/^https?:\/\/(www\.)?/,'').split('/')[0];
+
+  emails = demoEmails.map(function(de, idx) {
+    var html = generateFallbackHtml({
+      emailNumber:  idx + 1,
+      emailName:    de.emailName,
+      subject:      de.subject,
+      previewText:  'A message from ' + brandName,
+      bodyCopy:     getDemoBody(idx, brandName),
+      ctaText:      de.cta,
+      ctaUrl:       de.ctaUrl,
+      brandName:    brandName,
+      brandColour:  brandColour,
+    });
+    return {
+      idx: idx, emailNumber: idx+1, emailName: de.emailName,
+      subject: de.subject, previewText: 'A message from ' + brandName,
+      bodyCopy: getDemoBody(idx, brandName),
+      primaryCTA: de.cta + ' → ' + de.ctaUrl,
+      ctaText: de.cta, ctaUrl: de.ctaUrl,
+      timing: de.timing, sendTiming: de.timing, delayDays: de.delayDays,
+      targetAudience: 'All new subscribers', campaignStage: de.stage,
+      purpose: 'Move the prospect closer to booking a call.',
+      htmlTemplate: html, status: 'pending',
+      userSubject: null, userPreviewText: null, userHtml: null, userCtaText: null, userCtaUrl: null,
+    };
+  });
+}
+
+function getDemoBody(idx, brandName) {
+  var bodies = [
+    'Hi {{first_name}},\n\nThanks for requesting your free audit — we\'ve analysed your site and the results are inside.\n\nWe found 3 quick wins that could improve your visibility within 30 days. Most businesses miss these entirely.\n\nLet\'s get you moving in the right direction.',
+    'Hi {{first_name}},\n\nHere\'s the hard truth: 75% of people never scroll past the first page of Google results.\n\nIf your business isn\'t showing up there, you\'re invisible to the people who are actively searching for what you sell.\n\nThe good news? It\'s very fixable — and faster than you think.',
+    'Hi {{first_name}},\n\nLet me show you a real result.\n\nA local plumbing company came to us with 12 leads per month. Six months later, they were averaging 43 booked jobs.\n\nNo ad budget. No viral content. Just consistent, data-driven SEO and a properly optimised Google Business Profile.',
+    'Hi {{first_name}},\n\nI\'d love to hop on a free 20-minute strategy call with you this week.\n\nNo pitch. No pressure. Just an honest look at what\'s holding your online visibility back — and a clear path forward.\n\nSpots are limited — I only take 3 calls per week.',
+    'Hi {{first_name}},\n\nThis is my final follow-up.\n\nIf you\'re not ready right now, completely fine — but if you\'ve been sitting on the fence, this is your last chance to book a free session this month.\n\nWishing you every success.',
+  ];
+  return bodies[idx] || bodies[0];
+}
+
+// ── Fallback HTML generator (used when AI doesn't provide htmlTemplate) ──
+function generateFallbackHtml(e) {
+  var bodyLines = (e.bodyCopy || '').split('\n').filter(function(l){ return l.trim(); });
+  var paragraphs = bodyLines.map(function(l){
+    return '<tr><td style="padding:0 0 16px 0;font-size:15px;color:#374151;line-height:1.7;font-family:Arial,Helvetica,sans-serif">' + escHtml(l) + '</td></tr>';
+  }).join('');
+  var brand = escHtml(e.brandName || 'Company');
+  var colour = e.brandColour || '#f97316';
+
+  return '<!DOCTYPE html>\n' +
+    '<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n' +
+    '<title>' + escHtml(e.subject) + '</title>\n</head>\n' +
+    '<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif">\n' +
+    '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f4;padding:24px 0">\n' +
+    '<tr><td align="center">\n' +
+    '<table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%">\n' +
+
+    // Header
+    '<tr><td style="background:#1a1a2e;padding:22px 32px;border-radius:12px 12px 0 0">\n' +
+    '<table width="100%" cellpadding="0" cellspacing="0" border="0">\n' +
+    '<tr><td><span style="font-size:22px;font-weight:900;color:' + colour + ';letter-spacing:-.02em">' + brand + '</span></td>' +
+    '<td align="right"><span style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.08em;text-transform:uppercase">EMAIL ' + (e.emailNumber||1) + ' · ' + escHtml(e.emailName||'') + '</span></td></tr>\n' +
+    '</table>\n</td></tr>\n' +
+
+    // Hero
+    '<tr><td style="background:linear-gradient(135deg,#1a1a2e,#2d2d4e);padding:32px 32px 24px">\n' +
+    '<p style="margin:0 0 8px;font-size:10px;font-weight:700;color:' + colour + ';letter-spacing:.1em;text-transform:uppercase">NEW MESSAGE</p>\n' +
+    '<h1 style="margin:0;font-size:22px;font-weight:900;color:#ffffff;line-height:1.3">' + escHtml(e.subject) + '</h1>\n' +
+    (e.previewText ? '<p style="margin:10px 0 0;font-size:13px;color:rgba(255,255,255,.55);line-height:1.5">' + escHtml(e.previewText) + '</p>' : '') +
+    '</td></tr>\n' +
+
+    // Body
+    '<tr><td style="background:#ffffff;padding:36px 32px">\n' +
+    '<table width="100%" cellpadding="0" cellspacing="0" border="0">\n' +
+    paragraphs +
+    (e.ctaText ? '<tr><td style="padding:24px 0 8px" align="center">\n' +
+    '<a href="' + escHtml(e.ctaUrl||'#') + '" style="display:inline-block;background:' + colour + ';color:#ffffff;font-size:15px;font-weight:700;padding:16px 40px;border-radius:8px;text-decoration:none;letter-spacing:.01em">' + escHtml(e.ctaText) + ' →</a>\n' +
+    '</td></tr>\n' : '') +
+    '</table>\n</td></tr>\n' +
+
+    // Footer
+    '<tr><td style="background:#f9fafb;padding:22px 32px;border-radius:0 0 12px 12px;border-top:1px solid #e5e7eb">\n' +
+    '<table width="100%" cellpadding="0" cellspacing="0" border="0">\n' +
+    '<tr><td style="font-size:11px;color:#9ca3af;line-height:1.7">' + brand + ' · 123 Business St, Melbourne VIC 3000<br>' +
+    'You\'re receiving this because you requested a free audit.<br>' +
+    '<a href="#" style="color:#9ca3af">Unsubscribe</a> · <a href="#" style="color:#9ca3af">View in browser</a>' +
+    '</td></tr>\n</table>\n</td></tr>\n' +
+
+    '</table>\n</td></tr>\n</table>\n</body>\n</html>';
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Get the HTML to show in iframe ────────────────────────────
+function getEmailHtml(em) {
+  // Priority: user-edited HTML → AI-generated htmlTemplate → fallback generated
+  var html = em.userHtml || em.htmlTemplate || '';
+  if (!html || html.trim() === '') {
+    var brandName = (session.url || 'Company').replace(/^https?:\/\/(www\.)?/,'').split('/')[0];
+    html = generateFallbackHtml({
+      emailNumber:  em.emailNumber,
+      emailName:    em.emailName,
+      subject:      em.userSubject || em.subject,
+      previewText:  em.userPreviewText || em.previewText,
+      bodyCopy:     em.bodyCopy,
+      ctaText:      em.userCtaText || em.ctaText,
+      ctaUrl:       em.userCtaUrl  || em.ctaUrl,
+      brandName:    brandName,
+      brandColour:  '#f97316',
+    });
+  }
+  return html;
+}
+
+// ── Render UI ────────────────────────────────────────────────
+function renderUI() {
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('workspace').style.display = 'grid';
+  document.getElementById('campaign-bar').style.display = 'flex';
+
+  renderCampaignHeader();
+  renderEmailList();
+  renderCampaignBar();
+
+  // Auto-select first email
+  if (emails.length > 0) selectEmail(0);
+}
+
+function renderCampaignHeader() {
+  document.title = campaignMeta.name + ' — Campaign Builder | ClickTrends';
+  document.getElementById('nav-campaign-name').textContent = campaignMeta.name;
+  document.getElementById('header-campaign-name').textContent = campaignMeta.name;
+
+  var metaEl = document.getElementById('header-campaign-meta');
+  var pills = [];
+  if (campaignMeta.emailCount) pills.push('<span class="campaign-pill"><span class="dot"></span>' + campaignMeta.emailCount + ' Emails</span>');
+  if (campaignMeta.duration)   pills.push('<span class="campaign-pill">📅 ' + campaignMeta.duration + '</span>');
+  if (campaignMeta.goal)       pills.push('<span class="campaign-pill">🎯 ' + escHtml(campaignMeta.goal.slice(0,60)) + '</span>');
+  metaEl.innerHTML = pills.join('');
+
+  if (campaignMeta.openRate) {
+    document.getElementById('header-open-rate').textContent = campaignMeta.openRate;
+  }
+}
+
+function renderEmailList() {
+  var listEl = document.getElementById('email-list');
+  listEl.innerHTML = emails.map(function(em, idx) {
+    var icon = em.status === 'approved' ? '✓' : em.status === 'rejected' ? '✗' : '·';
+    return '<div class="email-item ' + em.status + (activeIdx === idx ? ' active' : '') + '" id="email-item-' + idx + '" onclick="selectEmail(' + idx + ')">' +
+      '<div class="email-num-badge">' + em.emailNumber + '</div>' +
+      '<div class="email-item-info">' +
+        '<div class="email-item-name">' + escHtml(em.emailName) + '</div>' +
+        '<div class="email-item-subject">' + escHtml(em.userSubject || em.subject) + '</div>' +
+      '</div>' +
+      '<div class="email-status-icon ' + em.status + '">' + icon + '</div>' +
+    '</div>';
+  }).join('');
+
+  // Sidebar stats
+  var approved = emails.filter(function(e){ return e.status === 'approved'; }).length;
+  var rejected = emails.filter(function(e){ return e.status === 'rejected'; }).length;
+  var pending  = emails.filter(function(e){ return e.status === 'pending'; }).length;
+  document.getElementById('sidebar-stats').innerHTML =
+    (pending  ? '<span class="sidebar-stat pending">'  + pending  + ' pending</span>'  : '') +
+    (approved ? '<span class="sidebar-stat approved">' + approved + ' approved</span>' : '') +
+    (rejected ? '<span class="sidebar-stat rejected">' + rejected + ' rejected</span>' : '');
+}
+
+function renderCampaignBar() {
+  var approved = emails.filter(function(e){ return e.status === 'approved'; }).length;
+  var rejected = emails.filter(function(e){ return e.status === 'rejected'; }).length;
+  var pending  = emails.filter(function(e){ return e.status === 'pending'; }).length;
+  document.getElementById('campaign-bar-stats').innerHTML =
+    '<span class="cbar-stat">Total: <strong>' + emails.length + '</strong></span>' +
+    '<span class="cbar-stat" style="color:#22c55e">✓ <strong>' + approved + '</strong> Approved</span>' +
+    '<span class="cbar-stat" style="color:#ef4444">✗ <strong>' + rejected + '</strong> Rejected</span>' +
+    '<span class="cbar-stat">⏳ <strong>' + pending + '</strong> Pending</span>';
+  var dispatchBtn = document.getElementById('dispatch-btn');
+  if (dispatchBtn) dispatchBtn.disabled = approved === 0;
+}
+
+// ── Select email ─────────────────────────────────────────────
+function selectEmail(idx) {
+  activeIdx = idx;
+  var em = emails[idx];
+
+  // Update sidebar active
+  document.querySelectorAll('.email-item').forEach(function(el, i) {
+    el.classList.toggle('active', i === idx);
+  });
+
+  // Show toolbar
+  document.getElementById('preview-toolbar').style.display = 'flex';
+  document.getElementById('preview-email-name').textContent = '✉ ' + em.emailName;
+
+  // Render preview
+  var frameOuter = document.getElementById('frame-outer');
+  document.getElementById('preview-empty').style.display = 'none';
+  frameOuter.style.display = 'block';
+  var iframe = document.getElementById('email-preview-iframe');
+  var html = getEmailHtml(em);
+  iframe.srcdoc = html;
+
+  // Resize iframe to content after load
+  iframe.onload = function() {
+    try {
+      var h = iframe.contentDocument.documentElement.scrollHeight;
+      iframe.style.height = Math.max(600, h + 20) + 'px';
+    } catch(e) { iframe.style.height = '700px'; }
+  };
+
+  // Render details panel
+  renderDetailsPanel(em, idx);
+  document.getElementById('action-row').style.display = 'flex';
+  updateActionButtons(em);
+}
+
+function renderDetailsPanel(em, idx) {
+  var subjectVal = em.userSubject || em.subject;
+  var previewVal = em.userPreviewText || em.previewText;
+  var ctaTextVal = em.userCtaText || em.ctaText;
+  var ctaUrlVal  = em.userCtaUrl  || em.ctaUrl;
+  var pendEdit   = editPending[idx] || {};
+
+  document.getElementById('details-inner').innerHTML =
+    // Email metadata
+    '<div class="detail-label">Subject Line</div>' +
+    '<div class="detail-value subject">' + escHtml(subjectVal) + '</div>' +
+    '<div class="detail-label">Preview Text</div>' +
+    '<div class="detail-value">' + escHtml(previewVal) + '</div>' +
+
+    (em.targetAudience ? '<div class="detail-label">Target Audience</div><div class="detail-value">' + escHtml(em.targetAudience) + '</div>' : '') +
+    (em.campaignStage  ? '<div class="detail-label">Campaign Stage</div><div class="detail-value">' + escHtml(em.campaignStage) + '</div>' : '') +
+    '<div class="detail-label">Send Timing</div>' +
+    '<div class="detail-value">' + escHtml(em.sendTiming || em.timing || 'Day ' + em.delayDays) + '</div>' +
+
+    '<hr class="section-divider">' +
+    '<div class="section-title">✏️ Edit Email</div>' +
+
+    // Edit fields
+    '<label class="edit-field-label" for="edit-subject-' + idx + '">Subject Line</label>' +
+    '<input type="text" class="edit-field" id="edit-subject-' + idx + '" value="' + escAttr(pendEdit.subject != null ? pendEdit.subject : subjectVal) + '" oninput="stagePendingEdit(' + idx + ')" placeholder="Subject line…" style="min-height:auto;resize:none">' +
+
+    '<label class="edit-field-label" for="edit-preview-' + idx + '">Preview Text</label>' +
+    '<input type="text" class="edit-field" id="edit-preview-' + idx + '" value="' + escAttr(pendEdit.previewText != null ? pendEdit.previewText : previewVal) + '" oninput="stagePendingEdit(' + idx + ')" placeholder="Preview text…" style="min-height:auto;resize:none">' +
+
+    '<label class="edit-field-label" for="edit-cta-' + idx + '">CTA Button Text</label>' +
+    '<input type="text" class="edit-field" id="edit-cta-' + idx + '" value="' + escAttr(pendEdit.ctaText != null ? pendEdit.ctaText : ctaTextVal) + '" oninput="stagePendingEdit(' + idx + ')" placeholder="Button text…" style="min-height:auto;resize:none">' +
+
+    '<label class="edit-field-label" for="edit-url-' + idx + '">CTA URL</label>' +
+    '<input type="text" class="edit-field" id="edit-url-' + idx + '" value="' + escAttr(pendEdit.ctaUrl != null ? pendEdit.ctaUrl : ctaUrlVal) + '" oninput="stagePendingEdit(' + idx + ')" placeholder="https://…" style="min-height:auto;resize:none">' +
+
+    '<button class="btn btn-save-edit" onclick="saveEdit(' + idx + ')">💾 Save &amp; Update Preview</button>';
+}
+
+function escAttr(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function stagePendingEdit(idx) {
+  var subEl  = document.getElementById('edit-subject-' + idx);
+  var preEl  = document.getElementById('edit-preview-' + idx);
+  var ctaEl  = document.getElementById('edit-cta-' + idx);
+  var urlEl  = document.getElementById('edit-url-' + idx);
+  if (!editPending[idx]) editPending[idx] = {};
+  if (subEl) editPending[idx].subject    = subEl.value;
+  if (preEl) editPending[idx].previewText= preEl.value;
+  if (ctaEl) editPending[idx].ctaText    = ctaEl.value;
+  if (urlEl) editPending[idx].ctaUrl     = urlEl.value;
+}
+
+function saveEdit(idx) {
+  var ep = editPending[idx] || {};
+  var em = emails[idx];
+  if (ep.subject    != null) em.userSubject     = ep.subject;
+  if (ep.previewText!= null) em.userPreviewText = ep.previewText;
+  if (ep.ctaText    != null) em.userCtaText     = ep.ctaText;
+  if (ep.ctaUrl     != null) em.userCtaUrl      = ep.ctaUrl;
+
+  // Regenerate HTML with updated values
+  var brandName = (session.url || 'Company').replace(/^https?:\/\/(www\.)?/,'').split('/')[0];
+  em.userHtml = generateFallbackHtml({
+    emailNumber:  em.emailNumber,
+    emailName:    em.emailName,
+    subject:      em.userSubject || em.subject,
+    previewText:  em.userPreviewText || em.previewText,
+    bodyCopy:     em.bodyCopy,
+    ctaText:      em.userCtaText || em.ctaText,
+    ctaUrl:       em.userCtaUrl  || em.ctaUrl,
+    brandName:    brandName,
+    brandColour:  '#f97316',
+  });
+
+  editPending[idx] = {};
+  selectEmail(idx);  // re-render preview with updates
+  renderEmailList();
+  toast('✓ Email updated!', 'success');
+}
+
+// ── Email approval ────────────────────────────────────────────
+function approveEmail() {
+  if (activeIdx < 0) return;
+  emails[activeIdx].status = 'approved';
+  renderEmailList();
+  renderCampaignBar();
+  updateActionButtons(emails[activeIdx]);
+  toast('✓ Email approved!', 'success');
+}
+
+function rejectEmail() {
+  if (activeIdx < 0) return;
+  emails[activeIdx].status = 'rejected';
+  renderEmailList();
+  renderCampaignBar();
+  updateActionButtons(emails[activeIdx]);
+  toast('✗ Email rejected', 'info');
+}
+
+function undoEmail() {
+  if (activeIdx < 0) return;
+  emails[activeIdx].status = 'pending';
+  renderEmailList();
+  renderCampaignBar();
+  updateActionButtons(emails[activeIdx]);
+  toast('↺ Reset to pending', 'info');
+}
+
+function updateActionButtons(em) {
+  var apBtn = document.getElementById('btn-approve');
+  var rjBtn = document.getElementById('btn-reject');
+  var unBtn = document.getElementById('btn-undo');
+  if (apBtn) apBtn.style.display = em.status === 'approved' ? 'none' : '';
+  if (rjBtn) rjBtn.style.display = em.status === 'rejected' ? 'none' : '';
+  if (unBtn) unBtn.style.display = em.status === 'pending'  ? 'none' : '';
+}
+
+function bulkApprove() {
+  emails.forEach(function(e){ e.status = 'approved'; });
+  renderEmailList();
+  renderCampaignBar();
+  if (activeIdx >= 0) updateActionButtons(emails[activeIdx]);
+  toast('✓ All emails approved!', 'success');
+}
+
+function bulkReject() {
+  emails.forEach(function(e){ e.status = 'rejected'; });
+  renderEmailList();
+  renderCampaignBar();
+  if (activeIdx >= 0) updateActionButtons(emails[activeIdx]);
+  toast('✗ All emails rejected', 'info');
+}
+
+// ── View toggle ───────────────────────────────────────────────
+function setView(view) {
+  var frameOuter = document.getElementById('frame-outer');
+  frameOuter.className = 'preview-frame-outer ' + view;
+  document.getElementById('btn-desktop').classList.toggle('active', view === 'desktop');
+  document.getElementById('btn-mobile').classList.toggle('active', view  === 'mobile');
+}
+
+// ── Payload modal ─────────────────────────────────────────────
+function buildPayload() {
+  var approved = emails.filter(function(e){ return e.status === 'approved'; });
+  return {
+    campaignType:  campaignMeta.sequenceType || 'email_sequence',
+    campaignName:  campaignMeta.name,
+    campaignGoal:  campaignMeta.goal,
+    totalDuration: campaignMeta.duration,
+    emails: approved.map(function(e) {
+      return {
+        subject:     e.userSubject     || e.subject,
+        previewText: e.userPreviewText || e.previewText,
+        html:        e.userHtml        || getEmailHtml(e),
+        delay:       e.delayDays + ' days',
+        ctaText:     e.userCtaText || e.ctaText,
+        ctaUrl:      e.userCtaUrl  || e.ctaUrl,
+      };
+    }),
+  };
+}
+
+function openPayloadModal() {
+  var payload = buildPayload();
+  document.getElementById('payload-preview').textContent = JSON.stringify(payload, null, 2);
+  document.getElementById('payload-modal').classList.add('open');
+}
+
+function closePayloadModal() {
+  document.getElementById('payload-modal').classList.remove('open');
+}
+
+async function dispatchCampaign() {
+  var btn = document.getElementById('confirm-dispatch-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Sending…';
+
+  try {
+    var payload = buildPayload();
+    var res = await fetch('/api/implementation/' + auditId + '/email-sequence/campaign-execute', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        approvedEmails:   payload.emails,
+        campaignSettings: {
+          campaignType:  payload.campaignType,
+          campaignName:  payload.campaignName,
+          campaignGoal:  payload.campaignGoal,
+          totalDuration: payload.totalDuration,
+        },
+      }),
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Dispatch failed');
+
+    closePayloadModal();
+    toast('🚀 Campaign dispatched! Job: ' + data.jobId, 'success');
+  } catch (err) {
+    toast('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🚀 Confirm & Dispatch';
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+var toastTimer;
+function toast(msg, type) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + (type || 'info');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.className = ''; }, 3500);
+}
+</script>
+</body>
+</html>
