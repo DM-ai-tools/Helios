@@ -102,31 +102,6 @@ Category weights (each scored 0–100):
 Score = round((emailCapture × 0.30) + (leadMagnet × 0.25) + (contentForNurture × 0.25) + (conversionPath × 0.20))
 
 ════════════════════════════════════════════════════════
-HTML EMAIL DESIGN REQUIREMENT
-════════════════════════════════════════════════════════
-
-For each email, you MUST generate a complete htmlTemplate field.
-
-The htmlTemplate must be a FULL responsive HTML email with inline CSS. Include:
-- A branded header bar with the business name/logo area
-- A hero section with a headline
-- Body copy paragraphs (2–3 short paragraphs)
-- A CTA button (orange, centred)
-- Footer with address placeholder and unsubscribe link
-
-Design guidelines:
-- Use inline CSS only (no <style> tags — email clients strip them)
-- Max width 600px, centred with margin:0 auto
-- Font: Arial, Helvetica, sans-serif (web-safe)
-- Background: white email body on light grey page background (#f4f4f4)
-- Header background: #1a1a2e (navy), header text: white, accent: #f97316 (orange)
-- CTA button: background:#f97316, color:white, padding:14px 32px, border-radius:6px
-- Footer: small grey text, #888888, font-size:11px
-- Use {{first_name}} personalisation token in greeting where appropriate
-
-The htmlTemplate value must be a SINGLE LINE string with \\n for line breaks and \\" for any quotes inside HTML attributes.
-
-════════════════════════════════════════════════════════
 OUTPUT RULES — READ CAREFULLY
 ════════════════════════════════════════════════════════
 1. YOUR RESPONSE MUST START WITH { AND END WITH }
@@ -138,20 +113,18 @@ OUTPUT RULES — READ CAREFULLY
 7. All copy must reflect the brand voice detected from the website crawl.
 
 CRITICAL JSON RULES — failure to follow these causes a parse error:
-- ALL string values must be on a single line. Use \\n (backslash-n) for line breaks within strings — NEVER use actual newlines inside a JSON string value.
-- ALL quotes inside string values must be escaped as \\" — NEVER use unescaped double quotes inside a string.
-- The flowDiagram field must be a single-line string with \\n for line breaks.
-- The htmlTemplate field must be a single-line string with \\n for line breaks — it is rendered HTML, escape all double-quote attribute values as \\".
+- ALL string values must be on a single line. Use \n (backslash-n) for line breaks within strings — NEVER use actual newlines inside a JSON string value.
+- ALL quotes inside string values must be escaped as \" — NEVER use unescaped double quotes inside a string.
+- The flowDiagram field must be a single-line string with \n for line breaks.
 - Keep bodyCopy under 200 words per email to stay within token limits.
 - Design only 1 sequence (the most relevant) with a maximum of 5 emails.
 
 ════════════════════════════════════════════════════════
 IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
 ════════════════════════════════════════════════════════
-You MUST include "implementationChanges" — one entry per email in the sequence, plus capture form improvements.
-- "proposedChange": COMPLETE email — Subject: [exact text] | Preview: [exact text] | Body: [full copy] | CTA: [button text → /url]
-- "currentState": describe what currently exists or does not exist
-- Every entry must be immediately sendable with zero additional copywriting`,
+You MUST include "implementationChanges" — 1-2 entries focusing ONLY on improvements to the website's email capture forms, popups, or lead magnets. Do NOT include entries for the email copies here (as they are already in the sequences field). Keep these entries short.
+- "proposedChange": describe the complete proposed optimization (e.g. copy for a popup or a new form field configuration)
+- "currentState": describe what currently exists or does not exist on the website`,
 
   scoringPrompt: `Score this business's email marketing readiness (0–100):
 
@@ -214,7 +187,6 @@ Score = (emailCapture × 0.30) + (leadMagnet × 0.25) + (contentForNurture × 0.
             targetAudience: 'string — brief description of who receives this email',
             campaignStage: 'string — e.g. Awareness, Consideration, Decision, Retention',
             sendTiming: 'string — human-readable e.g. Send 2 days after Email 1',
-            htmlTemplate: 'string — COMPLETE responsive HTML email with inline CSS only, single-line with \\n for newlines. Include header, hero, body, CTA button, footer, unsubscribe. Max 600px width.',
           }
         ],
       }

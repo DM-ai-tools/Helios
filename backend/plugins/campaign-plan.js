@@ -38,7 +38,7 @@ IMPORTANT RULES:
 ════════════════════════════════════════════════════════
 IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
 ════════════════════════════════════════════════════════
-You MUST include an "implementationChanges" array with 6–12 deployment-ready campaign assets.
+You MUST include an "implementationChanges" array with 3–5 deployment-ready campaign assets.
 - "proposedChange" must be COMPLETE, ready-to-publish content — actual LinkedIn post copy, actual email subject line + body, actual ad headline + description
 - "currentState" describes what the business currently does (or lacks) in that area
 - No placeholders. No [INSERT NAME]. No lorem ipsum. Write the actual copy.`,
