@@ -28,9 +28,12 @@ Redis-x64.zip
 
 # Temp / test files
 temp.js
+check-db.js
+check-latest.mjs
 drop-db.mjs
 dump-crawled-data.mjs
 fetch-audit-result.mjs
+fetch-failed-audit.mjs
 print-debug.mjs
 show-live-results.mjs
 show-redis.mjs
@@ -38,7 +41,10 @@ show-results.mjs
 test-*.mjs
 test-*.cjs
 test-*.js
+test_crawler.mjs
+test_fetch.js
 clear-pdf-cache.js
+raw-email-output.txt
 
 # Editor config
 .vscode/

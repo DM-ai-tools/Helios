@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deployment History &amp; Audit Trail — ClickTrends AI Audit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy-dark: #0f172a;
+      --navy-light: #1e293b;
+      --orange: #f97316;
+      --orange-dark: #ea580c;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --success: #22c55e;
+      --error: #ef4444;
+      --warning: #f59e0b;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── NAV BAR ─────────────────────────────────────────────── */
+    .nav {
+      background: var(--navy-dark);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--orange);
+      letter-spacing: -0.04em;
+      text-decoration: none;
+    }
+    .nav-logo span { color: #fff; }
+    
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .role-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.06);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .role-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .role-select {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      outline: none;
+      cursor: pointer;
+    }
+    .role-select option {
+      background: var(--navy-dark);
+      color: #fff;
+    }
+
+    .nav-back {
+      font-size: 13px;
+      color: #94a3b8;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color .2s;
+    }
+    .nav-back:hover { color: var(--orange); }
+
+    /* ── HEADER ──────────────────────────────────────────────── */
+    .header {
+      background: linear-gradient(135deg, var(--navy-dark) 0%, #1e1b4b 100%);
+      padding: 40px 24px;
+      text-align: center;
+      border-bottom: 1px solid rgba(249,115,22,.15);
+      color: #fff;
+    }
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 99px;
+      padding: 6px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin-bottom: 8px;
+    }
+    .header p {
+      font-size: 14px;
+      color: #94a3b8;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ── CONTAINER ───────────────────────────────────────────── */
+    .container {
+      max-width: 1050px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* ── TABS ────────────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    .tab {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-muted);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .tab:hover {
+      color: var(--text-main);
+      background: #f1f5f9;
+    }
+    .tab.active {
+      color: var(--orange);
+      background: rgba(249,115,22,0.1);
+    }
+
+    /* ── PANEL ───────────────────────────────────────────────── */
+    .panel {
+      display: none;
+    }
+    .panel.active {
+      display: block;
+    }
+
+    /* ── TABLE / HISTORY ─────────────────────────────────────── */
+    .history-table-container {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+      overflow-x: auto;
+    }
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+    .history-table th {
+      background: #f8fafc;
+      padding: 14px 20px;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+    .history-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+    .history-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .platform-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 99px;
+      text-transform: uppercase;
+    }
+    .status-completed {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .status-failed {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .btn-rollback {
+      background: var(--navy-dark);
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-rollback:hover {
+      background: var(--orange);
+    }
+    .btn-rollback:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: var(--text-muted);
+    }
+
+    /* ── AUDIT LOG TIMELINE ──────────────────────────────────── */
+    .timeline {
+      position: relative;
+      padding-left: 24px;
+      border-left: 2px solid var(--border);
+      margin-left: 10px;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 32px;
+    }
+    .timeline-item:last-child {
+      margin-bottom: 0;
+    }
+    .timeline-dot {
+      position: absolute;
+      left: -32px;
+      top: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid var(--orange);
+      z-index: 10;
+    }
+    .timeline-dot.approve { border-color: var(--success); }
+    .timeline-dot.deploy { border-color: var(--orange); }
+    .timeline-dot.rollback { border-color: #7c3aed; }
+    .timeline-dot.failed { border-color: var(--error); }
+
+    .timeline-content {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .timeline-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .timeline-time {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .timeline-desc {
+      font-size: 13px;
+      color: #4b5563;
+      line-height: 1.5;
+    }
+    .timeline-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      display: flex;
+      gap: 12px;
+    }
+
+    /* ── VERSION DIFF MODAL ──────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15,23,42,0.7);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .diff-modal {
+      background: #fff;
+      width: 90%;
+      max-width: 800px;
+      border-radius: 20px;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: 90vh;
+      transform: scale(0.95);
+      transition: transform 0.3s ease;
+    }
+    .modal-overlay.show .diff-modal {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      background: var(--navy-dark);
+      padding: 20px 24px;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h3 { font-size: 18px; font-weight: 800; }
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .modal-close:hover { color: #fff; }
+
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .diff-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 640px) {
+      .diff-grid { grid-template-columns: 1fr; }
+    }
+
+    .diff-panel {
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 16px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .diff-panel.before { background: #fff5f5; border-color: #fee2e2; }
+    .diff-panel.after { background: #f0fdf4; border-color: #dcfce7; }
+    
+    .diff-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .diff-label.before { color: var(--error); }
+    .diff-label.after { color: var(--success); }
+
+    .diff-content {
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-family: monospace;
+      color: #334155;
+    }
+
+    /* ── LOADING SPINNER OVERLAY ─────────────────────────────── */
+    .spinner-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15,23,42,0.8);
+      backdrop-filter: blur(8px);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      display: none;
+    }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255,255,255,0.1);
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── TOAST ───────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 14px 24px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s, transform .3s;
+      transform: translateY(10px);
+      z-index: 2100;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    #toast.success { background: linear-gradient(135deg, var(--success), #16a34a); }
+    #toast.error   { background: linear-gradient(135deg, var(--error), #dc2626); }
+    #toast.info    { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <a href="/" class="nav-logo">Click<span>Trends</span></a>
+    
+    <div class="nav-right">
+      <a href="/settings/integrations" class="nav-back" style="margin-right: 12px; font-weight: 600;">
+        🔌 Return to Integrations
+      </a>
+
+      <div class="role-container">
+        <span class="role-label">Active Role:</span>
+        <select id="role-select" class="role-select" onchange="changeRole(this.value)">
+          <option value="Admin">Admin (Full)</option>
+          <option value="Manager">Manager</option>
+          <option value="Viewer">Viewer (Read Only)</option>
+        </select>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-badge">📜 Audit Log &amp; Version History</div>
+    <h1>Deployment History &amp; Audit Trail</h1>
+    <p>Track all optimization deployment updates, review previous code and content versions, and trigger rollbacks to restore state.</p>
+  </header>
+
+  <!-- CONTAINER -->
+  <main class="container">
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('history', this)">🕒 Deployment History</button>
+      <button class="tab" onclick="switchTab('audit', this)">🛡️ Audit Trail Timeline</button>
+    </div>
+
+    <!-- PANEL 1: HISTORY -->
+    <div id="panel-history" class="panel active">
+      <div class="history-table-container">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Platform</th>
+              <th>Asset / Title</th>
+              <th>Deployment Time</th>
+              <th>Status</th>
+              <th>Deployed By</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="history-rows">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PANEL 2: AUDIT TRAIL -->
+    <div id="panel-audit" class="panel">
+      <div class="timeline" id="audit-timeline">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- DIFF MODAL -->
+  <div id="diff-overlay" class="modal-overlay" onclick="closeDiff()">
+    <div class="diff-modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="diff-title">Version Comparison</h3>
+        <button class="modal-close" onclick="closeDiff()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="diff-grid">
+          
+          <!-- Previous version -->
+          <div class="diff-panel before">
+            <div class="diff-label before">✕ Previous Content (Before Deployment)</div>
+            <pre class="diff-content" id="diff-before"></pre>
+          </div>
+
+          <!-- Deployed version -->
+          <div class="diff-panel after">
+            <div class="diff-label after">✓ Deployed Content</div>
+            <pre class="diff-content" id="diff-after"></pre>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOB SPINNER OVERLAY -->
+  <div id="spinner-overlay" class="spinner-overlay">
+    <div class="spinner"></div>
+    <h3 id="spinner-text">Processing deployment rollback...</h3>
+    <p style="font-size: 13px; color: #94a3b8; margin-top: 8px;">Simulating background workers and remote API synchronization...</p>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const auditId = params.get('auditId') || 'demo';
+
+    let historyRecords = [];
+    let auditTrailRecords = [];
+
+    // ── INITIALIZE ───────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      const savedRole = localStorage.getItem('user_role') || 'Admin';
+      document.getElementById('role-select').value = savedRole;
+
+      // Set business switcher state
+      const savedBusiness = getActiveBusinessId();
+      
+      await loadHistory();
+    });
+
+    // ── BUSINESS SWITCHING ───────────────────────────────────
+    function getActiveBusinessId() {
+      const saved = localStorage.getItem('active_business_id');
+      if (saved) return saved;
+      if (auditId && auditId !== 'demo') return auditId;
+      return 'Business-A';
+    }
+
+    // ── ROLE switcher ────────────────────────────────────────
+    function changeRole(role) {
+      localStorage.setItem('user_role', role);
+      toast(`Switched context to ${role} role`, 'info');
+      renderHistory();
+      renderAuditTimeline();
+    }
+
+    // ── LOAD HISTORY & AUDIT TRAIL FROM BACKEND ──────────────
+    async function loadHistory() {
+      const activeBusinessId = getActiveBusinessId();
+      try {
+        const url = `/api/deployment/history`;
+        const res = await fetch(url, {
+          headers: {
+            'X-Business-Id': activeBusinessId
+          }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          historyRecords = data.history || [];
+          auditTrailRecords = data.auditTrail || [];
+        }
+      } catch (err) {
+        console.error('Failed to fetch deployment records:', err);
+        toast('Failed to load history.', 'error');
+      }
+      renderHistory();
+      renderAuditTimeline();
+    }
+
+    // ── TAB SWITCHER ──────────────────────────────────────────
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      
+      btn.classList.add('active');
+      document.getElementById(`panel-${tabId}`).classList.add('active');
+    }
+
+    // ── RENDER TABLES ────────────────────────────────────────
+    function renderHistory() {
+      const tbody = document.getElementById('history-rows');
+      tbody.innerHTML = '';
+
+      if (historyRecords.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#64748b;padding:40px;">No deployments have occurred yet. Complete change approvals to deploy.</td></tr>`;
+        return;
+      }
+
+      const role = localStorage.getItem('user_role') || 'Admin';
+      const isViewerOrManager = role === 'Viewer' || role === 'Manager';
+
+      historyRecords.forEach(record => {
+        const payload = record.content_payload || {};
+        const title = payload.title || 'WordPress SEO Update';
+        const dateStr = new Date(record.created_at).toLocaleString();
+        
+        let platformName = record.platform.toUpperCase();
+        let platformColor = '#475569';
+        if (record.platform === 'wordpress') { platformName = 'WordPress'; platformColor = '#21759b'; }
+        else if (record.platform === 'shopify') { platformName = 'Shopify'; platformColor = '#96bf48'; }
+        else if (record.platform === 'webflow') { platformName = 'Webflow'; platformColor = '#4353ff'; }
+        else if (record.platform === 'linkedin') { platformName = 'LinkedIn'; platformColor = '#0a66c2'; }
+        else if (record.platform === 'instagram') { platformName = 'Instagram'; platformColor = '#e1306c'; }
+        else if (record.platform === 'mailchimp') { platformName = 'Mailchimp'; platformColor = '#c2a400'; }
+
+        const rollbackDisabled = isViewerOrManager || record.status === 'failed' || !record.previous_content ? 'disabled' : '';
+
+        tbody.innerHTML += `
+          <tr>
+            <td>
+              <span class="platform-badge" style="color: ${platformColor};">
+                🔌 ${platformName}
+              </span>
+            </td>
+            <td>
+              <strong>${title}</strong><br>
+              <span style="font-size:11px;color:var(--text-muted);cursor:pointer;text-decoration:underline;" onclick="viewDiff('${record.id}')">View Version comparison</span>
+            </td>
+            <td>${dateStr}</td>
+            <td>
+              <span class="status-pill status-${record.status}">${record.status}</span>
+            </td>
+            <td>
+              <span style="font-weight:600;color:var(--navy-light);">${record.deployed_by}</span>
+            </td>
+            <td>
+              <button class="btn-rollback" ${rollbackDisabled} onclick="triggerRollback('${record.id}', '${title}')">
+                ↺ Rollback
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    // ── RENDER TIMELINE ──────────────────────────────────────
+    function renderAuditTimeline() {
+      const timeline = document.getElementById('audit-timeline');
+      timeline.innerHTML = '';
+
+      if (auditTrailRecords.length === 0) {
+        timeline.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:40px;">No audit trail actions recorded yet.</p>`;
+        return;
+      }
+
+      auditTrailRecords.forEach(log => {
+        let typeClass = 'deploy';
+        if (log.event_type === 'approve_change') typeClass = 'approve';
+        else if (log.event_type === 'rollback_deployment') typeClass = 'rollback';
+        else if (log.event_type === 'deployment_failed') typeClass = 'failed';
+        else if (log.event_type === 'disconnect_integration') typeClass = 'failed';
+        else if (log.event_type === 'connect_integration') typeClass = 'approve';
+        else if (log.event_type === 'token_refresh') typeClass = 'rollback';
+
+        const dateStr = new Date(log.timestamp).toLocaleString();
+        
+        timeline.innerHTML += `
+          <div class="timeline-item">
+            <div class="timeline-dot ${typeClass}"></div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <span class="timeline-title">${log.action_details}</span>
+                <span class="timeline-time">${dateStr}</span>
+              </div>
+              <div class="timeline-desc">
+                Event Type: <strong>${log.event_type}</strong>
+              </div>
+              <div class="timeline-meta">
+                <span>Performed By: <strong>${log.performed_by}</strong></span>
+                ${log.metadata ? `<span>Details: ${JSON.stringify(log.metadata)}</span>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // ── TRIGGER ROLLBACK ─────────────────────────────────────
+    async function triggerRollback(id, title) {
+      const role = localStorage.getItem('user_role') || 'Admin';
+      if (role === 'Viewer' || role === 'Manager') {
+        toast('Permission Denied: Managers and Viewers cannot perform rollbacks.', 'error');
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to rollback this deployment for "${title}"?`)) return;
+
+      const overlay = document.getElementById('spinner-overlay');
+      const spinnerText = document.getElementById('spinner-text');
+      
+      overlay.style.display = 'flex';
+      spinnerText.textContent = `Queueing rollback for "${title}"...`;
+
+      const activeBusinessId = getActiveBusinessId();
+
+      try {
+        const res = await fetch(`/api/deployment/rollback/${id}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-Role': role,
+            'X-Business-Id': activeBusinessId
+          }
+        });
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.error);
+
+        // Track job in loop until completion
+        const jobId = data.jobId;
+        pollRollbackJob(jobId);
+
+      } catch (err) {
+        overlay.style.display = 'none';
+        toast(`Rollback failed: ${err.message}`, 'error');
+      }
+    }
+
+    async function pollRollbackJob(jobId) {
+      const spinnerText = document.getElementById('spinner-text');
+      const overlay = document.getElementById('spinner-overlay');
+      const activeBusinessId = getActiveBusinessId();
+
+      try {
+        const res = await fetch(`/api/deployment/jobs/${jobId}`, {
+          headers: {
+            'X-Business-Id': activeBusinessId
+          }
+        });
+        const data = await res.json();
+        if (data.success && data.job) {
+          const status = data.job.status;
+          if (status === 'queued') {
+            spinnerText.textContent = 'Queueing rollback...';
+            setTimeout(() => pollRollbackJob(jobId), 1000);
+          } else if (status === 'deploying') {
+            spinnerText.textContent = 'Pushing rolled-back content to platform API...';
+            setTimeout(() => pollRollbackJob(jobId), 1000);
+          } else if (status === 'completed') {
+            overlay.style.display = 'none';
+            toast('Rollback deployed successfully!', 'success');
+            await loadHistory();
+          } else if (status === 'failed') {
+            overlay.style.display = 'none';
+            toast('Rollback job failed. Check integration settings.', 'error');
+            await loadHistory();
+          }
+        }
+      } catch (err) {
+        overlay.style.display = 'none';
+        toast('Connection error checking rollback job.', 'error');
+      }
+    }
+
+    // ── VERSION DIFF DISPLAY ──────────────────────────────────
+    function viewDiff(id) {
+      const record = historyRecords.find(r => r.id === id);
+      if (!record) return;
+
+      document.getElementById('diff-title').textContent = `Version Comparison — ${record.platform.toUpperCase()}`;
+      
+      const prev = record.previous_content;
+      const current = record.content_payload;
+
+      document.getElementById('diff-before').textContent = prev ? JSON.stringify(prev, null, 2) : 'No previous version exists (Initial deployment).';
+      document.getElementById('diff-after').textContent = JSON.stringify(current, null, 2);
+
+      document.getElementById('diff-overlay').classList.add('show');
+    }
+
+    function closeDiff() {
+      document.getElementById('diff-overlay').classList.remove('show');
+    }
+
+    // ── TOAST ─────────────────────────────────────────────────
+    function toast(msg, type = 'info') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'show ' + type;
+      clearTimeout(el._t);
+      el._t = setTimeout(() => { el.className = ''; }, 3000);
+    }
+  </script>
+</body>
+</html>

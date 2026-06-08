@@ -103,3 +103,111 @@ CREATE TABLE IF NOT EXISTS reports (
 
 CREATE INDEX IF NOT EXISTS idx_reports_audit_id ON reports(audit_id);
 CREATE INDEX IF NOT EXISTS idx_reports_token    ON reports(public_token);
+
+-- ─────────────────────────────────────────────
+-- BUSINESS INTEGRATIONS
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS business_integrations (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id   TEXT NOT NULL,
+  platform      TEXT NOT NULL,
+  account_name  TEXT,
+  account_id    TEXT,
+  access_token  TEXT,
+  refresh_token TEXT,
+  token_expiry  TIMESTAMPTZ,
+  status        TEXT DEFAULT 'connected' CHECK (status IN ('connected', 'error', 'reauth')),
+  metadata      JSONB,
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (business_id, platform)
+);
+
+CREATE INDEX IF NOT EXISTS idx_business_integrations_business_platform ON business_integrations(business_id, platform);
+
+-- ─────────────────────────────────────────────
+-- DEPLOYMENT JOBS
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS deployment_jobs (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id TEXT,
+  audit_id    TEXT,
+  change_id   TEXT,
+  platform    TEXT NOT NULL,
+  asset_type  TEXT,
+  status      TEXT DEFAULT 'queued' CHECK (status IN ('queued', 'deploying', 'completed', 'failed')),
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ─────────────────────────────────────────────
+-- DEPLOYMENTS (Rollback & Version Storage)
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS deployments (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id      TEXT,
+  audit_id         TEXT,
+  change_id        TEXT,
+  platform         TEXT NOT NULL,
+  asset_type       TEXT,
+  content_payload  JSONB NOT NULL,
+  previous_content JSONB,
+  status           TEXT NOT NULL CHECK (status IN ('queued', 'deploying', 'completed', 'failed')),
+  deployed_by      TEXT NOT NULL,
+  response         JSONB,
+  created_at       TIMESTAMPTZ DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_deployments_business ON deployments(business_id);
+
+-- ─────────────────────────────────────────────
+-- AUDIT TRAIL
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS audit_trail (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id    TEXT,
+  event_type     TEXT NOT NULL, -- e.g., 'approve', 'deploy', 'rollback', 'disconnect'
+  audit_id       TEXT,
+  plugin_id      TEXT,
+  change_id      TEXT,
+  action_details TEXT NOT NULL,
+  performed_by   TEXT NOT NULL,
+  timestamp      TIMESTAMPTZ DEFAULT NOW(),
+  metadata       JSONB
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_trail_business ON audit_trail(business_id);
+CREATE INDEX IF NOT EXISTS idx_audit_trail_timestamp ON audit_trail(timestamp);
+
+/* IMPLEMENTATION CHANGES */
+CREATE TABLE IF NOT EXISTS implementation_changes (
+  id              TEXT PRIMARY KEY,
+  audit_id        UUID NOT NULL REFERENCES audits(id) ON DELETE CASCADE,
+  plugin_id       TEXT NOT NULL REFERENCES plugins(id),
+  title           TEXT NOT NULL,
+  priority        TEXT,
+  impact_score    INT,
+  description     TEXT,
+  current_state   TEXT,
+  proposed_change TEXT,
+  change_type     TEXT,
+  status          TEXT DEFAULT 'pending',
+  user_edit       TEXT,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+/* IMPLEMENTATION JOBS */
+CREATE TABLE IF NOT EXISTS implementation_jobs (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  audit_id         UUID NOT NULL REFERENCES audits(id) ON DELETE CASCADE,
+  plugin_id        TEXT NOT NULL REFERENCES plugins(id),
+  status           TEXT NOT NULL CHECK (status IN ('queued','deploying','completed','failed')),
+  approved_changes JSONB NOT NULL,
+  bot_response     JSONB,
+  dispatched_at    TIMESTAMPTZ DEFAULT NOW(),
+  completed_at     TIMESTAMPTZ,
+  updated_at       TIMESTAMPTZ DEFAULT NOW()
+);
+

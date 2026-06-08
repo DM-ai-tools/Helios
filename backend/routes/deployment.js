@@ -1,0 +1,353 @@
+import { Router } from 'express';
+import { requireAdmin } from './integrations.js';
+import {
+  createDbDeploymentJob,
+  getDbDeploymentJob,
+  updateDbDeploymentJob,
+  createDeployment,
+  getDeployments,
+  getDeploymentById,
+  getLatestDeployment,
+  createAuditTrailEntry,
+  getAuditTrail,
+  getIntegrationByPlatform,
+  getImplementationChanges,
+  upsertIntegration
+} from '../db/queries.js';
+
+const router = Router();
+
+// Helper to extract business context
+function getBusinessId(req) {
+  return req.headers['x-business-id'] || req.query.businessId || (req.body && req.body.businessId) || 'default-business';
+}
+
+// Helper to simulate background deployment job processing
+function runBackgroundDeployment(jobId, businessId, auditId, changeId, platform, assetType, payload, deployedBy, isRollback = false, originalDeploymentId = null) {
+  setTimeout(async () => {
+    try {
+      console.log(`[Job Worker] Job ${jobId} status: deploying...`);
+      await updateDbDeploymentJob(jobId, 'deploying');
+
+      // Wait another 2 seconds to simulate API calls to WordPress/Shopify/etc.
+      setTimeout(async () => {
+        try {
+          // Check integration status. If platform status is 'error', fail the job!
+          const integration = await getIntegrationByPlatform(businessId, platform);
+          if (integration && integration.status === 'error') {
+            throw new Error(`Connection Error: Unable to authenticate with ${platform}. API returned 401 Unauthorized.`);
+          }
+          if (integration && integration.status === 'reauth') {
+            throw new Error(`Reauthentication Required: Access token expired for ${platform}. Please reconnect.`);
+          }
+
+          // Fetch previous content for rollback purposes
+          let previousContent = null;
+          if (!isRollback) {
+            const lastDeployment = await getLatestDeployment(businessId, platform, changeId);
+            if (lastDeployment) {
+              previousContent = lastDeployment.content_payload;
+            } else {
+              // Simulate previous content if no deployment exists (e.g. from the change record's currentState)
+              previousContent = {
+                title: payload.title,
+                content: payload.currentState || ''
+              };
+            }
+          } else {
+            // For a rollback, the previousContent is what was deployed before we triggered the rollback
+            const lastDeployment = await getLatestDeployment(businessId, platform, changeId);
+            if (lastDeployment) {
+              previousContent = lastDeployment.content_payload;
+            }
+          }
+
+          // Complete the job
+          console.log(`[Job Worker] Job ${jobId} status: completed`);
+          await updateDbDeploymentJob(jobId, 'completed');
+
+          // Create deployment record
+          const responsePayload = {
+            success: true,
+            api_response: `Successfully pushed to ${platform} API`,
+            timestamp: new Date().toISOString(),
+            platform_resource_id: `res_${Math.random().toString(36).substring(2, 9)}`
+          };
+
+          const deployment = await createDeployment({
+            businessId,
+            auditId,
+            changeId,
+            platform,
+            assetType,
+            contentPayload: payload,
+            previousContent,
+            status: 'completed',
+            deployedBy,
+            response: responsePayload
+          });
+
+          // Write audit trail entry
+          const actionDetails = isRollback
+            ? `Rolled back ${platform} deployment for "${payload.title}"`
+            : `Deployed changes to ${platform} for "${payload.title}"`;
+
+          await createAuditTrailEntry({
+            businessId,
+            eventType: isRollback ? 'rollback_deployment' : 'deploy_change',
+            auditId,
+            pluginId: null,
+            changeId,
+            actionDetails,
+            performedBy: deployedBy,
+            metadata: {
+              jobId,
+              deploymentId: deployment.id,
+              platform,
+              title: payload.title,
+              isRollback,
+              originalDeploymentId
+            }
+          });
+
+        } catch (jobErr) {
+          console.error(`[Job Worker] Job ${jobId} failed:`, jobErr.message);
+          await updateDbDeploymentJob(jobId, 'failed');
+
+          // Save failed deployment record
+          await createDeployment({
+            businessId,
+            auditId,
+            changeId,
+            platform,
+            assetType,
+            contentPayload: payload,
+            previousContent: null,
+            status: 'failed',
+            deployedBy,
+            response: { error: jobErr.message, api_response: null }
+          });
+
+          await createAuditTrailEntry({
+            businessId,
+            eventType: 'deployment_failed',
+            auditId,
+            pluginId: null,
+            changeId,
+            actionDetails: `Failed to deploy to ${platform}: ${jobErr.message}`,
+            performedBy: deployedBy,
+            metadata: { jobId, platform, error: jobErr.message }
+          });
+        }
+      }, 200);
+
+    } catch (err) {
+      console.error(`[Job Worker] Critical job handling error for job ${jobId}:`, err.message);
+      await updateDbDeploymentJob(jobId, 'failed');
+    }
+  }, 200);
+}
+
+// ─── POST /api/deployment/queue ───────────────────────────────
+router.post('/queue', requireAdmin, async (req, res) => {
+  const { auditId, pluginId, changeId, platform, assetType, customPayload } = req.body;
+  const businessId = getBusinessId(req);
+  const user = 'Admin User';
+
+  if (!platform || !changeId) {
+    return res.status(400).json({ error: 'platform and changeId are required.' });
+  }
+
+  try {
+    // 1. Check if compatible integration exists
+    let integration = await getIntegrationByPlatform(businessId, platform.toLowerCase());
+    if (!integration) {
+      return res.status(400).json({
+        error: `No active integration connected for platform: ${platform}. Please connect it first.`
+      });
+    }
+
+    // 2. Detect expired token and auto-refresh
+    const now = new Date();
+    if (integration.token_expiry && new Date(integration.token_expiry) <= now) {
+      console.log(`[Token Refresh] Token for platform ${platform} in business ${businessId} has expired. Refreshing...`);
+      // Simulate token refresh
+      const newAccessToken = `refreshed_access_${Math.random().toString(36).substring(2, 9)}`;
+      const newRefreshToken = `refreshed_refresh_${Math.random().toString(36).substring(2, 9)}`;
+      const newExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      // Update the database with the refreshed tokens
+      await upsertIntegration({
+        businessId,
+        platform: platform.toLowerCase(),
+        accountName: integration.account_name,
+        accountId: integration.account_id,
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+        tokenExpiry: newExpiry,
+        status: 'connected',
+        metadata: integration.metadata
+      });
+
+      // Write to audit trail
+      await createAuditTrailEntry({
+        businessId,
+        eventType: 'token_refresh',
+        auditId: auditId || null,
+        pluginId,
+        changeId,
+        actionDetails: `Auto-refreshed access token for ${platform} integration.`,
+        performedBy: 'System',
+        metadata: { platform }
+      });
+    }
+
+    // 3. Fetch change details (resolve from Redis or use customPayload)
+    let payload = customPayload;
+    if (!payload && auditId !== 'demo') {
+      const changes = await getImplementationChanges(auditId, pluginId);
+      const matched = changes.find(c => c.id === changeId);
+      if (matched) {
+        payload = {
+          title: matched.title,
+          currentState: matched.currentState,
+          proposedChange: matched.userEdit || matched.proposedChange,
+          description: matched.description,
+          changeType: matched.changeType
+        };
+      }
+    }
+
+    // Fallback for demo/missing
+    if (!payload) {
+      payload = {
+        title: 'WordPress Deployment Update',
+        currentState: 'Welcome page draft',
+        proposedChange: 'Top rated localized SEO landing page design and content hooks',
+        description: 'SEO optimization update',
+        changeType: 'general'
+      };
+    }
+
+    // 4. Queue Deployment Job in database
+    const job = await createDbDeploymentJob({
+      businessId,
+      auditId,
+      changeId,
+      platform: platform.toLowerCase(),
+      assetType
+    });
+
+    // 5. Run background job process
+    runBackgroundDeployment(job.id, businessId, auditId, changeId, platform.toLowerCase(), assetType, payload, user);
+
+    res.json({
+      success: true,
+      message: `Deployment queued. Job ID: ${job.id}`,
+      jobId: job.id
+    });
+
+  } catch (err) {
+    console.error('[Deployment Route] Queue error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── GET /api/deployment/jobs/:id ────────────────────────────
+router.get('/jobs/:id', async (req, res) => {
+  const { id } = req.params;
+  const businessId = getBusinessId(req);
+  try {
+    const job = await getDbDeploymentJob(id);
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found.' });
+    }
+    // Verify tenant isolation
+    if (businessId && job.business_id && job.business_id !== businessId) {
+      return res.status(403).json({ error: 'Permission Denied: Cross-tenant access is not allowed.' });
+    }
+    res.json({ success: true, job });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── GET /api/deployment/history ─────────────────────────────
+router.get('/history', async (req, res) => {
+  const businessId = getBusinessId(req);
+  try {
+    const list = await getDeployments(businessId);
+    const auditLogs = await getAuditTrail(businessId);
+    res.json({ success: true, history: list, auditTrail: auditLogs });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── POST /api/deployment/rollback/:id ─────────────────────────
+router.post('/rollback/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const businessId = getBusinessId(req);
+  const user = 'Admin User';
+
+  try {
+    // 1. Fetch deployment record
+    const original = await getDeploymentById(id);
+    if (!original) {
+      return res.status(404).json({ error: 'Deployment record not found.' });
+    }
+
+    // Verify tenant isolation
+    if (original.business_id && original.business_id !== businessId) {
+      return res.status(403).json({ error: 'Permission Denied: Cross-tenant rollback is not allowed.' });
+    }
+
+    if (!original.previous_content) {
+      return res.status(400).json({
+        error: 'No rollback version content exists for this deployment record.'
+      });
+    }
+
+    // 2. Queue Rollback Job in database
+    const job = await createDbDeploymentJob({
+      businessId,
+      auditId: original.audit_id,
+      changeId: original.change_id,
+      platform: original.platform,
+      assetType: original.asset_type
+    });
+
+    // Content payload is the original's previous_content
+    const payload = original.previous_content;
+    // Append rolled-back indicator to title
+    if (payload.title && !payload.title.includes('Rolled Back')) {
+      payload.title = `${payload.title} (Rolled Back)`;
+    }
+
+    // 3. Run background job process as a rollback
+    runBackgroundDeployment(
+      job.id,
+      businessId,
+      original.audit_id,
+      original.change_id,
+      original.platform,
+      original.asset_type,
+      payload,
+      user,
+      true,
+      original.id
+    );
+
+    res.json({
+      success: true,
+      message: `Rollback job queued. Job ID: ${job.id}`,
+      jobId: job.id
+    });
+
+  } catch (err) {
+    console.error('[Deployment Route] Rollback error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+export default router;

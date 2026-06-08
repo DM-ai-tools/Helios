@@ -105,24 +105,34 @@ function generateHTMLReport(auditData, pluginResults, synthesis, overallScore) {
   });
 
   const effortDays = { 'SMALL': 3, 'MED': 6, 'MEDIUM': 6, 'LARGE': 12, 'ONGOING': 12 };
-  let totalEffort = 0;
-  allTasks.forEach(t => { totalEffort += (effortDays[t.effort] || 6); });
-
-  const scale = 90 / Math.max(totalEffort, 1);
-  const scaledDays = allTasks.map(t => Math.max(1, Math.round((effortDays[t.effort] || 6) * scale)));
-  
-  const totalDays = scaledDays.reduce((a,b) => a+b, 0);
-  if (scaledDays.length > 0) {
-    scaledDays[scaledDays.length - 1] += (90 - totalDays);
-    if (scaledDays[scaledDays.length - 1] < 1) scaledDays[scaledDays.length - 1] = 1;
+  const N = allTasks.length;
+  let scaledDays = [];
+  if (N >= 90) {
+    for (let i = 0; i < N; i++) {
+      scaledDays.push(i < 90 ? 1 : 0);
+    }
+  } else if (N > 0) {
+    const rawDays = allTasks.map(t => effortDays[t.effort] || 6);
+    const totalRaw = rawDays.reduce((a, b) => a + b, 0);
+    const remainingDays = 90 - N;
+    let cumulativeRaw = 0;
+    let prevScaledRemaining = 0;
+    for (let i = 0; i < N; i++) {
+      cumulativeRaw += rawDays[i];
+      let currScaledRemaining = Math.round((cumulativeRaw / totalRaw) * remainingDays);
+      let allocated = 1 + (currScaledRemaining - prevScaledRemaining);
+      scaledDays.push(allocated);
+      prevScaledRemaining = currScaledRemaining;
+    }
   }
 
   let currentDay = 1;
   const topPriorities = allTasks.map((t, i) => {
-    let nextDay = currentDay + scaledDays[i];
+    let nextDay = currentDay + scaledDays[i] - 1;
     if (nextDay > 90 || i === allTasks.length - 1) nextDay = 90;
+    if (nextDay < currentDay) nextDay = currentDay;
     const intervalStr = `Day ${currentDay} to ${nextDay}`;
-    currentDay = nextDay;
+    currentDay = Math.min(90, nextDay + 1);
     return `
     <tr>
       <td style="font-weight:700;color:#1a1a2e;white-space:nowrap;">${intervalStr}</td>

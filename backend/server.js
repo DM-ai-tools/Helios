@@ -27,6 +27,9 @@ import auditRouter from './routes/audit.js';
 import statusRouter from './routes/status.js';
 import initialAuditRouter from './routes/initialAudit.js';
 import implementationRouter from './routes/implementation.js';
+import integrationsRouter from './routes/integrations.js';
+import deploymentRouter from './routes/deployment.js';
+import { initDatabase } from './db/dbInit.js';
 import redisClient from './services/redisClient.js';
 import { generateReportPDF } from './services/puppeteerService.js';
 import fs from 'fs';
@@ -51,6 +54,18 @@ app.use('/api/audit', initialAuditRouter);   // initial quick audit (pre-score)
 app.use('/api/audit', auditRouter);
 app.use('/api/audit', statusRouter);
 app.use('/api/implementation', implementationRouter);  // implementation approval workflow
+app.use('/api/integrations', integrationsRouter);
+app.use('/api/deployment', deploymentRouter);
+
+// Integrations Settings Page
+app.get('/settings/integrations', (req, res) => {
+  res.sendFile(resolve(__dirname, '../frontend/integrations.html'));
+});
+
+// Deployment History Page
+app.get('/implementation/history', (req, res) => {
+  res.sendFile(resolve(__dirname, '../frontend/history.html'));
+});
 
 // Serve cached HTML reports
 app.get('/reports/:auditId', async (req, res) => {
@@ -145,9 +160,11 @@ app.get('*', (req, res) => {
   res.sendFile(resolve(__dirname, '../frontend/index.html'));
 });
 
-// ─── Start Server ─────────────────────────────────────────────
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`
+// ─── Initialize DB and Start Server ───────────────────────────
+(async () => {
+  await initDatabase();
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`
 ╔═══════════════════════════════════════════╗
 ║   ClickTrends AI Audit Server             ║
 ║   http://0.0.0.0:${PORT}                     ║
@@ -157,7 +174,8 @@ app.listen(PORT, '0.0.0.0', () => {
 ║   DATABASE_URL:      ${process.env.DATABASE_URL ? '✓ set' : '✗ missing'}             ║
 ║   RESEND_API_KEY:    ${process.env.RESEND_API_KEY ? '✓ set' : '✗ missing (email mock)'}  ║
 ╚═══════════════════════════════════════════╝
-  `);
-});
+    `);
+  });
+})();
 
 export default app;

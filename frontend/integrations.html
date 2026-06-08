@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Business Integrations Hub — ClickTrends AI Audit</title>
+  <meta name="description" content="Connect ClickTrends directly to WordPress, Shopify, Webflow, LinkedIn, Google Analytics, and Mailchimp to deploy AI updates." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }    :root {
+      --navy-dark: #111827;
+      --navy-light: #1f2937;
+      --navy-card: #ffffff;
+      --orange: #f97316;
+      --orange-dark: #ea6c0a;
+      --border: #e5e7eb;
+      --bg: #faf9f6;
+      --success: #10b981;
+      --error: #f43f5e;
+      --warning: #f59e0b;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── NAV BAR ─────────────────────────────────────────────── */
+    .nav {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--navy-dark);
+      letter-spacing: -0.04em;
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--orange); }
+    
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .nav-back {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color .2s;
+    }
+    .nav-back:hover { color: var(--orange); }
+
+    /* ── HEADER ──────────────────────────────────────────────── */
+    .header {
+      background: linear-gradient(135deg, #fdf8f3 0%, #ffffff 100%);
+      padding: 48px 24px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-main);
+    }
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(249,115,22,.1);
+      border: 1px solid rgba(249,115,22,.2);
+      border-radius: 99px;
+      padding: 6px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--orange);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .header h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin-bottom: 10px;
+    }
+    .header p {
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ── CONTAINER ───────────────────────────────────────────── */
+    .container {
+      max-width: 1050px;
+      margin: 0 auto;
+      padding: 40px 24px;
+      width: 100%;
+      flex: 1;
+    }
+
+    .category-section {
+      margin-bottom: 48px;
+    }
+    .category-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── CARD GRID ───────────────────────────────────────────── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--navy-card);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.02);
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(249, 115, 22, 0.4);
+      box-shadow: 0 12px 20px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(249,115,22,0.1);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .platform-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: #f3f4f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-weight: 800;
+      color: var(--text-main);
+      font-size: 14px;
+      border: 1px solid var(--border);
+    }
+    .platform-logo svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .platform-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .platform-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+    
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .status-not_connected {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+    .status-connected {
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .status-error {
+      background: rgba(244, 63, 94, 0.1);
+      color: #e11d48;
+      border: 1px solid rgba(244, 63, 94, 0.2);
+    }
+    .status-reauth {
+      background: rgba(245, 158, 11, 0.1);
+      color: #d97706;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .account-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── CARD ACTIONS ────────────────────────────────────────── */
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-connect {
+      background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+      color: #fff;
+      box-shadow: 0 4px 6px -1px rgba(249,115,22,0.2);
+    }
+    .btn-connect:hover {
+      box-shadow: 0 10px 15px -3px rgba(249,115,22,0.3);
+      transform: translateY(-0.5px);
+    }
+    .btn-connect:disabled, .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .btn-disconnect {
+      background: transparent;
+      color: var(--error);
+      border-color: rgba(244, 63, 94, 0.3);
+    }
+    .btn-disconnect:hover {
+      background: rgba(244, 63, 94, 0.05);
+    }
+
+    .btn-reconnect {
+      background: transparent;
+      color: var(--warning);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+    .btn-reconnect:hover {
+      background: rgba(245, 158, 11, 0.05);
+    }
+
+    /* ── SIMULATOR PANEL ─────────────────────────────────────── */
+    .sim-controls {
+      display: flex;
+      gap: 4px;
+      margin-top: 12px;
+      border-top: 1px dashed var(--border);
+      padding-top: 12px;
+    }
+    .sim-btn {
+      flex: 1;
+      padding: 4px 6px;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      transition: all 0.15s;
+    }
+    .sim-btn:hover {
+      background: #e5e7eb;
+      color: var(--text-main);
+    }
+    .sim-btn.active {
+      background: var(--orange);
+      color: #fff;
+      border-color: var(--orange-dark);
+    }
+
+    /* ── OAUTH MOCK MODAL ────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15,23,42,0.4);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .oauth-modal {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      width: 90%;
+      max-width: 440px;
+      max-height: 90vh;
+      border-radius: 20px;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: scale(0.95);
+      transition: transform 0.3s ease;
+    }
+    .modal-overlay.show .oauth-modal {
+      transform: scale(1);
+    }
+
+    .oauth-header {
+      background: #f9fafb;
+      padding: 24px;
+      color: var(--text-main);
+      text-align: center;
+      position: relative;
+      border-bottom: 1px solid var(--border);
+    }
+    .oauth-logo-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+    .oauth-logo-box {
+      width: 44px;
+      height: 44px;
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+      font-weight: 800;
+    }
+    .oauth-connector-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--orange);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0.6; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.6; }
+    }
+
+    .oauth-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .oauth-body input {
+      background: #ffffff !important;
+      color: #111827 !important;
+      border: 1.5px solid var(--border) !important;
+    }
+    .oauth-body input:focus {
+      border-color: var(--orange) !important;
+      box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2) !important;
+    }
+    .oauth-permissions-list {
+      margin: 16px 0 24px;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      list-style: none;
+    }
+    .oauth-permissions-list li {
+      font-size: 13px;
+      color: var(--text-main);
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .oauth-permissions-list li:last-child {
+      margin-bottom: 0;
+    }
+    .oauth-permissions-list li::before {
+      content: '✓';
+      color: var(--success);
+      font-weight: 900;
+    }
+
+    .oauth-footer {
+      display: flex;
+      gap: 12px;
+      padding: 0 24px 24px;
+    }
+    .oauth-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      text-align: center;
+    }
+    .oauth-btn-approve {
+      background: var(--success);
+      color: #fff;
+    }
+    .oauth-btn-cancel {
+      background: #f3f4f6;
+      color: var(--text-muted);
+      border-color: var(--border);
+    }
+    .oauth-btn-cancel:hover {
+      background: #e5e7eb;
+      color: var(--text-main);
+    }
+
+    /* ── TOAST ───────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 14px 24px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s, transform .3s;
+      transform: translateY(10px);
+      z-index: 2000;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    #toast.success { background: linear-gradient(135deg, var(--success), #16a34a); }
+    #toast.error   { background: linear-gradient(135deg, var(--error), #dc2626); }
+    #toast.info    { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <a href="/" class="nav-logo">Click<span>Trends</span></a>
+    
+    <div class="nav-right">
+      <a id="back-to-report-link" href="#" class="btn btn-connect" style="display: none; padding: 6px 14px; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 8px; margin-right: 12px; color: #fff;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Back to Report
+      </a>
+
+      <a id="back-to-impl-link" href="#" class="nav-back" style="display: none; margin-right: 12px; font-weight: 600;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Back to Implementation
+      </a>
+
+      <a id="history-link" href="/implementation/history" class="nav-back" style="margin-right: 12px; font-weight: 600;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>View Deployment History
+      </a>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-badge">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>Integrations Hub
+    </div>
+    <h1>Business Integrations Hub</h1>
+    <p>Connect your business platforms to ClickTrends. Once connected, approved optimizations, content updates, and campaigns can be deployed instantly.</p>
+  </header>
+
+  <!-- CONTAINER -->
+  <main class="container">
+    
+    <!-- WEBSITES & CMS -->
+    <section class="category-section">
+      <h2 class="category-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>Website &amp; CMS Platforms
+      </h2>
+      <div class="card-grid" id="grid-website">
+        <!-- JS populated cards -->
+      </div>
+    </section>
+
+    <!-- SOCIAL MEDIA -->
+    <section class="category-section">
+      <h2 class="category-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>Social Media Accounts
+      </h2>
+      <div class="card-grid" id="grid-social">
+        <!-- JS populated cards -->
+      </div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section class="category-section">
+      <h2 class="category-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>Analytics &amp; Tools
+      </h2>
+      <div class="card-grid" id="grid-analytics">
+        <!-- JS populated cards -->
+      </div>
+    </section>
+
+    <!-- MARKETING & EMAIL -->
+    <section class="category-section">
+      <h2 class="category-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>Marketing &amp; Email
+      </h2>
+      <div class="card-grid" id="grid-marketing">
+        <!-- JS populated cards -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
+
+  <!-- MOCK OAUTH MODAL -->
+  <div id="oauth-overlay" class="modal-overlay" onclick="closeOAuth()">
+    <div class="oauth-modal" onclick="event.stopPropagation()">
+      <div class="oauth-header">
+        <div class="oauth-logo-row">
+          <div class="oauth-logo-box" id="oauth-plat-logo">Logo</div>
+          <div class="oauth-connector-dot"></div>
+          <div class="oauth-logo-box" style="background: var(--orange); color: #fff;">CT</div>
+        </div>
+        <h3 id="oauth-title">Connect Platform</h3>
+        <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Authorize ClickTrends to connect to your account</p>
+      </div>
+      
+      <div class="oauth-body">
+        <!-- Dynamic metadata field container -->
+        <div id="oauth-metadata-container" style="margin-bottom: 20px;"></div>
+
+        <p style="font-size: 13px; font-weight: 600; color: var(--text-main);">ClickTrends requests permissions to:</p>
+        <ul class="oauth-permissions-list" id="oauth-permissions">
+          <!-- Populated dynamically -->
+        </ul>
+        <p style="font-size: 11px; color: var(--text-muted); text-align: center;">No passwords will be stored. Connection uses secure OAuth tokens.</p>
+      </div>
+      
+      <div class="oauth-footer">
+        <button class="oauth-btn oauth-btn-cancel" onclick="closeOAuth()">Cancel</button>
+        <button class="oauth-btn oauth-btn-approve" onclick="approveOAuth()">Authorize Connection</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── CONFIG ────────────────────────────────────────────────
+    const PLATFORMS = {
+      'wordpress': {
+        category: 'website',
+        name: 'WordPress',
+        logo: 'WP',
+        permissions: ['Publish blog posts and pages', 'Edit titles and meta descriptions', 'Access theme options'],
+        fields: [
+          { key: 'domain', label: 'Website URL', placeholder: 'e.g. https://myblog.com', type: 'url', required: true },
+          { key: 'username', label: 'WordPress Username', placeholder: 'e.g. admin', type: 'text', required: true },
+          { key: 'password', label: 'WordPress Application Password', placeholder: 'e.g. xxxx xxxx xxxx xxxx', type: 'password', required: true }
+        ],
+        metadataDisplayKey: 'domain',
+        metadataDisplayLabel: 'Connected Domain'
+      },
+      'shopify': {
+        category: 'website',
+        name: 'Shopify',
+        logo: 'SP',
+        permissions: ['Update product descriptions', 'Edit collection content', 'Manage store pages'],
+        fields: [
+          { key: 'storeName', label: 'Shopify Store URL', placeholder: 'e.g. https://my-shop.myshopify.com', type: 'url', required: true },
+          { key: 'accessToken', label: 'Shopify Admin API Access Token', placeholder: 'e.g. shpat_xxx', type: 'password', required: true }
+        ],
+        metadataDisplayKey: 'storeName',
+        metadataDisplayLabel: 'Connected Store'
+      },
+      'webflow': {
+        category: 'website',
+        name: 'Webflow',
+        logo: 'WF',
+        permissions: ['Publish collection CMS contents', 'Update static page structures', 'Deploy site styles'],
+        fields: [
+          { key: 'workspace', label: 'Webflow Project / Workspace Name', placeholder: 'e.g. clicktrends-site', type: 'text', required: true },
+          { key: 'accessToken', label: 'Webflow API Access Token', placeholder: 'e.g. wflow_xxx', type: 'password', required: true }
+        ],
+        metadataDisplayKey: 'workspace',
+        metadataDisplayLabel: 'Workspace'
+      },
+      'wix': {
+        category: 'website',
+        name: 'Wix',
+        logo: 'WX',
+        permissions: ['Modify site SEO attributes', 'Update text content modules'],
+        fields: [
+          { key: 'domain', label: 'Wix Site URL', placeholder: 'e.g. https://clicktrends.wixsite.com', type: 'url', required: true },
+          { key: 'apiKey', label: 'Wix API Key', placeholder: 'e.g. wix_xxx', type: 'password', required: true }
+        ],
+        metadataDisplayKey: 'domain',
+        metadataDisplayLabel: 'Wix Site'
+      },
+      'squarespace': {
+        category: 'website',
+        name: 'Squarespace',
+        logo: 'SQ',
+        permissions: ['Edit block contents', 'Manage page title definitions'],
+        fields: [
+          { key: 'domain', label: 'Squarespace Site URL', placeholder: 'e.g. https://clicktrends.squarespace.com', type: 'url', required: true },
+          { key: 'apiKey', label: 'Squarespace API Key', placeholder: 'e.g. sq_xxx', type: 'password', required: true }
+        ],
+        metadataDisplayKey: 'domain',
+        metadataDisplayLabel: 'Squarespace Site'
+      },
+      'linkedin': {
+        category: 'social',
+        name: 'LinkedIn',
+        logo: 'LN',
+        permissions: ['Create and publish member posts', 'Schedule text and image updates', 'Analyze page statistics'],
+        fields: [
+          { key: 'accessToken', label: 'LinkedIn Access Token', placeholder: 'e.g. lq_xxx', type: 'password', required: true },
+          { key: 'organization', label: 'Company Page ID', placeholder: 'e.g. 12345678', type: 'text', required: true }
+        ],
+        metadataDisplayKey: 'organization',
+        metadataDisplayLabel: 'Organization ID'
+      },
+      'facebook': {
+        category: 'social',
+        name: 'Facebook',
+        logo: 'FB',
+        permissions: ['Publish timeline updates', 'Manage advertisement drafts'],
+        fields: [
+          { key: 'accessToken', label: 'Facebook Page Access Token', placeholder: 'e.g. EAAxxx', type: 'password', required: true },
+          { key: 'pageName', label: 'Page ID', placeholder: 'e.g. 987654321', type: 'text', required: true }
+        ],
+        metadataDisplayKey: 'pageName',
+        metadataDisplayLabel: 'Page ID'
+      },
+      'instagram': {
+        category: 'social',
+        name: 'Instagram',
+        logo: 'IG',
+        permissions: ['Upload caption texts', 'Publish image updates', 'Analyze user interactions'],
+        fields: [
+          { key: 'accessToken', label: 'Instagram Business Account Access Token', placeholder: 'e.g. IGxxx', type: 'password', required: true },
+          { key: 'username', label: 'Instagram Business Account ID', placeholder: 'e.g. 178414...', type: 'text', required: true }
+        ],
+        metadataDisplayKey: 'username',
+        metadataDisplayLabel: 'Business Account ID'
+      },
+      'x (twitter)': {
+        category: 'social',
+        name: 'X (Twitter)',
+        logo: 'X',
+        permissions: ['Publish short post updates', 'Manage post drafts'],
+        fields: [
+          { key: 'apiKey', label: 'API Key', placeholder: 'e.g. api_key_xxx', type: 'text', required: true },
+          { key: 'apiSecret', label: 'API Secret', placeholder: 'e.g. api_secret_xxx', type: 'password', required: true },
+          { key: 'accessToken', label: 'Access Token', placeholder: 'e.g. access_token_xxx', type: 'password', required: true },
+          { key: 'accessTokenSecret', label: 'Access Token Secret', placeholder: 'e.g. token_secret_xxx', type: 'password', required: true }
+        ],
+        metadataDisplayKey: 'apiKey',
+        metadataDisplayLabel: 'API Key'
+      },
+      'google analytics': {
+        category: 'analytics',
+        name: 'Google Analytics',
+        logo: 'GA',
+        permissions: ['Read active visitor stream tracking data', 'Access audience conversion metrics'],
+        fields: [
+          { key: 'measurementId', label: 'Google Analytics Measurement ID', placeholder: 'e.g. G-XXXXXXX', type: 'text', required: true },
+          { key: 'apiKey', label: 'Google Analytics API Token', placeholder: 'e.g. ga_xxx', type: 'password', required: true }
+        ],
+        metadataDisplayKey: 'measurementId',
+        metadataDisplayLabel: 'Measurement ID'
+      },
+      'google search console': {
+        category: 'analytics',
+        name: 'Google Search Console',
+        logo: 'GSC',
+        permissions: ['Access search query ranking indicators', 'Verify index crawler statistics'],
+        fields: [
+          { key: 'siteUrl', label: 'Google Search Console Site URL', placeholder: 'e.g. https://clicktrends.io', type: 'url', required: true },
+          { key: 'clientEmail', label: 'Google Search Console API Client Email', placeholder: 'e.g. service@project.iam.gserviceaccount.com', type: 'email', required: true },
+          { key: 'privateKey', label: 'Google Search Console API Private Key', placeholder: 'e.g. -----BEGIN PRIVATE KEY-----...', type: 'password', required: true }
+        ],
+        metadataDisplayKey: 'siteUrl',
+        metadataDisplayLabel: 'Site URL'
+      },
+      'mailchimp': {
+        category: 'marketing',
+        name: 'Mailchimp',
+        logo: 'MC',
+        permissions: ['Create campaign drafts', 'Upload HTML newsletter templates', 'Analyze audience lists'],
+        fields: [
+          { key: 'apiKey', label: 'Mailchimp API Key', placeholder: 'e.g. us1-xxxxxx', type: 'password', required: true },
+          { key: 'listName', label: 'Mailchimp Audience / List ID', placeholder: 'e.g. 4a2b3c4d', type: 'text', required: true }
+        ],
+        metadataDisplayKey: 'listName',
+        metadataDisplayLabel: 'Audience List ID'
+      }
+    };
+
+    // Platform SVG logos mapping
+    const LOGO_SVGS = {
+      'wordpress': '<svg viewBox="0 0 24 24" fill="#21759b"><path d="M12.158 12.786l-2.698 7.84a9.135 9.135 0 01-4.22-1.921c.105-.008.21-.016.3-.016.92 0 1.558.55 1.558 1.157 0 .546-.388.948-.828.948-.48 0-.819-.384-.819-.893 0-.176.035-.353.111-.53-.787-1.127-1.464-2.42-1.986-3.834l5.253-15.01a9.208 9.208 0 015.158 5.733 9.222 9.222 0 011.666 6.476zm-9.356.638a8.887 8.887 0 01.378-4.526l4.246 12.21a8.948 8.948 0 01-4.624-7.684zm14.775-5.918c0-.756-.27-1.282-.502-1.702-.31-.502-.602-.931-.602-1.434 0-.547.42-.988.989-.988.102 0 .193.023.277.05a9.07 9.07 0 00-6.732.181c.148.023.287.054.41.054.919 0 1.558-.55 1.558-1.157 0-.545-.386-.948-.829-.948-.28 0-.518.134-.68.328a9.156 9.156 0 018.667 9.475c-.009-.434-.055-.863-.127-1.282v-.029l-3.03 8.809-1.89-5.5a8.868 8.868 0 011.89-5.88zm.292 6.5l-3.328 9.68a9.158 9.158 0 01-4.321.439l2.766-8.038.883-2.57 3.992-.48a9.2 9.2 0 01.008.97z"/></svg>',
+      'shopify': '<svg viewBox="0 0 24 24" fill="#96bf48"><path d="M18.8 6.4L17 3.3c-.3-.5-.8-.8-1.4-.8h-7.2c-.6 0-1.1.3-1.4.8L5.2 6.4H1.4v2.7L3.3 21c.1 1.1 1 1.9 2.1 1.9h13.2c1.1 0 2-.8 2.1-1.9l1.9-11.9V6.4h-3.8zm-9.4-2h5.2l1.1 2H8.3l1.1-2zM5.4 20.9l-1.5-9.8h16.2l-1.5 9.8H5.4z"/></svg>',
+      'webflow': '<svg viewBox="0 0 24 24" fill="#4353ff"><path d="M19.742 7.72c-.886 0-1.572.338-2.057 1.012l-1.862 2.658c-.506-.76-.874-1.287-1.103-1.576-.856-1.077-1.826-1.552-2.91-1.428-1.265.143-2.181.996-2.748 2.558L7.159 16.29c-.295.814-.523 1.442-.686 1.884-.13.351-.383.526-.76.526-.376 0-.671-.24-.886-.72l-2.6-5.819c-.198-.444-.395-.667-.593-.667-.222 0-.414.223-.574.667l-.76 2.056c-.16.444-.24.842-.24 1.196 0 1.258.948 2.593 2.845 4.004C5.617 20.73 7.828 21 9.537 21c2.404 0 4.14-.997 5.21-2.99l1.942-3.766c.27-.52.548-.78.834-.78.286 0 .584.286.894.856l1.365 2.529c.662 1.221 1.584 1.832 2.766 1.832C24.453 18.681 24 15.011 24 12.012c0-2.861-.595-4.292-1.785-4.292-.72 0-1.545 1.054-2.473 3.161l-1.785 4.053c-.328.747-.657 1.121-.989 1.121-.303 0-.58-.338-.834-1.012l-1.636-4.321c-.492-1.3-.923-2.148-1.293-2.543-.37-.395-.788-.592-1.253-.592-.53 0-.96.223-1.293.667l-.78 1.056c-.235.318-.46.477-.676.477-.246 0-.43-.198-.553-.593l-.934-2.99c-.183-.593-.41-1.012-.683-1.258-.273-.246-.611-.37-1.015-.37-.626 0-1.492.352-2.6 1.056l4.671-11.83c.184-.444.37-.667.554-.667.147 0 .28.192.4.576l1.635 5.343c.27.887.525 1.52.76 1.902.235.38.528.572.88.572z"/></svg>',
+      'linkedin': '<svg viewBox="0 0 24 24" fill="#0a66c2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0z"/></svg>',
+      'facebook': '<svg viewBox="0 0 24 24" fill="#1877f2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
+      'instagram': '<svg viewBox="0 0 24 24" fill="#e1306c"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>',
+      'x (twitter)': '<svg viewBox="0 0 24 24" fill="#000000"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>',
+      'google analytics': '<svg viewBox="0 0 24 24" fill="#f9ab00"><path d="M22.5 20.25h-21c-.41 0-.75-.34-.75-.75s.34-.75.75-.75h21c.41 0 .75.34.75.75s-.34.75-.75.75zm-16.5-3c-.41 0-.75-.34-.75-.75v-6c0-.41.34-.75.75-.75s.75.34.75.75v6c0 .41-.34.75-.75.75zm6-4.5c-.41 0-.75-.34-.75-.75v-10.5c0-.41.34-.75.75-.75s.75.34.75.75v10.5c0 .41-.34.75-.75.75zm6 4.5c-.41 0-.75-.34-.75-.75v-13.5c0-.41.34-.75.75-.75s.75.34.75.75v13.5c0 .41-.34.75-.75.75z"/></svg>',
+      'google search console': '<svg viewBox="0 0 24 24" fill="#4285f4"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 13v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 1.93-.72 3.68-1.9 5.03z"/></svg>',
+      'mailchimp': '<svg viewBox="0 0 24 24" fill="#ffe01b"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm1.2 16.5c-1.3 0-2.4-.7-2.9-1.8l-1.3 2.6c-.2.4-.7.6-1.1.4-.4-.2-.6-.7-.4-1.1l1.5-3c-.6-.7-1-1.6-1-2.6 0-2.2 1.8-4 4-4s4 1.8 4 4c0 1-.4 1.9-1 2.6l1.5 3c.2.4 0 .9-.4 1.1-.1.1-.3.2-.4.2zm-.2-4.5c.8 0 1.5-.7 1.5-1.5S13.8 9 13 9s-1.5.7-1.5 1.5.7 1.5 1.5 1.5z"/></svg>',
+      'wix': '<svg viewBox="0 0 24 24" fill="#000000"><rect x="2" y="2" width="20" height="20" rx="4" fill="#f1f5f9"/><text x="12" y="14" font-size="10" font-weight="900" text-anchor="middle" font-family="sans-serif">WIX</text></svg>',
+      'squarespace': '<svg viewBox="0 0 24 24" fill="#000000"><rect x="2" y="2" width="20" height="20" rx="4" fill="#111827"/><text x="12" y="14" font-size="10" font-weight="900" text-anchor="middle" font-family="sans-serif" fill="#fff">SQ</text></svg>'
+    };
+
+    // Parse URL parameter for business/audit context
+    const params = new URLSearchParams(window.location.search);
+    const auditId = params.get('auditId') || 'demo';
+
+    let activeOAuthPlatform = null;
+    let connectedIntegrations = [];
+
+    // ── INITIALIZE ───────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Set current role from localStorage or default
+      const savedRole = localStorage.getItem('user_role') || 'Admin';
+      applyRolePrivileges(savedRole);
+
+      // Handle Back to Report button dynamically (always visible)
+      let reportAuditId = auditId;
+      if (!reportAuditId || reportAuditId === 'demo') {
+        try {
+          const session = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
+          if (session.auditId) {
+            reportAuditId = session.auditId;
+          }
+        } catch (e) {}
+      }
+
+      const reportBtn = document.getElementById('back-to-report-link');
+      if (reportBtn) {
+        if (reportAuditId && reportAuditId !== 'demo') {
+          reportBtn.href = `/report.html?auditId=${reportAuditId}`;
+        } else {
+          reportBtn.href = '/'; // Fallback to landing/portal page
+        }
+        reportBtn.style.display = 'inline-flex';
+      }
+
+      // Handle Back to Implementation link dynamically
+      const pluginId = params.get('pluginId');
+      if (auditId && auditId !== 'demo' && pluginId) {
+        let backUrl = `/audit/${auditId}/plugin/${pluginId}/implementation`;
+        if (pluginId === 'email-sequence') {
+          backUrl = `/audit/${auditId}/email-sequence/implementation`;
+        }
+        const backBtn = document.getElementById('back-to-impl-link');
+        if (backBtn) {
+          backBtn.href = backUrl;
+          backBtn.style.display = 'inline-flex';
+        }
+      }
+
+      // Handle Deployment History link dynamically
+      const historyLink = document.getElementById('history-link');
+      if (historyLink && auditId && auditId !== 'demo') {
+        historyLink.href = `/implementation/history?auditId=${auditId}`;
+      }
+
+      // Set business context from localStorage or query or fallback
+      const savedBusiness = getActiveBusinessId();
+
+      await loadIntegrations();
+    });
+
+    // ── BUSINESS SWITCHING ───────────────────────────────────
+    function getActiveBusinessId() {
+      const saved = localStorage.getItem('active_business_id');
+      if (saved) return saved;
+      if (auditId && auditId !== 'demo') return auditId;
+      return 'Business-A';
+    }
+
+    // ── LOAD INTEGRATIONS FROM BACKEND ───────────────────────
+    async function loadIntegrations() {
+      const activeBusinessId = getActiveBusinessId();
+      try {
+        const url = `/api/integrations`;
+        const res = await fetch(url, {
+          headers: {
+            'X-Business-Id': activeBusinessId
+          }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          connectedIntegrations = data.integrations || [];
+        }
+      } catch (err) {
+        console.error('Failed to fetch integrations:', err);
+        toast('Failed to load integrations.', 'error');
+      }
+      renderHub();
+    }
+
+    // ── ROLE MANAGEMENT ──────────────────────────────────────
+    function changeRole(role) {
+      localStorage.setItem('user_role', role);
+      applyRolePrivileges(role);
+      toast(`Switched context to ${role} role`, 'info');
+      renderHub();
+    }
+
+    function applyRolePrivileges(role) {
+      const isViewer = role === 'Viewer';
+      document.querySelectorAll('.btn-connect, .btn-disconnect, .btn-reconnect, .sim-btn').forEach(btn => {
+        if (isViewer) {
+          btn.setAttribute('disabled', 'true');
+        } else {
+          btn.removeAttribute('disabled');
+        }
+      });
+    }
+
+    // ── RENDER INTEGRATIONS CARDS ────────────────────────────
+    function renderHub() {
+      const websiteGrid = document.getElementById('grid-website');
+      const socialGrid = document.getElementById('grid-social');
+      const analyticsGrid = document.getElementById('grid-analytics');
+      const marketingGrid = document.getElementById('grid-marketing');
+
+      websiteGrid.innerHTML = '';
+      socialGrid.innerHTML = '';
+      analyticsGrid.innerHTML = '';
+      marketingGrid.innerHTML = '';
+
+      Object.entries(PLATFORMS).forEach(([slug, info]) => {
+        const conn = connectedIntegrations.find(c => c.platform === slug);
+        const cardHtml = buildCard(slug, info, conn);
+
+        if (info.category === 'website') websiteGrid.innerHTML += cardHtml;
+        else if (info.category === 'social') socialGrid.innerHTML += cardHtml;
+        else if (info.category === 'analytics') analyticsGrid.innerHTML += cardHtml;
+        else if (info.category === 'marketing') marketingGrid.innerHTML += cardHtml;
+      });
+
+      // Re-apply disabled states based on active role
+      applyRolePrivileges(localStorage.getItem('user_role') || 'Admin');
+    }
+
+    function buildCard(slug, info, connection) {
+      let statusClass = 'not_connected';
+      let statusText = 'Not Connected';
+      let buttonHtml = `<button class="btn btn-connect" onclick="connectPlatform('${slug}')">Connect</button>`;
+      let metaHtml = '';
+      let simulatorHtml = '';
+
+      if (connection) {
+        statusClass = connection.status || 'connected';
+        if (statusClass === 'connected') {
+          statusText = 'Connected';
+          buttonHtml = `<button class="btn btn-disconnect" onclick="disconnectPlatform('${slug}')">Disconnect</button>`;
+        } else if (statusClass === 'error') {
+          statusText = 'Connection Error';
+          buttonHtml = `
+            <button class="btn btn-reconnect" onclick="connectPlatform('${slug}')">Reconnect</button>
+            <button class="btn btn-disconnect" onclick="disconnectPlatform('${slug}')">Disconnect</button>
+          `;
+        } else if (statusClass === 'reauth') {
+          statusText = 'Reauthenticate';
+          buttonHtml = `
+            <button class="btn btn-reconnect" onclick="connectPlatform('${slug}')">Reauthenticate</button>
+            <button class="btn btn-disconnect" onclick="disconnectPlatform('${slug}')">Disconnect</button>
+          `;
+        }
+
+        // Render platform metadata nicely
+        let metadataDisplay = '';
+        if (connection.metadata) {
+          const meta = typeof connection.metadata === 'string' ? JSON.parse(connection.metadata) : connection.metadata;
+          if (meta && meta[info.metadataDisplayKey]) {
+            let label = info.metadataDisplayLabel || 'Connected Asset';
+            metadataDisplay = `<div class="account-meta" style="color:var(--text-main); font-weight:600;"><strong>${label}:</strong> ${meta[info.metadataDisplayKey]}</div>`;
+          }
+        }
+
+        metaHtml = `
+          <div class="account-meta"><strong>Account:</strong> ${connection.account_name}</div>
+          ${metadataDisplay}
+          <div class="account-meta" style="font-size:10px;">ID: ${connection.account_id}</div>
+        `;
+
+        const isViewer = (localStorage.getItem('user_role') || 'Admin') === 'Viewer';
+        const disabled = isViewer ? 'disabled' : '';
+
+        // Simulator controls for development and testing
+        simulatorHtml = `
+          <div class="sim-controls">
+            <button class="sim-btn ${statusClass === 'connected' ? 'active' : ''}" ${disabled} onclick="simulateStatus('${connection.id}', 'connected')">Live</button>
+            <button class="sim-btn ${statusClass === 'error' ? 'active' : ''}" ${disabled} onclick="simulateStatus('${connection.id}', 'error')">Error</button>
+            <button class="sim-btn ${statusClass === 'reauth' ? 'active' : ''}" ${disabled} onclick="simulateStatus('${connection.id}', 'reauth')">Reauth</button>
+          </div>
+        `;
+      }
+
+      const logoSvg = LOGO_SVGS[slug] || `<div class="platform-logo">${info.logo}</div>`;
+
+      return `
+        <div class="card card-${statusClass}">
+          <div>
+            <div class="card-top">
+              <div class="platform-logo">${logoSvg}</div>
+              <div class="platform-info">
+                <div class="platform-name">${info.name}</div>
+                <span class="status-badge status-${statusClass}">${statusText}</span>
+              </div>
+            </div>
+            ${metaHtml}
+          </div>
+          <div>
+            <div class="card-actions">
+              ${buttonHtml}
+            </div>
+            ${simulatorHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    // ── MOCK OAUTH MODAL ACTIONS ─────────────────────────────
+    function connectPlatform(slug) {
+      const role = localStorage.getItem('user_role') || 'Admin';
+      if (role === 'Viewer') {
+        toast('Viewer role cannot connect integrations.', 'error');
+        return;
+      }
+
+      activeOAuthPlatform = slug;
+      const plat = PLATFORMS[slug];
+      
+      document.getElementById('oauth-plat-logo').innerHTML = LOGO_SVGS[slug] || plat.logo;
+      document.getElementById('oauth-title').textContent = `Authorize ${plat.name}`;
+      
+      // Dynamic fields injection
+      const metadataContainer = document.getElementById('oauth-metadata-container');
+      metadataContainer.innerHTML = plat.fields.map(f => {
+        const inputType = f.type || 'text';
+        return `
+          <div style="display:flex; flex-direction:column; gap:6px; text-align:left; margin-bottom:14px;">
+            <label for="oauth-input-${f.key}" style="font-size:12px; font-weight:700; color:var(--text-main);">${f.label}</label>
+            <input type="${inputType}" id="oauth-input-${f.key}" placeholder="${f.placeholder}" ${f.required ? 'required' : ''}
+              style="width:100%; padding:10px 14px; font-size:13px; font-family:'Inter',sans-serif; border:1.5px solid var(--border); border-radius:8px; outline:none; transition:border-color 0.2s;"
+              onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border)'"/>
+          </div>
+        `;
+      }).join('');
+
+      const permissionsList = document.getElementById('oauth-permissions');
+      permissionsList.innerHTML = plat.permissions.map(p => `<li>${p}</li>`).join('');
+      
+      document.getElementById('oauth-overlay').classList.add('show');
+    }
+
+    function closeOAuth() {
+      document.getElementById('oauth-overlay').classList.remove('show');
+      activeOAuthPlatform = null;
+    }
+
+    async function approveOAuth() {
+      const platform = activeOAuthPlatform;
+      const plat = PLATFORMS[platform];
+      
+      const metadataObj = {};
+      let bodyAccessToken = '';
+      let bodyRefreshToken = '';
+      let isFormValid = true;
+
+      plat.fields.forEach(f => {
+        const inputEl = document.getElementById(`oauth-input-${f.key}`);
+        if (!inputEl) return;
+        const val = inputEl.value.trim();
+        if (f.required && !val) {
+          isFormValid = false;
+        }
+
+        // Mapping logic to map secrets to body tokens
+        if (platform === 'x (twitter)' && f.key === 'accessToken') {
+          bodyAccessToken = val;
+        } else if (platform === 'x (twitter)' && f.key === 'accessTokenSecret') {
+          bodyRefreshToken = val;
+        } else if (f.key === 'accessToken' || f.key === 'password' || f.key === 'apiKey' || f.key === 'privateKey') {
+          bodyAccessToken = val;
+        } else {
+          metadataObj[f.key] = val;
+        }
+      });
+
+      if (!isFormValid) {
+        toast('Please fill in all required fields.', 'error');
+        return;
+      }
+
+      closeOAuth();
+
+      const userRole = localStorage.getItem('user_role') || 'Admin';
+      const activeBusinessId = getActiveBusinessId();
+
+      let accountName = `Main ${plat.name} Account`;
+      if (metadataObj.domain) accountName = `${plat.name} (${metadataObj.domain})`;
+      else if (metadataObj.storeName) accountName = `${plat.name} (${metadataObj.storeName})`;
+      else if (metadataObj.organization) accountName = `${plat.name} (Org: ${metadataObj.organization})`;
+      else if (metadataObj.pageName) accountName = `${plat.name} (Page: ${metadataObj.pageName})`;
+      else if (metadataObj.username) accountName = `${plat.name} (@${metadataObj.username})`;
+      
+      try {
+        const res = await fetch('/api/integrations/connect', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-Role': userRole,
+            'X-Business-Id': activeBusinessId
+          },
+          body: JSON.stringify({
+            platform,
+            accountName,
+            accountId: `acc_${Math.random().toString(36).substring(2, 9)}`,
+            accessToken: bodyAccessToken || `access_${Math.random().toString(36).substring(2, 15)}`,
+            refreshToken: bodyRefreshToken || `refresh_${Math.random().toString(36).substring(2, 15)}`,
+            tokenExpiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            metadata: metadataObj
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          toast(`Connected to ${plat.name} successfully!`, 'success');
+          await loadIntegrations();
+        } else {
+          throw new Error(data.error || 'Failed to connect');
+        }
+      } catch (err) {
+        toast(`Connection failed: ${err.message}`, 'error');
+      }
+    }
+
+    async function disconnectPlatform(platform) {
+      const role = localStorage.getItem('user_role') || 'Admin';
+      if (role === 'Viewer') {
+        toast('Viewer role cannot disconnect integrations.', 'error');
+        return;
+      }
+
+      const confirmText = `Are you sure you want to disconnect ${PLATFORMS[platform].name}?`;
+      if (!confirm(confirmText)) return;
+
+      const activeBusinessId = getActiveBusinessId();
+
+      try {
+        const res = await fetch('/api/integrations/disconnect', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-Role': role,
+            'X-Business-Id': activeBusinessId
+          },
+          body: JSON.stringify({
+            platform
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          toast(`Disconnected ${PLATFORMS[platform].name} successfully.`, 'info');
+          await loadIntegrations();
+        } else {
+          throw new Error(data.error || 'Failed to disconnect');
+        }
+      } catch (err) {
+        toast(`Disconnect failed: ${err.message}`, 'error');
+      }
+    }
+
+    async function simulateStatus(id, status) {
+      const role = localStorage.getItem('user_role') || 'Admin';
+      try {
+        const res = await fetch(`/api/integrations/${id}/simulate-status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-Role': role,
+            'X-Business-Id': getActiveBusinessId()
+          },
+          body: JSON.stringify({ status })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          toast(`Simulated status: ${status}`, 'success');
+          await loadIntegrations();
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (err) {
+        toast(`Simulation failed: ${err.message}`, 'error');
+      }
+    }
+
+    // ── TOAST ─────────────────────────────────────────────────
+    function toast(msg, type = 'info') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'show ' + type;
+      clearTimeout(el._t);
+      el._t = setTimeout(() => { el.className = ''; }, 3000);
+    }
+  </script>
+</body>
+</html>

@@ -1077,30 +1077,38 @@ function buildActionPlan(synthesis, pluginOutputs) {
   }
 
   var effortMap = { 'SMALL': 3, 'MED': 6, 'MEDIUM': 6, 'LARGE': 12, 'ONGOING': 12 };
-  var totalEffort = 0;
-  allTasks.forEach(function(t) { totalEffort += (effortMap[t.effort] || 6); });
-
-  var scale = 90 / Math.max(totalEffort, 1);
-  var scaledDays = allTasks.map(function(t) {
-    return Math.max(1, Math.round((effortMap[t.effort] || 6) * scale));
-  });
-
-  var totalDays = scaledDays.reduce(function(a,b){return a+b}, 0);
-  if (scaledDays.length > 0) {
-    scaledDays[scaledDays.length - 1] += (90 - totalDays);
-    if (scaledDays[scaledDays.length - 1] < 1) scaledDays[scaledDays.length - 1] = 1;
+  var N = allTasks.length;
+  var scaledDays = [];
+  if (N >= 90) {
+    for (var i = 0; i < N; i++) {
+      scaledDays.push(i < 90 ? 1 : 0);
+    }
+  } else if (N > 0) {
+    var rawDays = allTasks.map(function(t) { return effortMap[t.effort] || 6; });
+    var totalRaw = rawDays.reduce(function(a, b) { return a + b; }, 0);
+    var remainingDays = 90 - N;
+    var cumulativeRaw = 0;
+    var prevScaledRemaining = 0;
+    for (var i = 0; i < N; i++) {
+      cumulativeRaw += rawDays[i];
+      var currScaledRemaining = Math.round((cumulativeRaw / totalRaw) * remainingDays);
+      var allocated = 1 + (currScaledRemaining - prevScaledRemaining);
+      scaledDays.push(allocated);
+      prevScaledRemaining = currScaledRemaining;
+    }
   }
 
   var currentDay = 1;
   var rows = allTasks.map(function(t, i) {
-    var nextDay = currentDay + scaledDays[i];
+    var nextDay = currentDay + scaledDays[i] - 1;
     if (nextDay > 90 || i === allTasks.length - 1) nextDay = 90;
+    if (nextDay < currentDay) nextDay = currentDay;
     var intervalStr = 'Day ' + currentDay + ' to ' + nextDay;
-    currentDay = nextDay;
+    currentDay = Math.min(90, nextDay + 1);
     return { interval: intervalStr, action: t.action, impact: t.impact, effort: t.effort };
   });
 
-  return rows.slice(0, 30);
+  return rows;
 }
 
 var observer = new IntersectionObserver(function(entries) {
@@ -1263,7 +1271,7 @@ function addImplButton(sectionEl, pluginId) {
   row.style.cssText = 'display:flex;gap:12px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid #f3f4f6;';
   var btn = document.createElement('button');
   btn.id = 'impl-btn-' + pluginId;
-  btn.innerHTML = '&#128640;&nbsp; Implement Changes';
+  btn.innerHTML = 'Implement Changes';
   btn.style.cssText = 'background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;font-size:13px;font-weight:700;padding:10px 22px;border-radius:10px;border:none;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 2px 12px rgba(249,115,22,.35);transition:all .2s;';
   btn.onmouseover = function() { this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 24px rgba(249,115,22,.5)'; };
   btn.onmouseout  = function() { this.style.transform=''; this.style.boxShadow='0 2px 12px rgba(249,115,22,.35)'; };
@@ -2246,7 +2254,7 @@ function renderEmailSequence(es) {
         '<span style="font-size:22px">&#128231;</span>' +
         '<div>' +
           '<div style="font-size:16px;font-weight:800;color:white;line-height:1.2">Ready to Build Your Email Campaign?</div>' +
-          '<div style="font-size:12px;color:#9ca3af;margin-top:2px">Review rendered email designs, approve each email, and send to your implementation bot</div>' +
+          '<div style="font-size:12px;color:#9ca3af;margin-top:2px">Review rendered email designs, approve each email, and send to your integrated platform</div>' +
         '</div>' +
       '</div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap">' +

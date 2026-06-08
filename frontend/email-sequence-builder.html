@@ -495,7 +495,7 @@
     <button class="btn-bulk-approve" onclick="bulkApprove()">✓ Approve All</button>
     <button class="btn-bulk-reject"  onclick="bulkReject()">✗ Reject All</button>
     <button class="btn-dispatch" id="dispatch-btn" onclick="openPayloadModal()" disabled>
-      🚀 Send Approved Sequence To Implementation Bot
+      🚀 Send Approved Sequence To Integrated Platform
     </button>
   </div>
 </div>
@@ -509,8 +509,8 @@
     </div>
     <div class="modal-body">
       <p style="font-size:13px;color:#6b7280;margin-bottom:16px;line-height:1.6">
-        The following JSON payload will be sent to your implementation bot. Only <strong>approved</strong> emails are included.
-        Your bot will upload the HTML emails, configure the sequence delays, and publish the campaign.
+        The following JSON payload will be sent to your integrated platform. Only <strong>approved</strong> emails are included.
+        The platform will upload the HTML emails, configure the sequence delays, and publish the campaign.
       </p>
       <pre class="code-block" id="payload-preview"></pre>
     </div>

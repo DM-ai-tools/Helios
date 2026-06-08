@@ -12,7 +12,14 @@ import {
   getAuditById,
   getAuditPlugins,
   saveImplementationChanges,
+  createDbDeploymentJob,
+  updateDbDeploymentJob,
+  createDeployment,
+  createAuditTrailEntry,
+  getIntegrationByPlatform,
+  upsertIntegration
 } from '../db/queries.js';
+import { requireAdmin } from './integrations.js';
 
 const router = Router();
 
@@ -310,9 +317,10 @@ router.post('/:auditId([^/]+)/:pluginId/bulk', async (req, res) => {
 
 // ─── POST /api/implementation/:auditId/email-sequence/campaign-execute ───
 // Email-specific execute — builds campaign bot payload with HTML email templates
-router.post('/:auditId([^/]+)/email-sequence/campaign-execute', async (req, res) => {
+router.post('/:auditId([^/]+)/email-sequence/campaign-execute', requireAdmin, async (req, res) => {
   const { auditId } = req.params;
   const { approvedEmails, campaignSettings } = req.body;
+  const businessId = req.headers['x-business-id'] || 'default-business';
   const isDemo = auditId === 'demo' || auditId.startsWith('demo-');
 
   if (isDemo) {
@@ -343,6 +351,46 @@ router.post('/:auditId([^/]+)/email-sequence/campaign-execute', async (req, res)
       return res.status(400).json({ error: 'No approved emails to send' });
     }
 
+    // 1. Verify Mailchimp integration
+    let integration = await getIntegrationByPlatform(businessId, 'mailchimp');
+    if (!integration) {
+      return res.status(400).json({
+        error: 'No active Mailchimp integration connected for this business. Please connect it first.'
+      });
+    }
+
+    // 2. Auto-detect and refresh expired token
+    const now = new Date();
+    if (integration.token_expiry && new Date(integration.token_expiry) <= now) {
+      console.log(`[Token Refresh] Mailchimp token for business ${businessId} has expired. Refreshing...`);
+      const newAccessToken = `refreshed_access_${Math.random().toString(36).substring(2, 9)}`;
+      const newRefreshToken = `refreshed_refresh_${Math.random().toString(36).substring(2, 9)}`;
+      const newExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      await upsertIntegration({
+        businessId,
+        platform: 'mailchimp',
+        accountName: integration.account_name,
+        accountId: integration.account_id,
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+        tokenExpiry: newExpiry,
+        status: 'connected',
+        metadata: integration.metadata
+      });
+
+      await createAuditTrailEntry({
+        businessId,
+        eventType: 'token_refresh',
+        auditId: auditId || null,
+        pluginId: 'email-sequence',
+        changeId: 'email-sequence-campaign',
+        actionDetails: 'Auto-refreshed access token for Mailchimp integration.',
+        performedBy: 'System',
+        metadata: { platform: 'mailchimp' }
+      });
+    }
+
     // Build campaign payload
     const payload = {
       campaignType:  campaignSettings?.campaignType || 'email_sequence',
@@ -362,8 +410,17 @@ router.post('/:auditId([^/]+)/email-sequence/campaign-execute', async (req, res)
       })),
     };
 
-    // Create an implementation job record for audit trail
+    // Create implementation job record in Redis
     const job = await createImplementationJob(auditId, 'email-sequence', payload.emails);
+
+    // 3. Create deployment job queue entry in PostgreSQL
+    const dbJob = await createDbDeploymentJob({
+      businessId,
+      auditId,
+      changeId: 'email-sequence-campaign',
+      platform: 'mailchimp',
+      assetType: 'email_sequence'
+    });
 
     // Bot dispatch
     const botUrl = process.env.IMPLEMENTATION_BOT_URL;
@@ -383,6 +440,38 @@ router.post('/:auditId([^/]+)/email-sequence/campaign-execute', async (req, res)
     } else {
       botResult = { status: 'queued', note: 'Bot not yet configured. Campaign payload stored and ready for dispatch.' };
     }
+
+    // Update job status to completed/failed based on dispatch result
+    const status = botResult?.error ? 'failed' : 'completed';
+    await updateDbDeploymentJob(dbJob.id, status);
+
+    // 4. Record the completed deployment in PostgreSQL deployments table
+    await createDeployment({
+      businessId,
+      auditId,
+      changeId: 'email-sequence-campaign',
+      platform: 'mailchimp',
+      assetType: 'email_sequence',
+      contentPayload: payload,
+      previousContent: null,
+      status,
+      deployedBy: 'Admin User',
+      response: botResult
+    });
+
+    // 5. Write to audit trail
+    await createAuditTrailEntry({
+      businessId,
+      eventType: status === 'completed' ? 'deploy_change' : 'deployment_failed',
+      auditId,
+      pluginId: 'email-sequence',
+      changeId: 'email-sequence-campaign',
+      actionDetails: status === 'completed'
+        ? `Dispatched campaign "${payload.campaignName}" to Mailchimp.`
+        : `Failed to dispatch campaign to Mailchimp: ${botResult?.error}`,
+      performedBy: 'Admin User',
+      metadata: { jobId: dbJob.id, botResult }
+    });
 
     res.json({
       success:  true,

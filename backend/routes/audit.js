@@ -88,7 +88,7 @@ router.post('/:id([^/]+)/analyze', async (req, res) => {
   // If this audit was previously complete, the old Redis cache would cause
   // plugin-scanning.html to see status=complete and jump straight to the old
   // report — skipping the new plugin run entirely.
-  await updateAuditStatus(auditId, 'analyzing');
+  await updateAuditStatus(auditId, 'running');
   try { await redisClient.del(`audit_final_json:${auditId}`); } catch (_) {}
 
   res.json({

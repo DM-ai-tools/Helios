@@ -32,9 +32,12 @@ temp.js
 
 # Dev/debug utility scripts (local only)
 clear-pdf-cache.js
+check-db.js
+check-latest.mjs
 drop-db.mjs
 dump-crawled-data.mjs
 fetch-audit-result.mjs
+fetch-failed-audit.mjs
 print-debug.mjs
 show-live-results.mjs
 show-redis.mjs
@@ -42,6 +45,9 @@ show-results.mjs
 test-*.mjs
 test-*.cjs
 test-*.js
+test_crawler.mjs
+test_fetch.js
+raw-email-output.txt
 
 # macOS
 .DS_Store

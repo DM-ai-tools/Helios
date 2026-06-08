@@ -1,14 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Generating Your Report · ClickTrends AI Audit</title>
   <meta name="description" content="Claude AI is generating your personalised audit report. Please wait." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: 'Inter', sans-serif;
@@ -29,6 +37,7 @@
       top: 0;
       z-index: 50;
     }
+
     .header-inner {
       max-width: 1100px;
       margin: 0 auto;
@@ -38,6 +47,7 @@
       align-items: center;
       justify-content: space-between;
     }
+
     .logo {
       font-size: 1.15rem;
       font-weight: 800;
@@ -45,8 +55,17 @@
       text-decoration: none;
       letter-spacing: -0.03em;
     }
-    .logo .accent { color: #f97316; }
-    .logo .light  { font-weight: 400; color: #9ca3af; margin-left: 4px; font-size: 0.88rem; }
+
+    .logo .accent {
+      color: #f97316;
+    }
+
+    .logo .light {
+      font-weight: 400;
+      color: #9ca3af;
+      margin-left: 4px;
+      font-size: 0.88rem;
+    }
 
     .status-pill {
       display: flex;
@@ -60,6 +79,7 @@
       font-size: 0.76rem;
       font-weight: 600;
     }
+
     .live-dot {
       width: 7px;
       height: 7px;
@@ -67,7 +87,18 @@
       border-radius: 50%;
       animation: blink 1.2s infinite;
     }
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.25;
+      }
+    }
 
     /* ── Main ───────────────────────────────────────────── */
     .main {
@@ -100,10 +131,19 @@
       margin: 0 auto 32px;
       animation: pulse-ring 2.2s ease-in-out infinite;
     }
+
     @keyframes pulse-ring {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.3); }
-      50%       { box-shadow: 0 0 0 16px rgba(249, 115, 22, 0); }
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.3);
+      }
+
+      50% {
+        box-shadow: 0 0 0 16px rgba(249, 115, 22, 0);
+      }
     }
+
     .spinner-icon {
       width: 38px;
       height: 38px;
@@ -112,11 +152,24 @@
       border-radius: 50%;
       animation: spin 0.85s linear infinite;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
     /* When complete, spinner turns green */
-    .spinner-wrap.done { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); animation: none; }
-    .spinner-icon.done { border-color: #bbf7d0; border-top-color: #22c55e; animation: none; }
+    .spinner-wrap.done {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      animation: none;
+    }
+
+    .spinner-icon.done {
+      border-color: #bbf7d0;
+      border-top-color: #22c55e;
+      animation: none;
+    }
 
     .eyebrow {
       font-size: 0.68rem;
@@ -135,7 +188,10 @@
       line-height: 1.2;
       margin-bottom: 10px;
     }
-    .card-title .highlight { color: #f97316; }
+
+    .card-title .highlight {
+      color: #f97316;
+    }
 
     .card-sub {
       font-size: 0.88rem;
@@ -151,6 +207,7 @@
       justify-content: space-between;
       margin-bottom: 10px;
     }
+
     .prog-label {
       font-size: 0.8rem;
       font-weight: 600;
@@ -161,6 +218,7 @@
       text-overflow: ellipsis;
       max-width: 82%;
     }
+
     .prog-pct {
       font-size: 0.8rem;
       font-weight: 700;
@@ -168,12 +226,14 @@
       flex-shrink: 0;
       transition: color 0.4s;
     }
+
     .prog-track {
       height: 10px;
       background: #f3f4f6;
       border-radius: 99px;
       overflow: hidden;
     }
+
     .prog-fill {
       height: 100%;
       background: linear-gradient(90deg, #f97316 0%, #fb923c 60%, #fdba74 100%);
@@ -182,6 +242,7 @@
       transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 0 0 12px rgba(249, 115, 22, 0.4);
     }
+
     .prog-fill.done {
       background: linear-gradient(90deg, #22c55e, #4ade80);
       box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
@@ -196,274 +257,279 @@
     }
   </style>
 </head>
+
 <body>
 
-<!-- ── HEADER ───────────────────────────────────────────── -->
-<header>
-  <div class="header-inner">
-    <a href="/" class="logo">Click<span class="accent">Trends</span><span class="light">AI Audit</span></a>
-    <div style="display: flex; align-items: center;">
-      <div class="status-pill">
-        <div class="live-dot" id="live-dot"></div>
-        <span id="header-status">Generating report…</span>
-      </div>
-      
-      <!-- HELIOS Branding -->
-      <div class="navbar-powered" style="display: flex; align-items: center; border-left: 1px solid #d1d5db; padding-left: 12px; margin-left: 16px;">
-        <div style="display: flex; flex-direction: column; line-height: 1.1; font-family: 'Inter', sans-serif;">
-          <div style="display: flex; align-items: center; gap: 4px; font-weight: 900; color: #f97316; font-size: 0.95rem; letter-spacing: 0.05em;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="5"></circle>
-              <line x1="12" y1="1" x2="12" y2="3"></line>
-              <line x1="12" y1="21" x2="12" y2="23"></line>
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-              <line x1="1" y1="12" x2="3" y2="12"></line>
-              <line x1="21" y1="12" x2="23" y2="12"></line>
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-            </svg>
-            HELIOS
-          </div>
-          <div style="font-size: 0.75rem; color: #4b5563; font-weight: 500; margin-top: 2px;">
-            by <strong style="color: #111827;">Click Trends</strong>
+  <!-- ── HEADER ───────────────────────────────────────────── -->
+  <header>
+    <div class="header-inner">
+      <a href="/" class="logo">Click<span class="accent">Trends</span><span class="light">AI Audit</span></a>
+      <div style="display: flex; align-items: center;">
+        <div class="status-pill">
+          <div class="live-dot" id="live-dot"></div>
+          <span id="header-status">Generating report…</span>
+        </div>
+
+        <!-- HELIOS Branding -->
+        <div class="navbar-powered"
+          style="display: flex; align-items: center; border-left: 1px solid #d1d5db; padding-left: 12px; margin-left: 16px;">
+          <div style="display: flex; flex-direction: column; line-height: 1.1; font-family: 'Inter', sans-serif;">
+            <div
+              style="display: flex; align-items: center; gap: 4px; font-weight: 900; color: #f97316; font-size: 0.95rem; letter-spacing: 0.05em;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+              HELIOS
+            </div>
+            <div style="font-size: 0.75rem; color: #4b5563; font-weight: 500; margin-top: 2px;">
+              by <strong style="color: #111827;">Click Trends</strong>
+            </div>
           </div>
         </div>
       </div>
     </div>
+  </header>
+
+  <!-- ── MAIN CARD ─────────────────────────────────────────── -->
+  <div class="main">
+    <div class="card">
+
+      <div class="spinner-wrap" id="spinner-wrap">
+        <div class="spinner-icon" id="spinner-icon"></div>
+      </div>
+
+      <div class="eyebrow">AI Analysis in Progress</div>
+      <h1 class="card-title">Analysing <span class="highlight" id="site-name">your website</span></h1>
+      <p class="card-sub" id="card-sub">
+        Claude AI is running your selected plugins and generating<br>
+        a personalised audit report. This takes 60 – 90 seconds.
+      </p>
+
+      <div class="prog-header">
+        <span class="prog-label" id="prog-label">Initialising pipeline…</span>
+        <span class="prog-pct" id="prog-pct">0%</span>
+      </div>
+      <div class="prog-track">
+        <div class="prog-fill" id="prog-fill"></div>
+      </div>
+
+      <p class="bottom-note">Don't close this tab — your report is being generated</p>
+
+    </div>
   </div>
-</header>
 
-<!-- ── MAIN CARD ─────────────────────────────────────────── -->
-<div class="main">
-  <div class="card">
+  <script>
+    // ── Read session & URL params ──────────────────────────────
+    const urlParams = new URLSearchParams(window.location.search);
+    const session = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
 
-    <div class="spinner-wrap" id="spinner-wrap">
-      <div class="spinner-icon" id="spinner-icon"></div>
-    </div>
+    // auditId: URL param takes priority (passed by plugin-select.html)
+    let auditId = urlParams.get('auditId') || session.auditId;
+    if (auditId === 'undefined') auditId = null;
 
-    <div class="eyebrow">AI Analysis in Progress</div>
-    <h1 class="card-title">Analysing <span class="highlight" id="site-name">your website</span></h1>
-    <p class="card-sub" id="card-sub">
-      Claude AI is running your selected plugins and generating<br>
-      a personalised audit report. This takes 60 – 90 seconds.
-    </p>
-
-    <div class="prog-header">
-      <span class="prog-label" id="prog-label">Initialising pipeline…</span>
-      <span class="prog-pct" id="prog-pct">0%</span>
-    </div>
-    <div class="prog-track">
-      <div class="prog-fill" id="prog-fill"></div>
-    </div>
-
-    <p class="bottom-note">Don't close this tab — your report is being generated</p>
-
-  </div>
-</div>
-
-<script>
-// ── Read session & URL params ──────────────────────────────
-const urlParams = new URLSearchParams(window.location.search);
-const session   = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
-
-// auditId: URL param takes priority (passed by plugin-select.html)
-let auditId = urlParams.get('auditId') || session.auditId;
-if (auditId === 'undefined') auditId = null;
-
-// Persist back to session
-if (auditId) {
-  session.auditId = auditId;
-  sessionStorage.setItem('clicktrends_audit', JSON.stringify(session));
-}
-
-// Personalise header/title with domain name
-const url    = session.url || '';
-const domain = url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] || 'your website';
-const biz    = domain.split('.')[0];
-const siteName = biz.charAt(0).toUpperCase() + biz.slice(1);
-
-document.getElementById('site-name').textContent = siteName;
-document.title = `Generating Report for ${siteName} · ClickTrends`;
-document.getElementById('header-status').textContent = `Scanning ${domain}…`;
-
-// ── Progress state — single high-water mark ────────────────
-// The bar NEVER moves backwards. All updates go through setProgress().
-let displayedPct = 0;
-let tickTimer    = null;
-let tickCeiling  = 45;   // ticker won't go past this until raised by real events
-
-function setProgress(pct, msg) {
-  // Enforce high-water mark: never go below what's already shown
-  const next = Math.min(Math.max(Math.round(pct), displayedPct), 99);
-  if (next > displayedPct) {
-    displayedPct = next;
-    document.getElementById('prog-fill').style.width = next + '%';
-    document.getElementById('prog-pct').textContent  = next + '%';
-  }
-  if (msg) document.getElementById('prog-label').textContent = msg;
-}
-
-// Raise the ceiling so ticker can advance a little past current position
-function raiseCeiling(upTo) {
-  tickCeiling = Math.max(tickCeiling, Math.min(upTo, 97));
-}
-
-function startTicker() {
-  if (tickTimer) return;
-  tickTimer = setInterval(() => {
-    if (displayedPct < tickCeiling) {
-      setProgress(displayedPct + 0.4, null);
+    // Persist back to session
+    if (auditId) {
+      session.auditId = auditId;
+      sessionStorage.setItem('clicktrends_audit', JSON.stringify(session));
     }
-  }, 600);
-}
 
-function stopTicker() {
-  if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
-}
+    // Personalise header/title with domain name
+    const url = session.url || '';
+    const domain = url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] || 'your website';
+    const biz = domain.split('.')[0];
+    const siteName = biz.charAt(0).toUpperCase() + biz.slice(1);
 
-// ── Completion ────────────────────────────────────────────
-function onComplete(dest) {
-  stopTicker();
-  displayedPct = 100;
-  document.getElementById('prog-fill').style.width  = '100%';
-  document.getElementById('prog-pct').textContent   = '100%';
-  document.getElementById('prog-label').textContent = '✓ Report ready — opening now…';
-  document.getElementById('prog-fill').classList.add('done');
-  document.getElementById('prog-pct').style.color   = '#22c55e';
-  document.getElementById('spinner-wrap').classList.add('done');
-  document.getElementById('spinner-icon').classList.add('done');
-  document.getElementById('card-sub').textContent      = 'Your AI audit report is complete and ready to view.';
-  document.getElementById('header-status').textContent = 'Report ready!';
-  document.getElementById('live-dot').style.background = '#22c55e';
-  setTimeout(() => {
-    window.location.href = dest || ('report.html?auditId=' + auditId);
-  }, 1800);
-}
+    document.getElementById('site-name').textContent = siteName;
+    document.title = `Generating Report for ${siteName} · ClickTrends`;
+    document.getElementById('header-status').textContent = `Scanning ${domain}…`;
 
-// ── SSE listener ─────────────────────────────────────────
-let reconnects = 0;
-function listenSSE() {
-  const sse = new EventSource('/api/audit/' + auditId + '/status');
+    // ── Progress state — single high-water mark ────────────────
+    // The bar NEVER moves backwards. All updates go through setProgress().
+    let displayedPct = 0;
+    let tickTimer = null;
+    let tickCeiling = 45;   // ticker won't go past this until raised by real events
 
-  sse.onmessage = function(e) {
-    try {
-      const ev = JSON.parse(e.data);
-
-      // Real progress from backend — high-water mark enforced inside setProgress()
-      if (typeof ev.progress === 'number') {
-        raiseCeiling(ev.progress + 8);   // let ticker advance a bit past this milestone
-        setProgress(ev.progress, ev.message || null);
-      } else if (ev.message) {
-        document.getElementById('prog-label').textContent = ev.message;
+    function setProgress(pct, msg) {
+      // Enforce high-water mark: never go below what's already shown
+      const next = Math.min(Math.max(Math.round(pct), displayedPct), 99);
+      if (next > displayedPct) {
+        displayedPct = next;
+        document.getElementById('prog-fill').style.width = next + '%';
+        document.getElementById('prog-pct').textContent = next + '%';
       }
+      if (msg) document.getElementById('prog-label').textContent = msg;
+    }
 
-      // Plugin step labels
-      if (ev.type === 'plugin-running' && ev.pluginId) {
-        const name = ev.pluginId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        document.getElementById('prog-label').textContent = '⚙ Running ' + name + '…';
-      }
-      if (ev.type === 'plugin-complete') {
-        raiseCeiling(displayedPct + 6);  // nudge ceiling up after each plugin finishes
-      }
+    // Raise the ceiling so ticker can advance a little past current position
+    function raiseCeiling(upTo) {
+      tickCeiling = Math.max(tickCeiling, Math.min(upTo, 97));
+    }
 
-      // Done
-      if (ev.type === 'complete') {
-        sse.close();
-        onComplete(ev.reportUrl || ('report.html?auditId=' + (ev.auditId || auditId)));
-      }
+    function startTicker() {
+      if (tickTimer) return;
+      tickTimer = setInterval(() => {
+        if (displayedPct < tickCeiling) {
+          setProgress(displayedPct + 0.4, null);
+        }
+      }, 600);
+    }
 
-      // Error from backend
-      if (ev.type === 'error') {
-        document.getElementById('prog-label').textContent = '⚠ ' + (ev.message || 'An error occurred');
-      }
-    } catch (_) {}
-  };
+    function stopTicker() {
+      if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+    }
 
-  sse.onerror = function() {
-    sse.close();
-    reconnects++;
-    if (reconnects <= 10) {
-      setTimeout(listenSSE, Math.min(reconnects * 2000, 10000));
-    } else {
-      document.getElementById('prog-label').textContent = 'Connection lost — please refresh.';
+    // ── Completion ────────────────────────────────────────────
+    function onComplete(dest) {
       stopTicker();
+      displayedPct = 100;
+      document.getElementById('prog-fill').style.width = '100%';
+      document.getElementById('prog-pct').textContent = '100%';
+      document.getElementById('prog-label').textContent = '✓ Report ready — opening now…';
+      document.getElementById('prog-fill').classList.add('done');
+      document.getElementById('prog-pct').style.color = '#22c55e';
+      document.getElementById('spinner-wrap').classList.add('done');
+      document.getElementById('spinner-icon').classList.add('done');
+      document.getElementById('card-sub').textContent = 'Your AI audit report is complete and ready to view.';
+      document.getElementById('header-status').textContent = 'Report ready!';
+      document.getElementById('live-dot').style.background = '#22c55e';
+      setTimeout(() => {
+        window.location.href = dest || ('report.html?auditId=' + auditId);
+      }, 1800);
     }
-  };
-}
 
-// ── Boot ─────────────────────────────────────────────────
-async function boot() {
-  // Case A: auditId already exists (normal flow from plugin-select.html)
-  if (auditId) {
-    try {
-      const res  = await fetch('/api/audit/' + auditId);
-      const data = res.ok ? await res.json() : null;
+    // ── SSE listener ─────────────────────────────────────────
+    let reconnects = 0;
+    function listenSSE() {
+      const sse = new EventSource('/api/audit/' + auditId + '/status');
 
-      // Only skip to report if truly complete AND we didn't just arrive from
-      // plugin-select.html (which means a new run was just triggered)
-      const fromSelect = urlParams.get('from') === 'select';
-      if (data && data.status === 'complete' && !fromSelect) {
-        window.location.replace('report.html?auditId=' + auditId);
+      sse.onmessage = function (e) {
+        try {
+          const ev = JSON.parse(e.data);
+
+          // Real progress from backend — high-water mark enforced inside setProgress()
+          if (typeof ev.progress === 'number') {
+            raiseCeiling(ev.progress + 8);   // let ticker advance a bit past this milestone
+            setProgress(ev.progress, ev.message || null);
+          } else if (ev.message) {
+            document.getElementById('prog-label').textContent = ev.message;
+          }
+
+          // Plugin step labels
+          if (ev.type === 'plugin-running' && ev.pluginId) {
+            const name = ev.pluginId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            document.getElementById('prog-label').textContent = '⚙ Running ' + name + '…';
+          }
+          if (ev.type === 'plugin-complete') {
+            raiseCeiling(displayedPct + 6);  // nudge ceiling up after each plugin finishes
+          }
+
+          // Done
+          if (ev.type === 'complete') {
+            sse.close();
+            onComplete(ev.reportUrl || ('report.html?auditId=' + (ev.auditId || auditId)));
+          }
+
+          // Error from backend
+          if (ev.type === 'error') {
+            document.getElementById('prog-label').textContent = '⚠ ' + (ev.message || 'An error occurred');
+          }
+        } catch (_) { }
+      };
+
+      sse.onerror = function () {
+        sse.close();
+        reconnects++;
+        if (reconnects <= 10) {
+          setTimeout(listenSSE, Math.min(reconnects * 2000, 10000));
+        } else {
+          document.getElementById('prog-label').textContent = 'Connection lost — please refresh.';
+          stopTicker();
+        }
+      };
+    }
+
+    // ── Boot ─────────────────────────────────────────────────
+    async function boot() {
+      // Case A: auditId already exists (normal flow from plugin-select.html)
+      if (auditId) {
+        try {
+          const res = await fetch('/api/audit/' + auditId);
+          const data = res.ok ? await res.json() : null;
+
+          // Only skip to report if truly complete AND we didn't just arrive from
+          // plugin-select.html (which means a new run was just triggered)
+          const fromSelect = urlParams.get('from') === 'select';
+          if (data && data.status === 'complete' && !fromSelect) {
+            window.location.replace('report.html?auditId=' + auditId);
+            return;
+          }
+        } catch (_) { }
+        setProgress(10, 'Claude AI modules are running…');
+        raiseCeiling(48);
+        startTicker();
+        listenSSE();
         return;
       }
-    } catch (_) {}
-    setProgress(10, 'Claude AI modules are running…');
-    raiseCeiling(48);
-    startTicker();
-    listenSSE();
-    return;
-  }
 
 
-  // Case B: no auditId — recover from session
-  if (!session.url) {
-    window.location.replace('/');
-    return;
-  }
+      // Case B: no auditId — recover from session
+      if (!session.url) {
+        window.location.replace('/');
+        return;
+      }
 
-  setProgress(5, 'Setting up your audit…');
-  raiseCeiling(20);
-  startTicker();
+      setProgress(5, 'Setting up your audit…');
+      raiseCeiling(20);
+      startTicker();
 
-  try {
-    const initRes  = await fetch('/api/audit/init', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ url: session.url, industry: session.industry || 'General', email: session.email }),
-    });
-    const initData = await initRes.json();
-    if (initData.error) throw new Error(initData.error);
+      try {
+        const initRes = await fetch('/api/audit/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: session.url, industry: session.industry || 'General', email: session.email }),
+        });
+        const initData = await initRes.json();
+        if (initData.error) throw new Error(initData.error);
 
-    auditId = initData.auditId;
-    session.auditId = auditId;
-    sessionStorage.setItem('clicktrends_audit', JSON.stringify(session));
-    history.replaceState(null, '', 'plugin-scanning.html?auditId=' + auditId);
+        auditId = initData.auditId;
+        session.auditId = auditId;
+        sessionStorage.setItem('clicktrends_audit', JSON.stringify(session));
+        history.replaceState(null, '', 'plugin-scanning.html?auditId=' + auditId);
 
-    setProgress(15, 'Starting AI analysis…');
-    raiseCeiling(48);
+        setProgress(15, 'Starting AI analysis…');
+        raiseCeiling(48);
 
-    const plugins = session.selectedPlugins || [];
-    await fetch('/api/audit/' + auditId + '/analyze', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ email: session.email, selectedPlugins: plugins }),
-    });
+        const plugins = session.selectedPlugins || [];
+        await fetch('/api/audit/' + auditId + '/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: session.email, selectedPlugins: plugins }),
+        });
 
-    setProgress(22, 'Claude is generating your report…');
-    listenSSE();
+        setProgress(22, 'Claude is generating your report…');
+        listenSSE();
 
-  } catch (err) {
-    console.error('[plugin-scan] Recovery failed:', err);
-    document.getElementById('prog-label').textContent = 'Something went wrong — please refresh.';
-    stopTicker();
-  }
-}
+      } catch (err) {
+        console.error('[plugin-scan] Recovery failed:', err);
+        document.getElementById('prog-label').textContent = 'Something went wrong — please refresh.';
+        stopTicker();
+      }
+    }
 
-boot();
+    boot();
 
 
 
-</script>
+  </script>
 </body>
+
 </html>
