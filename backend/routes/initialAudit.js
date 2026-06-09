@@ -243,18 +243,32 @@ Return this exact JSON structure:
 
   } catch (err) {
     console.error('[InitialAudit] Perplexity error:', err.message);
-    // Fallback: derive a rough score from meta signals
     const meta = crawledData.metaSignals || {};
     const total = meta.totalPages || 1;
     const issues = (meta.missingMetaDescriptions || 0) + (meta.missingH1 || 0);
     const score = Math.max(20, Math.round(100 - (issues / total) * 60));
+    
+    const discoveries = [
+      { severity: 'warning', title: 'AI web research unavailable', detail: 'Using local crawl signals. Configure OPENROUTER_API_KEY with credits for full live web analysis.' }
+    ];
+    if ((meta.missingMetaDescriptions || 0) > 0) {
+      discoveries.push({ severity: 'warning', title: `${meta.missingMetaDescriptions} pages missing meta descriptions`, detail: 'Missing meta descriptions reduce search snippet click-through rates.' });
+    }
+    if ((meta.missingH1 || 0) > 0) {
+      discoveries.push({ severity: 'warning', title: `${meta.missingH1} pages missing H1 tags`, detail: 'H1 tags signal key topic to search engines.' });
+    }
+    if ((meta.missingImageAlt || 0) > 0) {
+      discoveries.push({ severity: 'warning', title: `${meta.missingImageAlt} images missing alt text`, detail: 'Alt text is required for accessibility and image search.' });
+    }
+    if (!meta.hasStructuredData) {
+      discoveries.push({ severity: 'opportunity', title: 'No structured data detected', detail: 'Schema markup can gain rich snippets in Google.' });
+    }
+
     return {
       score,
       businessName: crawledData.businessSummary?.name || extractDomain(crawledData.url),
       insight: 'Several technical and content improvements identified.',
-      discoveries: [
-        { severity: 'warning', title: 'AI analysis unavailable', detail: 'Configure ANTHROPIC_API_KEY for full analysis.' },
-      ],
+      discoveries,
     };
   }
 }
