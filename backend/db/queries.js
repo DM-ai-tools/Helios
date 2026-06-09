@@ -378,10 +378,91 @@ export async function saveImplementationChanges(auditId, pluginId, changes) {
   return records;
 }
 
+function resolveSourceUrlFromLocation(location, baseUrl, crawledPages) {
+  if (!location) return baseUrl || '';
+  if (!baseUrl) return '';
+
+  const locLower = location.toLowerCase().trim();
+
+  // Clean location name: strip "page" from the end
+  let locClean = locLower;
+  if (locClean.endsWith(' page')) {
+    locClean = locClean.slice(0, -5).trim();
+  }
+  if (locClean.endsWith(' of click trends')) {
+    locClean = locClean.replace(' of click trends', '').trim();
+  }
+
+  if (locClean === 'home' || locClean === 'homepage' || locClean === '') {
+    return baseUrl;
+  }
+
+  // Ensure crawledPages is an array
+  const pages = Array.isArray(crawledPages) ? crawledPages : [];
+
+  // 1. Try to find an exact or close match in crawledPages
+  // Try exact match on URL path
+  for (const page of pages) {
+    if (!page.url) continue;
+    try {
+      const u = new URL(page.url);
+      const pathClean = u.pathname.replace(/^\/|\/$/g, '').replace(/-/g, ' ').toLowerCase();
+      if (pathClean === locClean) {
+        return page.url;
+      }
+    } catch (_) {}
+  }
+
+  // Try matching page title contains locClean
+  for (const page of pages) {
+    if (!page.title) continue;
+    const titleLower = page.title.toLowerCase();
+    if (titleLower.includes(locClean)) {
+      return page.url;
+    }
+  }
+
+  // Try matching path contains/contained-in
+  for (const page of pages) {
+    if (!page.url) continue;
+    try {
+      const u = new URL(page.url);
+      const pathClean = u.pathname.replace(/^\/|\/$/g, '').replace(/-/g, ' ').toLowerCase();
+      if (pathClean.includes(locClean) || locClean.includes(pathClean)) {
+        return page.url;
+      }
+    } catch (_) {}
+  }
+
+  // 2. Fallback: URL slug conversion
+  // e.g. "about us" -> "about-us"
+  const slug = locClean.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  try {
+    const u = new URL(baseUrl);
+    u.pathname = slug;
+    return u.toString();
+  } catch (_) {
+    // Basic fallback string concatenation
+    const baseClean = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    return baseClean + '/' + slug;
+  }
+}
+
 export async function getImplementationChanges(auditId, pluginId) {
   const key = `impl_changes:${auditId}:${pluginId}`;
   let records = await redisGet(key);
-  if (!records || records.length === 0) {
+  
+  let needsResolution = false;
+  if (records && records.length > 0) {
+    for (const r of records) {
+      if (!r.sourceUrl) {
+        needsResolution = true;
+        break;
+      }
+    }
+  }
+
+  if (!records || records.length === 0 || needsResolution) {
     const selectQuery = `SELECT * FROM implementation_changes WHERE audit_id = $1 AND plugin_id = $2;`;
     const { rows } = await pool.query(selectQuery, [auditId, pluginId]);
     if (rows.length > 0) {
@@ -403,9 +484,32 @@ export async function getImplementationChanges(auditId, pluginId) {
         createdAt:      row.created_at,
         updatedAt:      row.updated_at,
       }));
+    }
+  }
+
+  if (records && records.length > 0) {
+    let hasResolvedAny = false;
+    const audit = await getAuditById(auditId);
+    if (audit) {
+      const baseUrl = audit.url;
+      const crawledPages = audit.crawled_data?.pages || [];
+      for (const r of records) {
+        if (!r.sourceUrl) {
+          r.sourceUrl = resolveSourceUrlFromLocation(r.location, baseUrl, crawledPages);
+          hasResolvedAny = true;
+          // Async update PostgreSQL so it's permanent
+          pool.query(`UPDATE implementation_changes SET source_url = $1 WHERE id = $2;`, [r.sourceUrl, r.id]).catch(err => {
+            console.error(`[queries] Error updating resolved source_url in DB:`, err);
+          });
+        }
+      }
+    }
+    
+    if (hasResolvedAny) {
       await redisSet(key, records, IMPL_TTL);
     }
   }
+
   return records || [];
 }
 
@@ -446,6 +550,13 @@ export async function updateImplementationChange(auditId, pluginId, changeId, { 
   }
 
   if (row) {
+    let resolvedUrl = row.source_url;
+    if (!resolvedUrl) {
+      const audit = await getAuditById(auditId);
+      if (audit) {
+        resolvedUrl = resolveSourceUrlFromLocation(row.location, audit.url, audit.crawled_data?.pages || []);
+      }
+    }
     return {
       id:             row.id,
       auditId:        row.audit_id,
@@ -460,7 +571,7 @@ export async function updateImplementationChange(auditId, pluginId, changeId, { 
       status:         row.status,
       userEdit:       row.user_edit,
       location:       row.location,
-      sourceUrl:      row.source_url,
+      sourceUrl:      resolvedUrl,
       createdAt:      row.created_at,
       updatedAt:      row.updated_at,
     };
