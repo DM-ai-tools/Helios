@@ -378,6 +378,19 @@ export async function saveImplementationChanges(auditId, pluginId, changes) {
   return records;
 }
 
+function ensureAbsoluteUrl(url, defaultBase = '') {
+  if (!url) return '';
+  let cleanUrl = url.trim();
+  if (!/^https?:\/\//i.test(cleanUrl)) {
+    if (cleanUrl.startsWith('/')) {
+      const baseClean = defaultBase.endsWith('/') ? defaultBase.slice(0, -1) : defaultBase;
+      return ensureAbsoluteUrl(baseClean + cleanUrl);
+    }
+    return 'https://' + cleanUrl;
+  }
+  return cleanUrl;
+}
+
 function resolveSourceUrlFromLocation(location, baseUrl, crawledPages) {
   if (!location) return baseUrl || '';
   if (!baseUrl) return '';
@@ -393,15 +406,14 @@ function resolveSourceUrlFromLocation(location, baseUrl, crawledPages) {
     locClean = locClean.replace(' of click trends', '').trim();
   }
 
-  if (locClean === 'home' || locClean === 'homepage' || locClean === '') {
+  if (locClean === 'home' || locClean === 'homepage' || locClean === 'homepage meta title' || locClean === 'homepage h1' || locClean === '') {
     return baseUrl;
   }
 
   // Ensure crawledPages is an array
   const pages = Array.isArray(crawledPages) ? crawledPages : [];
 
-  // 1. Try to find an exact or close match in crawledPages
-  // Try exact match on URL path
+  // 1. Try to find an exact match on path
   for (const page of pages) {
     if (!page.url) continue;
     try {
@@ -413,36 +425,72 @@ function resolveSourceUrlFromLocation(location, baseUrl, crawledPages) {
     } catch (_) {}
   }
 
-  // Try matching page title contains locClean
+  // 2. Try matching page title contains locClean
   for (const page of pages) {
     if (!page.title) continue;
     const titleLower = page.title.toLowerCase();
-    if (titleLower.includes(locClean)) {
+    if (titleLower.includes(locClean) || locClean.includes(titleLower)) {
       return page.url;
     }
   }
 
-  // Try matching path contains/contained-in
+  // 3. Try matching path contains/contained-in
   for (const page of pages) {
     if (!page.url) continue;
     try {
       const u = new URL(page.url);
       const pathClean = u.pathname.replace(/^\/|\/$/g, '').replace(/-/g, ' ').toLowerCase();
-      if (pathClean.includes(locClean) || locClean.includes(pathClean)) {
+      if (pathClean.length > 3 && (locClean.includes(pathClean) || pathClean.includes(locClean))) {
         return page.url;
       }
     } catch (_) {}
   }
 
-  // 2. Fallback: URL slug conversion
-  // e.g. "about us" -> "about-us"
+  // 4. Token-based matching (for titles/descriptions fallback)
+  let bestMatchPage = null;
+  let maxScore = 0;
+
+  const locTokens = locClean.split(/[^a-z0-9]+/);
+  
+  for (const page of pages) {
+    let score = 0;
+    if (page.url) {
+      try {
+        const u = new URL(page.url);
+        const pathTokens = u.pathname.replace(/^\/|\/$/g, '').split(/[^a-z0-9]+/);
+        for (const token of pathTokens) {
+          if (token.length > 3 && locTokens.includes(token)) {
+            score += 2; // path match gets higher weight
+          }
+        }
+      } catch (_) {}
+    }
+    if (page.title) {
+      const titleTokens = page.title.toLowerCase().split(/[^a-z0-9]+/);
+      for (const token of titleTokens) {
+        if (token.length > 3 && locTokens.includes(token)) {
+          score += 1;
+        }
+      }
+    }
+
+    if (score > maxScore) {
+      maxScore = score;
+      bestMatchPage = page.url;
+    }
+  }
+
+  if (maxScore > 0 && bestMatchPage) {
+    return bestMatchPage;
+  }
+
+  // 5. Fallback: URL slug conversion
   const slug = locClean.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   try {
     const u = new URL(baseUrl);
     u.pathname = slug;
     return u.toString();
   } catch (_) {
-    // Basic fallback string concatenation
     const baseClean = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     return baseClean + '/' + slug;
   }
@@ -492,15 +540,31 @@ export async function getImplementationChanges(auditId, pluginId) {
     const audit = await getAuditById(auditId);
     if (audit) {
       const baseUrl = audit.url;
-      const crawledPages = audit.crawled_data?.pages || [];
+      let crawledData = audit.crawled_data;
+      if (typeof crawledData === 'string') {
+        try {
+          crawledData = JSON.parse(crawledData);
+        } catch (_) {}
+      }
+      const crawledPages = crawledData?.pages || [];
       for (const r of records) {
         if (!r.sourceUrl) {
-          r.sourceUrl = resolveSourceUrlFromLocation(r.location, baseUrl, crawledPages);
+          const lookupTerm = r.location || r.title || '';
+          const resolved = resolveSourceUrlFromLocation(lookupTerm, baseUrl, crawledPages);
+          r.sourceUrl = ensureAbsoluteUrl(resolved, baseUrl);
           hasResolvedAny = true;
-          // Async update PostgreSQL so it's permanent
           pool.query(`UPDATE implementation_changes SET source_url = $1 WHERE id = $2;`, [r.sourceUrl, r.id]).catch(err => {
             console.error(`[queries] Error updating resolved source_url in DB:`, err);
           });
+        } else {
+          const absolute = ensureAbsoluteUrl(r.sourceUrl, baseUrl);
+          if (absolute !== r.sourceUrl) {
+            r.sourceUrl = absolute;
+            hasResolvedAny = true;
+            pool.query(`UPDATE implementation_changes SET source_url = $1 WHERE id = $2;`, [r.sourceUrl, r.id]).catch(err => {
+              console.error(`[queries] Error updating absolute source_url in DB:`, err);
+            });
+          }
         }
       }
     }
@@ -551,12 +615,22 @@ export async function updateImplementationChange(auditId, pluginId, changeId, { 
 
   if (row) {
     let resolvedUrl = row.source_url;
+    const audit = await getAuditById(auditId);
+    const baseUrl = audit ? audit.url : '';
     if (!resolvedUrl) {
-      const audit = await getAuditById(auditId);
       if (audit) {
-        resolvedUrl = resolveSourceUrlFromLocation(row.location, audit.url, audit.crawled_data?.pages || []);
+        let crawledData = audit.crawled_data;
+        if (typeof crawledData === 'string') {
+          try {
+            crawledData = JSON.parse(crawledData);
+          } catch (_) {}
+        }
+        const lookupTerm = row.location || row.title || '';
+        resolvedUrl = resolveSourceUrlFromLocation(lookupTerm, baseUrl, crawledData?.pages || []);
       }
     }
+    resolvedUrl = ensureAbsoluteUrl(resolvedUrl, baseUrl);
+    
     return {
       id:             row.id,
       auditId:        row.audit_id,
