@@ -41,8 +41,12 @@ IMPORTANT RULES:
 IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
 ════════════════════════════════════════════════════════
 You MUST include an "implementationChanges" array with 6–12 ready-to-execute competitive actions.
-- "proposedChange" must be EXACT rewritten copy, battlecard text, positioning statement, or response script
+- All changes MUST ONLY consist of content, code, or messaging that can be directly modified on the user's website (such as updating differentiators on pricing or homepage hero text). Do NOT propose off-site sales enablement or response scripts here.
+- "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
+- "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
+- "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
 - "currentState" must reference actual language found on the website (exact quotes)
+- "proposedChange" must be EXACT rewritten copy, battlecard text, positioning statement, or response script
 - No vague suggestions — write the finished deliverable`,
 
   scoringPrompt: `Score this brand's competitive positioning from 0–100:
@@ -127,13 +131,15 @@ Categories (each 0–100):
     ],
     implementationChanges: [
       {
-        title: 'string — e.g. "Rewrite Homepage Tagline to Differentiate from Competitor A"',
+        title: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
         priority: 'string — High / Medium / Low',
         impactScore: 'number 1-100',
         description: 'string — competitive rationale for this change',
         currentState: 'string — EXACT current headline, tagline, or copy from the site',
         proposedChange: 'string — EXACT new copy, ready to publish with no edits required',
-        changeType: 'string — one of: messaging / content / positioning / battlecard'
+        changeType: 'string — one of: messaging / content / positioning / battlecard',
+        location: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
+        sourceUrl: 'string — the exact URL of the page where the change is located (from the crawl data)'
       }
     ],
   },

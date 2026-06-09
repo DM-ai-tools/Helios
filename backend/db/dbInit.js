@@ -13,6 +13,13 @@ export async function initDatabase() {
 
     // Run the schema.sql queries
     await pool.query(sql);
+    
+    // Check and add location and source_url columns to implementation_changes if they don't exist (migration)
+    await pool.query(`
+      ALTER TABLE implementation_changes ADD COLUMN IF NOT EXISTS location TEXT;
+      ALTER TABLE implementation_changes ADD COLUMN IF NOT EXISTS source_url TEXT;
+    `);
+
     console.log('[PostgreSQL] Database tables initialized successfully.');
   } catch (err) {
     console.error('[PostgreSQL] Database initialization failed:', err.message);

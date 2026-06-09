@@ -99,6 +99,10 @@ OUTPUT RULES — READ CAREFULLY
 IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
 ════════════════════════════════════════════════════════
 You MUST include an "implementationChanges" array with 6–12 copy-paste-ready fixes.
+- All changes MUST ONLY consist of content, code, or metadata that can be directly modified on the user's website. Do NOT propose off-site changes.
+- "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
+- "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
+- "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
 - "currentState": EXACT quote of the problematic text as it appears on the site
 - "proposedChange": COMPLETE rewritten version — no placeholders, no "...", fully finished
 - Bad: "Rewrite the hero headline to be clearer"
@@ -172,13 +176,15 @@ You MUST include an "implementationChanges" array with 6–12 copy-paste-ready f
     ],
     implementationChanges: [
       {
-        title: 'string — short name e.g. "Remove Unsubstantiated Claim on Homepage"',
+        title: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
         priority: 'string — High / Medium / Low',
         impactScore: 'number 1-100',
         description: 'string — why this change is needed',
         currentState: 'string — EXACT current text from the website',
         proposedChange: 'string — EXACT rewritten replacement text, ready to publish',
-        changeType: 'string — one of: content / legal / voice / metadata'
+        changeType: 'string — one of: content / legal / voice / metadata',
+        location: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
+        sourceUrl: 'string — the exact URL of the page where the change is located (from the crawl data)'
       }
     ],
   },

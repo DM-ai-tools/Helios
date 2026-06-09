@@ -90,6 +90,10 @@ IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
 You MUST generate an "implementationChanges" array containing 8–15 ready-to-deploy changes derived from your SEO findings.
 
 RULES:
+- All changes MUST ONLY consist of content, code, or metadata that can be directly modified on the user's website. Do NOT propose off-site changes.
+- "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
+- "location" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
+- "sourceUrl" must be the exact source URL of the page where the change is located (taken from the crawl data).
 - "currentState" must quote EXACT existing content from the crawl data provided (title tags, meta descriptions, H1s, etc.)
 - "proposedChange" must be EXACT replacement text — no placeholders, no "[Your keyword here]", no "…"
 - Generate the COMPLETE new title tag, meta description, H1, schema JSON, or alt text — not a description of what to write
@@ -195,13 +199,15 @@ Return all scores as integers.`,
     ],
     implementationChanges: [
       {
-        title: 'string — short name of the change e.g. "Update Homepage Meta Title"',
+        title: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
         priority: 'string — High / Medium / Low',
         impactScore: 'number 1-100',
         description: 'string — why this change is needed and what outcome is expected',
         currentState: 'string — EXACT current content pulled from the website crawl data',
         proposedChange: 'string — EXACT replacement content ready to deploy, no placeholders',
-        changeType: 'string — one of: metadata / content / technical / schema / link'
+        changeType: 'string — one of: metadata / content / technical / schema / link',
+        location: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
+        sourceUrl: 'string — the exact URL of the page where the change is located (from the crawl data)'
       }
     ],
   },

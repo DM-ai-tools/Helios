@@ -194,6 +194,8 @@ CREATE TABLE IF NOT EXISTS implementation_changes (
   change_type     TEXT,
   status          TEXT DEFAULT 'pending',
   user_edit       TEXT,
+  location        TEXT,
+  source_url      TEXT,
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   updated_at      TIMESTAMPTZ DEFAULT NOW()
 );

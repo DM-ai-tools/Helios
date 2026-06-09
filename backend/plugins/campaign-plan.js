@@ -40,8 +40,13 @@ IMPORTANT RULES:
 IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
 ════════════════════════════════════════════════════════
 You MUST include an "implementationChanges" array with 3–5 deployment-ready campaign assets.
-- "proposedChange" must be COMPLETE, ready-to-publish content — actual LinkedIn post copy, actual email subject line + body, actual ad headline + description
+- "location": proper location name derived from page URL (e.g., "home page of click trends", "about us page") where the change is located.
+- All changes MUST ONLY consist of content, code, or campaign copy that can be directly modified on the user's website (such as home page promotional banner copy, landing page copy, website banner ads, etc.). Do NOT propose off-site campaign assets (such as off-site social posts or ad network copies) here.
+- "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
+- "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
+- "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
 - "currentState" describes what the business currently does (or lacks) in that area
+- "proposedChange" must be COMPLETE, ready-to-publish content — actual LinkedIn post copy, actual email subject line + body, actual ad headline + description
 - No placeholders. No [INSERT NAME]. No lorem ipsum. Write the actual copy.`,
 
   scoringPrompt: `Assess the business's current marketing readiness and campaign potential (0–100):
@@ -138,13 +143,15 @@ Categories (each 0–100):
     ],
     implementationChanges: [
       {
-        title: 'string — e.g. "Launch LinkedIn Thought Leadership Series"',
+        title: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
         priority: 'string — High / Medium / Low',
         impactScore: 'number 1-100',
         description: 'string — what this achieves and why now',
         currentState: 'string — what the business currently does or does not do in this area',
         proposedChange: 'string — EXACT campaign brief, post copy, email draft, or ad copy ready to use',
-        changeType: 'string — one of: social / email / paid / content / seo / event'
+        changeType: 'string — one of: social / email / paid / content / seo / event',
+        location: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
+        sourceUrl: 'string — the exact URL of the page where the change is located (from the crawl data)'
       }
     ]
   },

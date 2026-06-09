@@ -102,12 +102,12 @@ router.get('/:id([^/]+)', async (req, res) => {
   const auditId = req.params.id;
 
   try {
-    const cachedDataStr = await redisClient.get(`audit_final_json:${auditId}`);
+        const cachedDataStr = await redisClient.get(`audit_final_json:${auditId}`);
     if (cachedDataStr) {
       console.log(`[Status Route] Serving audit ${auditId} from temp cache`);
       return res.json(JSON.parse(cachedDataStr));
     }
-    console.log(`[Status Route] audit_final_json not found for ${auditId} — using fallback path`);
+    // Quietly fall back to database query without throwing noisy console logs
   } catch(e) {
     console.error(`[Status Route] Redis cache error:`, e);
   }

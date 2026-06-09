@@ -123,6 +123,11 @@ CRITICAL JSON RULES — failure to follow these causes a parse error:
 IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
 ════════════════════════════════════════════════════════
 You MUST include "implementationChanges" — 1-2 entries focusing ONLY on improvements to the website's email capture forms, popups, or lead magnets. Do NOT include entries for the email copies here (as they are already in the sequences field). Keep these entries short.
+- "location": proper location name derived from page URL (e.g., "home page of click trends", "about us page") where the change is located.
+- All changes MUST ONLY consist of content, code, or settings that can be directly modified on the user's website. Do NOT propose off-site changes.
+- "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
+- "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
+- "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
 - "proposedChange": describe the complete proposed optimization (e.g. copy for a popup or a new form field configuration)
 - "currentState": describe what currently exists or does not exist on the website`,
 
@@ -218,13 +223,15 @@ Score = (emailCapture × 0.30) + (leadMagnet × 0.25) + (contentForNurture × 0.
     ],
     implementationChanges: [
       {
-        title: 'string — e.g. "Send Welcome Email to New Subscribers"',
+        title: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
         priority: 'string — High / Medium / Low',
         impactScore: 'number 1-100',
         description: 'string — what this email achieves in the sequence',
-        currentState: 'string — what currently happens or does not happen (e.g. "No welcome email currently sent")',
+        currentState: 'string — what currently exists or does not exist on the website (e.g. "No welcome email currently sent")',
         proposedChange: 'string — COMPLETE email: subject line + preview text + full body copy + CTA text, ready to send',
-        changeType: 'string — one of: email / automation / subject-line / capture-form'
+        changeType: 'string — one of: email / automation / subject-line / capture-form',
+        location: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
+        sourceUrl: 'string — the exact URL of the page where the change is located (from the crawl data)'
       }
     ],
   },

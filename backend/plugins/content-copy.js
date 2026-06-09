@@ -55,8 +55,12 @@ CRITICAL JSON RULES — failure to follow these causes a parse error:
 IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
 ════════════════════════════════════════════════════════
 You MUST include "implementationChanges" with 8–15 copy-and-paste-ready content pieces.
-- "proposedChange" must be the COMPLETE finished piece of content — full social post, full headline+subheadline+CTA, full email subject line + preview text + body opening
+- All changes MUST ONLY consist of content, code, or metadata that can be directly modified on the user's website. Do NOT propose off-site changes (such as off-site social posts or email copy).
+- "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
+- "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
+- "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
 - "currentState" must quote the EXACT existing copy from the website (not a description of it)
+- "proposedChange" must be the COMPLETE finished piece of content — full social post, full headline+subheadline+CTA, full email subject line + preview text + body opening
 - No ellipsis, no [brackets], no "to be written later" — write the entire content piece`,
 
   scoringPrompt: `Score this business's content and copy quality (0–100):
@@ -143,13 +147,15 @@ Categories (each 0–100):
     ],
     implementationChanges: [
       {
-        title: 'string — e.g. "Replace Homepage Hero Headline"',
+        title: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
         priority: 'string — High / Medium / Low',
         impactScore: 'number 1-100',
         description: 'string — why this copy change is needed',
         currentState: 'string — EXACT current copy from the website',
         proposedChange: 'string — COMPLETE replacement copy, ready to publish as-is',
-        changeType: 'string — one of: headline / cta / body / social / email / meta'
+        changeType: 'string — one of: headline / cta / body / social / email / meta',
+        location: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
+        sourceUrl: 'string — the exact URL of the page where the change is located (from the crawl data)'
       }
     ]
   },

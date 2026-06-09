@@ -27,126 +27,139 @@ const router = Router();
 function getMockChanges(auditId, pluginId) {
   const defaults = [
     {
-      title: 'Update Title Tag',
+      title: 'home page',
       priority: 'High',
       impactScore: 85,
       description: 'The title tag is missing high-intent keywords.',
       currentState: 'Welcome to our site',
       proposedChange: 'Top-Rated Local Services & Solutions | Call Today',
       changeType: 'metadata',
+      location: 'home page',
+      sourceUrl: 'https://clicktrends.com.au/',
     }
   ];
 
   const mockData = {
     'seo-audit': [
       {
-        title: 'Optimize Homepage Meta Title',
+        title: 'home page',
         priority: 'High',
         impactScore: 90,
         description: 'Homepage meta title is missing high-intent target keywords for the local market.',
         currentState: 'ClickTrends | Digital Marketing',
         proposedChange: 'ClickTrends | Data-Driven Digital Marketing Agency Melbourne | Lift Your ROI',
         changeType: 'metadata',
+        location: 'home page',
+        sourceUrl: 'https://clicktrends.com.au/',
       },
       {
-        title: 'Inject Schema Markup for LocalBusiness',
+        title: 'home page',
         priority: 'Medium',
         impactScore: 75,
         description: 'No structured data detected on homepage. Adding LocalBusiness schema helps Google understand site entity details.',
         currentState: 'No schema markup found',
         proposedChange: '{\n  "@context": "https://schema.org",\n  "@type": "LocalBusiness",\n  "name": "ClickTrends Agency",\n  "url": "https://clicktrends.com.au",\n  "telephone": "+61 3 9000 0000",\n  "address": {\n    "@type": "PostalAddress",\n    "addressLocality": "Melbourne",\n    "addressRegion": "VIC",\n    "postalCode": "3000",\n    "addressCountry": "AU"\n  }\n}',
         changeType: 'schema',
+        location: 'home page',
+        sourceUrl: 'https://clicktrends.com.au/',
       },
       {
-        title: 'Fix Missing Alt Text on Homepage Hero',
+        title: 'home page',
         priority: 'Low',
         impactScore: 40,
         description: 'Homepage hero image is missing descriptive alt text, causing accessibility warnings.',
         currentState: '<img src="/images/hero-marketing.jpg">',
         proposedChange: '<img src="/images/hero-marketing.jpg" alt="ClickTrends team analyzing digital marketing performance dashboard">',
         changeType: 'technical',
+        location: 'home page',
+        sourceUrl: 'https://clicktrends.com.au/',
       }
     ],
     'brand-review': [
       {
-        title: 'Remove ACCC Liability: "100% Guaranteed Results"',
+        title: 'services page',
         priority: 'High',
         impactScore: 95,
         description: 'ACCC rules prohibit unqualified guarantees on marketing results. Soften claim to remain legally compliant.',
         currentState: 'We offer 100% guaranteed results for all SEO campaigns.',
         proposedChange: 'We follow data-driven methodologies to maximize campaign performance and SEO results.',
         changeType: 'content',
+        location: 'services page',
+        sourceUrl: 'https://clicktrends.com.au/services',
       },
       {
-        title: 'Replace Internal Technical Jargon',
+        title: 'about us page',
         priority: 'Medium',
         impactScore: 60,
         description: 'Jargon confuses non-technical prospects. Simplify terminology to improve landing page conversions.',
         currentState: 'Our team conducts hyper-granular CTR optimizations on high-intent SERP features.',
         proposedChange: 'We improve your search result titles and descriptions to get more people clicking through to your site.',
         changeType: 'content',
+        location: 'about us page',
+        sourceUrl: 'https://clicktrends.com.au/about',
       }
     ],
     'content-copy': [
       {
-        title: 'Optimize Homepage Hero H1 Heading',
+        title: 'home page',
         priority: 'High',
         impactScore: 85,
         description: 'Homepage heading is company-focused rather than benefit-focused. Make it target customer needs.',
         currentState: 'We Are ClickTrends',
         proposedChange: 'Get More Leads & Sales With Melbourne\'s Leading Digital Marketing Agency',
         changeType: 'content',
+        location: 'home page',
+        sourceUrl: 'https://clicktrends.com.au/',
       },
       {
-        title: 'Rewrite Primary CTA Button Copy',
+        title: 'home page',
         priority: 'Medium',
         impactScore: 70,
         description: 'Current CTA button is low-friction but does not drive high commercial intent.',
         currentState: 'Submit Info',
         proposedChange: 'Get Your Free Growth Audit →',
         changeType: 'content',
+        location: 'home page',
+        sourceUrl: 'https://clicktrends.com.au/',
       }
     ],
     'competitive-brief': [
       {
-        title: 'Add Strengths Differentiator to Pricing Page',
+        title: 'pricing page',
         priority: 'High',
         impactScore: 80,
         description: 'Emphasize your dedicated senior strategist advantage compared to competitor self-serve automated portals.',
         currentState: 'We have good service.',
         proposedChange: 'Unlike other agencies who put you in an automated portal, ClickTrends gives you a dedicated senior strategist with direct weekly calls.',
         changeType: 'content',
+        location: 'pricing page',
+        sourceUrl: 'https://clicktrends.com.au/pricing',
       }
     ],
     'campaign-plan': [
       {
-        title: 'Update Retargeting Facebook Ad Copy',
+        title: 'home page',
         priority: 'High',
         impactScore: 80,
-        description: 'Retargeting ad needs direct, pain-point matching copy to lift CTR for warming prospects.',
-        currentState: 'Hire a Marketing Agency',
-        proposedChange: 'Still not hitting your lead targets? Get a free digital audit of your site today.',
+        description: 'Retargeting campaign requires a high-converting on-site promo banner to lift CTR for warming prospects.',
+        currentState: '(No promo banner)',
+        proposedChange: '💥 FREE Audit: We are offering 5 free website growth audits this week. Claim yours below.',
         changeType: 'content',
+        location: 'home page',
+        sourceUrl: 'https://clicktrends.com.au/',
       }
     ],
     'email-sequence': [
       {
-        title: 'Optimize Welcome Email Subject Line',
+        title: 'contact page',
         priority: 'High',
         impactScore: 90,
-        description: 'Welcome email open rate can be significantly increased by offering instant value and clear delivery.',
-        currentState: 'Welcome to ClickTrends',
-        proposedChange: '🎁 Your Free SEO Audit is inside (plus 3 quick fixes)',
-        changeType: 'metadata',
-      },
-      {
-        title: 'Add Direct Booking CTA to Nurture Email 2',
-        priority: 'Medium',
-        impactScore: 75,
-        description: 'Prospects reading email 2 have shown interest. Provide a clear booking link to book direct calls.',
-        currentState: 'Let us know if you have questions.',
-        proposedChange: 'Ready to scale? Book a 15-minute strategy call directly in my calendar: [Link]',
-        changeType: 'content',
+        description: 'Email capture rate can be significantly increased by offering instant lead magnet checklist value.',
+        currentState: 'Subscribe to newsletter',
+        proposedChange: 'Get our weekly checklist of 3 quick SEO fixes to double your website traffic (Subscribe below)',
+        changeType: 'capture-form',
+        location: 'contact page',
+        sourceUrl: 'https://clicktrends.com.au/contact',
       }
     ]
   };
@@ -165,6 +178,8 @@ function getMockChanges(auditId, pluginId) {
     changeType: c.changeType,
     status: 'pending',
     userEdit: null,
+    location: c.location || 'home page',
+    sourceUrl: c.sourceUrl || '',
     createdAt: new Date().toISOString(),
   }));
 }

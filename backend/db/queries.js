@@ -332,13 +332,15 @@ export async function saveImplementationChanges(auditId, pluginId, changes) {
       changeType:        c.changeType        || 'general',
       status:            'pending',
       userEdit:          null,
+      location:          c.location          || '',
+      sourceUrl:         c.sourceUrl         || '',
       createdAt:         new Date().toISOString(),
     };
     records.push(record);
 
     const insertQuery = `
-      INSERT INTO implementation_changes (id, audit_id, plugin_id, title, priority, impact_score, description, current_state, proposed_change, change_type, status, user_edit)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      INSERT INTO implementation_changes (id, audit_id, plugin_id, title, priority, impact_score, description, current_state, proposed_change, change_type, status, user_edit, location, source_url)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       ON CONFLICT (id) DO UPDATE
       SET title = EXCLUDED.title,
           priority = EXCLUDED.priority,
@@ -349,6 +351,8 @@ export async function saveImplementationChanges(auditId, pluginId, changes) {
           change_type = EXCLUDED.change_type,
           status = EXCLUDED.status,
           user_edit = EXCLUDED.user_edit,
+          location = EXCLUDED.location,
+          source_url = EXCLUDED.source_url,
           updated_at = NOW()
       RETURNING *;
     `;
@@ -364,7 +368,9 @@ export async function saveImplementationChanges(auditId, pluginId, changes) {
       record.proposedChange,
       record.changeType,
       record.status,
-      record.userEdit
+      record.userEdit,
+      record.location,
+      record.sourceUrl
     ]);
   }
 
@@ -392,6 +398,8 @@ export async function getImplementationChanges(auditId, pluginId) {
         changeType:     row.change_type,
         status:         row.status,
         userEdit:       row.user_edit,
+        location:       row.location,
+        sourceUrl:      row.source_url,
         createdAt:      row.created_at,
         updatedAt:      row.updated_at,
       }));
@@ -451,6 +459,8 @@ export async function updateImplementationChange(auditId, pluginId, changeId, { 
       changeType:     row.change_type,
       status:         row.status,
       userEdit:       row.user_edit,
+      location:       row.location,
+      sourceUrl:      row.source_url,
       createdAt:      row.created_at,
       updatedAt:      row.updated_at,
     };

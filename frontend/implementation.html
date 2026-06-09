@@ -310,6 +310,7 @@
     .badge-low     { background: rgba(148, 163, 184, 0.15); color: #6b7280; border: 1px solid rgba(148, 163, 184, 0.3); }
     .badge-type    { background: rgba(59, 130, 246, 0.1); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.2); }
     .badge-impact  { background: rgba(168, 85, 247, 0.1); color: #7c3aed; border: 1px solid rgba(168, 85, 247, 0.2); }
+    .badge-location { background: rgba(20, 184, 166, 0.1); color: #0d9488; border: 1px solid rgba(20, 184, 166, 0.2); }
     .badge-status-approved { background: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid rgba(16, 185, 129, 0.2); }
     .badge-status-rejected { background: rgba(244, 63, 94, 0.1); color: #e11d48; border: 1px solid rgba(244, 63, 94, 0.2); }
     .badge-status-pending  { background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); }
@@ -824,8 +825,10 @@ function buildCard(c, idx) {
           '<span class="badge ' + priorityBadge + '">' + (c.priority||'—') + ' Priority</span>' +
           (c.changeType ? '<span class="badge badge-type">' + escHtml(c.changeType) + '</span>' : '') +
           (impactScore > 0 ? '<span class="badge badge-impact">Impact ' + impactScore + '/100</span>' : '') +
+          (c.location ? '<span class="badge badge-location">📍 ' + escHtml(c.location) + '</span>' : '') +
         '</div>' +
         (impactScore > 0 ? '<div class="impact-bar" style="max-width:200px;margin-top:8px;"><div class="impact-bar-fill" style="width:' + impactScore + '%;background:' + impactColor + ';"></div></div>' : '') +
+        (c.sourceUrl ? '<div style="margin-top:8px;font-size:12px;color:var(--text-muted);">Source URL: <a href="' + escHtml(c.sourceUrl) + '" target="_blank" style="color:var(--orange);text-decoration:none;font-weight:600;">' + escHtml(c.sourceUrl) + '</a></div>' : '') +
       '</div>' +
       '<div class="card-actions">' +
         (c.status !== 'approved' ? '<button class="btn btn-approve btn-sm" onclick="setStatus(\'' + c.id + '\',\'approved\')" title="Approve"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polyline points="20 6 9 17 4 12"></polyline></svg></button>' : '') +
