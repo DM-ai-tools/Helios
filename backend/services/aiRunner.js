@@ -415,6 +415,94 @@ function escapeNewlinesInJSON(jsonString) {
   return result;
 }
 
+function tryParseTruncatedJSON(str) {
+  const trimmed = str.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+    return null;
+  }
+
+  let inString = false;
+  let isEscaped = false;
+  const stack = [];
+  const safePoints = [];
+
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+
+    if (inString) {
+      if (char === '\\') {
+        isEscaped = !isEscaped;
+      } else if (char === '"' && !isEscaped) {
+        inString = false;
+      } else {
+        isEscaped = false;
+      }
+    } else {
+      if (char === '"') {
+        inString = true;
+        isEscaped = false;
+      } else if (char === '{' || char === '[') {
+        stack.push(char);
+        safePoints.push({ index: i, type: char, stack: [...stack] });
+      } else if (char === '}') {
+        if (stack[stack.length - 1] === '{') {
+          stack.pop();
+        }
+        safePoints.push({ index: i, type: '}', stack: [...stack] });
+      } else if (char === ']') {
+        if (stack[stack.length - 1] === '[') {
+          stack.pop();
+        }
+        safePoints.push({ index: i, type: ']', stack: [...stack] });
+      } else if (char === ',') {
+        safePoints.push({ index: i, type: ',', stack: [...stack] });
+      }
+    }
+  }
+
+  function getClosingSuffix(st) {
+    let suffix = '';
+    for (let i = st.length - 1; i >= 0; i--) {
+      if (st[i] === '{') suffix += '}';
+      else if (st[i] === '[') suffix += ']';
+    }
+    return suffix;
+  }
+
+  let directCandidate = str;
+  if (inString) {
+    directCandidate += '"';
+  }
+  directCandidate += getClosingSuffix(stack);
+  try {
+    return JSON.parse(directCandidate);
+  } catch (_) {}
+
+  for (let i = safePoints.length - 1; i >= 0; i--) {
+    const sp = safePoints[i];
+    let candidate = '';
+    let currentStack = [];
+
+    if (sp.type === ',') {
+      candidate = str.slice(0, sp.index);
+      currentStack = sp.stack;
+    } else if (sp.type === '{' || sp.type === '[') {
+      candidate = str.slice(0, sp.index + 1);
+      currentStack = sp.stack;
+    } else if (sp.type === '}' || sp.type === ']') {
+      candidate = str.slice(0, sp.index + 1);
+      currentStack = sp.stack;
+    }
+
+    const closedCandidate = candidate + getClosingSuffix(currentStack);
+    try {
+      return JSON.parse(closedCandidate);
+    } catch (_) {}
+  }
+
+  return null;
+}
+
 function parseJSON(text, context = 'plugin') {
   // Sanitize actual newlines inside strings (which Claude frequently writes for email bodies)
   const sanitizedText = escapeNewlinesInJSON(text);
@@ -430,34 +518,21 @@ function parseJSON(text, context = 'plugin') {
 
   // 3. Opening fence only (truncated response) — extract everything after the fence
   const openFence = sanitizedText.match(/```(?:json|JSON)?\s*([\s\S]*)/);
+  let jsonCandidate = sanitizedText;
   if (openFence) {
-    // Try to parse as-is (might be valid JSON even without closing fence)
-    try { return JSON.parse(openFence[1].trim()); } catch (_) {}
+    jsonCandidate = openFence[1];
+    try { return JSON.parse(jsonCandidate.trim()); } catch (_) {}
   }
 
-  // 4. Bracket-depth scan — finds the outermost valid JSON object
-  //    Catches partial fences, leading prose, trailing commentary
-  let depth = 0, start = -1;
-  for (let i = 0; i < sanitizedText.length; i++) {
-    if (sanitizedText[i] === '{') {
-      if (depth === 0) start = i;
-      depth++;
-    } else if (sanitizedText[i] === '}') {
-      depth--;
-      if (depth === 0 && start !== -1) {
-        try { return JSON.parse(sanitizedText.slice(start, i + 1)); } catch (_) {}
-        start = -1;
-      }
-    }
+  // 4. Extract content starting from first opening brace/bracket
+  const firstBrace = jsonCandidate.search(/[{[]/);
+  if (firstBrace !== -1) {
+    jsonCandidate = jsonCandidate.slice(firstBrace);
   }
 
-  // 5. Truncation recovery — response was cut off mid-JSON; try to close it
-  //    Find the last complete top-level key-value pair and close the object
-  const lastBrace = sanitizedText.lastIndexOf(',');
-  if (lastBrace > 0) {
-    const candidate = sanitizedText.slice(0, lastBrace) + '}';
-    try { return JSON.parse(candidate.includes('{') ? candidate.slice(candidate.indexOf('{')) : candidate); } catch (_) {}
-  }
+  // 5. Truncation recovery
+  const parsed = tryParseTruncatedJSON(jsonCandidate);
+  if (parsed) return parsed;
 
   console.warn(`[Claude] Could not parse JSON for "${context}". Raw preview:`, sanitizedText.slice(0, 200));
   return { score: 0, summary: sanitizedText.slice(0, 500), parseError: true };

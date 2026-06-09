@@ -440,7 +440,13 @@
 
           // Error from backend
           if (ev.type === 'error') {
-            document.getElementById('prog-label').textContent = '⚠ ' + (ev.message || 'An error occurred');
+            sse.close();
+            stopTicker();
+            document.getElementById('prog-label').innerHTML = `<span style="color:#ef4444; font-weight:700;">⚠ ${ev.message || 'Analysis failed. Please try again.'}</span>`;
+            document.getElementById('spinner-wrap').style.animation = 'none';
+            document.getElementById('spinner-icon').style.borderColor = '#fca5a5';
+            document.getElementById('spinner-icon').style.borderTopColor = '#ef4444';
+            document.getElementById('spinner-icon').style.animation = 'none';
           }
         } catch (_) { }
       };

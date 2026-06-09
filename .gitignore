@@ -33,6 +33,7 @@ temp.js
 # Dev/debug utility scripts (local only)
 clear-pdf-cache.js
 check-db.js
+check-db.mjs
 check-latest.mjs
 drop-db.mjs
 dump-crawled-data.mjs

@@ -624,6 +624,71 @@ function continueToPlugins() {
   window.location.href = 'plugin-select.html';
 }
 
+let pollInterval = null;
+function startPollingFallback(auditId) {
+  if (pollInterval) return;
+  console.log('[SSE] Connection error. Starting HTTP polling fallback...');
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/audit/${auditId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      
+      // Update stats
+      if (data.stats) {
+        document.getElementById('stat-pages').textContent = data.stats.pages || 0;
+        document.getElementById('stat-kw').textContent    = data.stats.keywords || 0;
+      }
+      if (data.competitors) {
+        document.getElementById('stat-wins').textContent = data.competitors;
+      }
+      if (data.overallScore) {
+        setScore(data.overallScore);
+      }
+
+      // Update plugin statuses
+      if (data.plugins && Array.isArray(data.plugins)) {
+        const anyStarted = data.plugins.some(p => p.status === 'complete' || p.status === 'running' || p.status === 'failed');
+        if (anyStarted) {
+          stepDone('crawl', 'done');
+          stepDone('extract', 'done');
+          stepDone('serp', 'done');
+          stepDone('cwv', 'done');
+        }
+
+        data.plugins.forEach(p => {
+          if (p.status === 'complete') {
+            stepDone(p.id, 'complete');
+          } else if (p.status === 'running') {
+            stepRunning(p.id);
+          } else if (p.status === 'failed') {
+            stepDone(p.id, 'failed');
+          }
+        });
+      }
+
+      // Check if audit is complete
+      if (data.status === 'complete') {
+        clearInterval(pollInterval);
+        pollInterval = null;
+        allDone();
+        sessionStorage.setItem('clicktrends_audit', JSON.stringify({ ...session, auditId: data.id, overallScore: data.overallScore }));
+        if (MODE !== 'initial') {
+          showComplete(data.id, data.reportUrl);
+        } else {
+          showCTA();
+        }
+      } else if (data.status === 'failed') {
+        clearInterval(pollInterval);
+        pollInterval = null;
+        document.getElementById('step-msg').textContent = 'Audit failed. Please try again.';
+      }
+    } catch (err) {
+      console.error('[Polling] Error in fallback:', err);
+    }
+  }, 4000);
+}
+
 // ─── INITIAL MODE ──────────────────────────────────────────────
 function runInitFetch() {
   document.getElementById('cta-btn').style.display = 'none';
@@ -638,7 +703,10 @@ function runInitFetch() {
     sessionStorage.setItem('clicktrends_audit', JSON.stringify({ ...session, auditId }));
     const sse = new EventSource(`/api/audit/${auditId}/status`);
     sse.onmessage = e => { try { handleFullSSE(JSON.parse(e.data), sse); } catch(_){} };
-    sse.onerror = () => { sse.close(); demoInitial(); };
+    sse.onerror = () => {
+      // Try polling instead of falling back to fake demo animations
+      startPollingFallback(auditId);
+    };
   })
   .catch(() => demoInitial());
 }
@@ -658,7 +726,10 @@ function runFullMode() {
     sessionStorage.setItem('clicktrends_audit', JSON.stringify({ ...session, auditId }));
     const sse = new EventSource(`/api/audit/${auditId}/status`);
     sse.onmessage = e => { try { handleFullSSE(JSON.parse(e.data), sse); } catch(_){} };
-    sse.onerror = () => { sse.close(); demoFull(); };
+    sse.onerror = () => {
+      // Try polling instead of falling back to fake demo animations
+      startPollingFallback(auditId);
+    };
   })
   .catch(() => demoFull());
 }
@@ -673,6 +744,36 @@ function handleFullSSE(ev, sse) {
     'ai-running':'seo-audit', 'scoring':'synthesis', 'synthesis':'render',
     'building-report':'render', 'emailing':'deliver',
   };
+
+  // State recovery on connected event
+  if (ev.type === 'connected' && ev.pluginStatuses) {
+    const statuses = ev.pluginStatuses || [];
+    const anyStarted = statuses.some(p => p.status === 'complete' || p.status === 'running' || p.status === 'failed');
+    if (anyStarted) {
+      stepDone('crawl', 'done');
+      stepDone('extract', 'done');
+      stepDone('serp', 'done');
+      stepDone('cwv', 'done');
+    }
+
+    statuses.forEach(p => {
+      if (p.status === 'complete') {
+        stepDone(p.plugin_id, 'complete');
+        if (p.score !== undefined) {
+          receivedPluginScores.push(p.score);
+        }
+      } else if (p.status === 'running') {
+        stepRunning(p.plugin_id);
+      } else if (p.status === 'failed') {
+        stepDone(p.plugin_id, 'failed');
+      }
+    });
+
+    if (receivedPluginScores.length > 0) {
+      const avg = Math.round(receivedPluginScores.reduce((a, b) => a + b, 0) / receivedPluginScores.length);
+      setScore(avg);
+    }
+  }
 
   if (ev.type === 'step' && MODE !== 'initial') {
     const id = stepMap[ev.step] || ev.step;
@@ -746,6 +847,7 @@ function handleFullSSE(ev, sse) {
   // ── Complete events ──
   if (ev.type === 'complete') {
     demoTimers.forEach(clearTimeout); demoTimers = [];
+    if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
     sse && sse.close();
     allDone();
     reportUrl = ev.reportUrl;
@@ -754,9 +856,19 @@ function handleFullSSE(ev, sse) {
     if (MODE !== 'initial') showComplete(ev.auditId, ev.reportUrl);
   }
   if (ev.type === 'init-complete') {
+    if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
     sse && sse.close();
     // Snap any remaining demo stages to done quickly, then show CTA
     snapRemainingToDone();
+  }
+
+  if (ev.type === 'error') {
+    demoTimers.forEach(clearTimeout); demoTimers = [];
+    if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+    sse && sse.close();
+    document.getElementById('step-msg').innerHTML = `<span style="color:#ef4444; font-weight:700;">⚠ ${ev.message || 'Audit failed. Please try again.'}</span>`;
+    const loader = document.querySelector('.loader-dots');
+    if (loader) loader.style.display = 'none';
   }
 
 }

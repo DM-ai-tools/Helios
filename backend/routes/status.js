@@ -25,14 +25,40 @@ router.get('/:id([^/]+)/status', async (req, res) => {
     return res.status(404).json({ error: 'Audit not found' });
   }
 
-  // If audit is already complete, return final state immediately
+  // If audit is already complete, send complete event over SSE and close
   if (audit.status === 'complete') {
-    return res.json({
-      status: 'complete',
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+    res.write(`data: ${JSON.stringify({
+      type: 'complete',
+      auditId,
       overallScore: audit.overall_score,
       reportUrl: audit.report_url,
       docxUrl: audit.docx_url,
-    });
+    })}\n\n`);
+    res.end();
+    return;
+  }
+
+  // If audit has failed, send error event over SSE and close
+  if (audit.status === 'failed') {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+    res.write(`data: ${JSON.stringify({
+      type: 'error',
+      message: 'Audit execution failed. Please try again.',
+      auditId,
+    })}\n\n`);
+    res.end();
+    return;
   }
 
   // ── Set up SSE ────────────────────────────────────────────
@@ -40,6 +66,7 @@ router.get('/:id([^/]+)/status', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
   // Register client

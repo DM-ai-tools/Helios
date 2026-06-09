@@ -31,8 +31,9 @@ CAMPAIGN BRIEF DELIVERABLES:
 IMPORTANT RULES:
 - Base channel recommendations on where the target audience spends time, not generic lists.
 - Be specific with KPIs — avoid vanity metrics unless justified for awareness.
-- Calendar must have specific week numbers and action items.
+- Calendar must have specific week numbers and action items. Keep the calendar concise by including at most 6 key weeks (e.g., Weeks 1, 3, 5, 7, 9, 11) to avoid token truncation.
 - Split your Prioritized Action Plan (Recommendations) into Quick Wins (do this week, < 2 hours) and Strategic Investments.
+- Be extremely concise in all text fields (summaries, descriptions, rationale). Limit paragraphs to 2-3 brief sentences.
 - OUTPUT FORMAT: Respond ONLY with valid JSON matching the exact structure specified.
 
 ════════════════════════════════════════════════════════
