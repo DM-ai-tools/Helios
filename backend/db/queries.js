@@ -496,14 +496,39 @@ function resolveSourceUrlFromLocation(location, baseUrl, crawledPages) {
   }
 }
 
+function isGeneralizedUrl(sourceUrl, baseUrl, location, title) {
+  if (!sourceUrl || !baseUrl) return true; // if empty, it needs resolution
+
+  const cleanSource = sourceUrl.trim().replace(/\/$/, '').toLowerCase();
+  const cleanBase = baseUrl.trim().replace(/\/$/, '').toLowerCase();
+
+  // If the source URL is not just the base URL, it is specific (not generalized)
+  if (cleanSource !== cleanBase) {
+    return false;
+  }
+
+  // If the source URL is the base URL, check if the change actually belongs to the homepage.
+  // If location or title contains homepage terms, then it is NOT generalized (it's correctly pointing to homepage).
+  const lookupTerm = (location || title || '').toLowerCase();
+  if (lookupTerm.includes('home') || lookupTerm.includes('index') || lookupTerm.trim() === '') {
+    return false;
+  }
+
+  // Otherwise, it is pointing to the base URL but the change belongs to a subpage -> it is generalized!
+  return true;
+}
+
 export async function getImplementationChanges(auditId, pluginId) {
   const key = `impl_changes:${auditId}:${pluginId}`;
   let records = await redisGet(key);
   
+  const audit = await getAuditById(auditId);
+  const baseUrl = audit ? audit.url : '';
+  
   let needsResolution = false;
   if (records && records.length > 0) {
     for (const r of records) {
-      if (!r.sourceUrl) {
+      if (isGeneralizedUrl(r.sourceUrl, baseUrl, r.location, r.title)) {
         needsResolution = true;
         break;
       }
@@ -535,36 +560,32 @@ export async function getImplementationChanges(auditId, pluginId) {
     }
   }
 
-  if (records && records.length > 0) {
+  if (records && records.length > 0 && audit) {
     let hasResolvedAny = false;
-    const audit = await getAuditById(auditId);
-    if (audit) {
-      const baseUrl = audit.url;
-      let crawledData = audit.crawled_data;
-      if (typeof crawledData === 'string') {
-        try {
-          crawledData = JSON.parse(crawledData);
-        } catch (_) {}
-      }
-      const crawledPages = crawledData?.pages || [];
-      for (const r of records) {
-        if (!r.sourceUrl) {
-          const lookupTerm = r.location || r.title || '';
-          const resolved = resolveSourceUrlFromLocation(lookupTerm, baseUrl, crawledPages);
-          r.sourceUrl = ensureAbsoluteUrl(resolved, baseUrl);
+    let crawledData = audit.crawled_data;
+    if (typeof crawledData === 'string') {
+      try {
+        crawledData = JSON.parse(crawledData);
+      } catch (_) {}
+    }
+    const crawledPages = crawledData?.pages || [];
+    for (const r of records) {
+      if (isGeneralizedUrl(r.sourceUrl, baseUrl, r.location, r.title)) {
+        const lookupTerm = r.location || r.title || '';
+        const resolved = resolveSourceUrlFromLocation(lookupTerm, baseUrl, crawledPages);
+        r.sourceUrl = ensureAbsoluteUrl(resolved, baseUrl);
+        hasResolvedAny = true;
+        pool.query(`UPDATE implementation_changes SET source_url = $1 WHERE id = $2;`, [r.sourceUrl, r.id]).catch(err => {
+          console.error(`[queries] Error updating resolved source_url in DB:`, err);
+        });
+      } else {
+        const absolute = ensureAbsoluteUrl(r.sourceUrl, baseUrl);
+        if (absolute !== r.sourceUrl) {
+          r.sourceUrl = absolute;
           hasResolvedAny = true;
           pool.query(`UPDATE implementation_changes SET source_url = $1 WHERE id = $2;`, [r.sourceUrl, r.id]).catch(err => {
-            console.error(`[queries] Error updating resolved source_url in DB:`, err);
+            console.error(`[queries] Error updating absolute source_url in DB:`, err);
           });
-        } else {
-          const absolute = ensureAbsoluteUrl(r.sourceUrl, baseUrl);
-          if (absolute !== r.sourceUrl) {
-            r.sourceUrl = absolute;
-            hasResolvedAny = true;
-            pool.query(`UPDATE implementation_changes SET source_url = $1 WHERE id = $2;`, [r.sourceUrl, r.id]).catch(err => {
-              console.error(`[queries] Error updating absolute source_url in DB:`, err);
-            });
-          }
         }
       }
     }
@@ -617,7 +638,8 @@ export async function updateImplementationChange(auditId, pluginId, changeId, { 
     let resolvedUrl = row.source_url;
     const audit = await getAuditById(auditId);
     const baseUrl = audit ? audit.url : '';
-    if (!resolvedUrl) {
+    
+    if (isGeneralizedUrl(resolvedUrl, baseUrl, row.location, row.title)) {
       if (audit) {
         let crawledData = audit.crawled_data;
         if (typeof crawledData === 'string') {
