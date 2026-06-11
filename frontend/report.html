@@ -795,6 +795,12 @@
       <div id="seo-tech-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hidden"></div>
       <div id="seo-onpage-card" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hidden"></div>
     </div>
+    <!-- Services & Sub-Services Analysis -->
+    <div id="seo-services-wrap" class="mb-6 hidden">
+      <h3 class="text-base font-bold text-[#1a1a2e] mb-3">Recommended Sub-Services</h3>
+      <p style="font-size:12px;color:#6b7280;margin-bottom:12px;">The following sub-service pages are recommended for your website. Click "Add Page" to generate, preview, and publish each one.</p>
+      <div id="seo-services-grid" class="grid sm:grid-cols-2 gap-4"></div>
+    </div>
     <!-- Keyword opportunities -->
     <div id="seo-keywords-wrap" class="mb-6 hidden">
       <h3 class="text-base font-bold text-[#1a1a2e] mb-3">Keyword Opportunities</h3>
@@ -1347,6 +1353,36 @@ function renderSeoAudit(sa) {
           '<td><span style="font-size:10px;font-weight:700;color:'+oppCol+'">' + clean(k.opportunityScore || '') + '</span></td>' +
           '<td style="color:#6b7280;font-size:10px">' + clean(k.recommendedContentType || '') + '</td>' +
         '</tr>';
+      }).join('');
+    }
+  }
+
+  // Services & Sub-Services Analysis — show names only + Add Page buttons
+  var serv = sa.servicesAnalysis || [];
+  if (serv.length) {
+    var servWrap = document.getElementById('seo-services-wrap');
+    var servGrid = document.getElementById('seo-services-grid');
+    if (servWrap) servWrap.classList.remove('hidden');
+    if (servGrid) {
+      servGrid.innerHTML = serv.map(function(s) {
+        var subHtml = (s.subServices || []).map(function(sub) {
+          var slug = sub.pageSlug || sub.subServiceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+          var implUrl = '/audit/' + (auditId || 'demo') + '/plugin/seo-audit/implementation?tab=sub-services&slug=' + encodeURIComponent(slug);
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f3f4f6;">' +
+                 '<div>' +
+                   '<div style="font-size:13px;font-weight:700;color:#1a1a2e">' + clean(sub.subServiceName) + '</div>' +
+                   (sub.briefDescription ? '<div style="font-size:11px;color:#6b7280;margin-top:2px">' + clean(sub.briefDescription) + '</div>' : '') +
+                 '</div>' +
+                 '<a href="' + implUrl + '" style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#f97316,#ea6c0a);color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:8px;text-decoration:none;white-space:nowrap;flex-shrink:0;transition:opacity .2s" onmouseover="this.style.opacity=.85" onmouseout="this.style.opacity=1">' +
+                   '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>' +
+                   ' Add Page' +
+                 '</a>' +
+                 '</div>';
+        }).join('');
+        return '<div class="p-card" style="margin-bottom:0;">' +
+               '<div style="font-size:14px;font-weight:800;color:#f97316;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">' + clean(s.serviceName) + '</div>' +
+               subHtml +
+               '</div>';
       }).join('');
     }
   }

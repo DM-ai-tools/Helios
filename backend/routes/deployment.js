@@ -22,131 +22,7 @@ function getBusinessId(req) {
   return req.headers['x-business-id'] || req.query.businessId || (req.body && req.body.businessId) || 'default-business';
 }
 
-// Helper to simulate background deployment job processing
-function runBackgroundDeployment(jobId, businessId, auditId, changeId, platform, assetType, payload, deployedBy, isRollback = false, originalDeploymentId = null) {
-  setTimeout(async () => {
-    try {
-      console.log(`[Job Worker] Job ${jobId} status: deploying...`);
-      await updateDbDeploymentJob(jobId, 'deploying');
-
-      // Wait another 2 seconds to simulate API calls to WordPress/Shopify/etc.
-      setTimeout(async () => {
-        try {
-          // Check integration status. If platform status is 'error', fail the job!
-          const integration = await getIntegrationByPlatform(businessId, platform);
-          if (integration && integration.status === 'error') {
-            throw new Error(`Connection Error: Unable to authenticate with ${platform}. API returned 401 Unauthorized.`);
-          }
-          if (integration && integration.status === 'reauth') {
-            throw new Error(`Reauthentication Required: Access token expired for ${platform}. Please reconnect.`);
-          }
-
-          // Fetch previous content for rollback purposes
-          let previousContent = null;
-          if (!isRollback) {
-            const lastDeployment = await getLatestDeployment(businessId, platform, changeId);
-            if (lastDeployment) {
-              previousContent = lastDeployment.content_payload;
-            } else {
-              // Simulate previous content if no deployment exists (e.g. from the change record's currentState)
-              previousContent = {
-                title: payload.title,
-                content: payload.currentState || ''
-              };
-            }
-          } else {
-            // For a rollback, the previousContent is what was deployed before we triggered the rollback
-            const lastDeployment = await getLatestDeployment(businessId, platform, changeId);
-            if (lastDeployment) {
-              previousContent = lastDeployment.content_payload;
-            }
-          }
-
-          // Complete the job
-          console.log(`[Job Worker] Job ${jobId} status: completed`);
-          await updateDbDeploymentJob(jobId, 'completed');
-
-          // Create deployment record
-          const responsePayload = {
-            success: true,
-            api_response: `Successfully pushed to ${platform} API`,
-            timestamp: new Date().toISOString(),
-            platform_resource_id: `res_${Math.random().toString(36).substring(2, 9)}`
-          };
-
-          const deployment = await createDeployment({
-            businessId,
-            auditId,
-            changeId,
-            platform,
-            assetType,
-            contentPayload: payload,
-            previousContent,
-            status: 'completed',
-            deployedBy,
-            response: responsePayload
-          });
-
-          // Write audit trail entry
-          const actionDetails = isRollback
-            ? `Rolled back ${platform} deployment for "${payload.title}"`
-            : `Deployed changes to ${platform} for "${payload.title}"`;
-
-          await createAuditTrailEntry({
-            businessId,
-            eventType: isRollback ? 'rollback_deployment' : 'deploy_change',
-            auditId,
-            pluginId: null,
-            changeId,
-            actionDetails,
-            performedBy: deployedBy,
-            metadata: {
-              jobId,
-              deploymentId: deployment.id,
-              platform,
-              title: payload.title,
-              isRollback,
-              originalDeploymentId
-            }
-          });
-
-        } catch (jobErr) {
-          console.error(`[Job Worker] Job ${jobId} failed:`, jobErr.message);
-          await updateDbDeploymentJob(jobId, 'failed');
-
-          // Save failed deployment record
-          await createDeployment({
-            businessId,
-            auditId,
-            changeId,
-            platform,
-            assetType,
-            contentPayload: payload,
-            previousContent: null,
-            status: 'failed',
-            deployedBy,
-            response: { error: jobErr.message, api_response: null }
-          });
-
-          await createAuditTrailEntry({
-            businessId,
-            eventType: 'deployment_failed',
-            auditId,
-            pluginId: null,
-            changeId,
-            actionDetails: `Failed to deploy to ${platform}: ${jobErr.message}`,
-            performedBy: deployedBy,
-            metadata: { jobId, platform, error: jobErr.message }
-          });
-        }
-      }, 200);
-
-    } catch (err) {
-      console.error(`[Job Worker] Critical job handling error for job ${jobId}:`, err.message);
-      await updateDbDeploymentJob(jobId, 'failed');
-    }
-  }, 200);
-}
+import { addDeploymentJob } from '../services/deploymentQueue.js';
 
 // ─── POST /api/deployment/queue ───────────────────────────────
 router.post('/queue', requireAdmin, async (req, res) => {
@@ -238,8 +114,19 @@ router.post('/queue', requireAdmin, async (req, res) => {
       assetType
     });
 
-    // 5. Run background job process
-    runBackgroundDeployment(job.id, businessId, auditId, changeId, platform.toLowerCase(), assetType, payload, user);
+    // 5. Enqueue background job process via BullMQ
+    await addDeploymentJob({
+      jobDbId: job.id,
+      businessId,
+      auditId,
+      changeId,
+      platform: platform.toLowerCase(),
+      assetType,
+      payload,
+      deployedBy: user,
+      isRollback: false,
+      originalDeploymentId: null
+    });
 
     res.json({
       success: true,
@@ -266,6 +153,14 @@ router.get('/jobs/:id', async (req, res) => {
     if (businessId && job.business_id && job.business_id !== businessId) {
       return res.status(403).json({ error: 'Permission Denied: Cross-tenant access is not allowed.' });
     }
+
+    if (job.status === 'completed' || job.status === 'failed') {
+      const deploymentResult = await getLatestDeployment(businessId, job.platform, job.change_id);
+      if (deploymentResult && deploymentResult.response) {
+        job.response_payload = deploymentResult.response.response_payload || deploymentResult.response;
+      }
+    }
+    
     res.json({ success: true, job });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -324,19 +219,19 @@ router.post('/rollback/:id', requireAdmin, async (req, res) => {
       payload.title = `${payload.title} (Rolled Back)`;
     }
 
-    // 3. Run background job process as a rollback
-    runBackgroundDeployment(
-      job.id,
+    // 3. Enqueue Rollback Job via BullMQ
+    await addDeploymentJob({
+      jobDbId: job.id,
       businessId,
-      original.audit_id,
-      original.change_id,
-      original.platform,
-      original.asset_type,
+      auditId: original.audit_id,
+      changeId: original.change_id,
+      platform: original.platform,
+      assetType: original.asset_type,
       payload,
-      user,
-      true,
-      original.id
-    );
+      deployedBy: user,
+      isRollback: true,
+      originalDeploymentId: original.id
+    });
 
     res.json({
       success: true,

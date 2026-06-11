@@ -840,7 +840,16 @@ function handleFullSSE(ev, sse) {
     }
     session.preScore     = ev.score;
     session.businessName = ev.businessName;
-    session.competitors  = ev.competitors;
+    session.insight      = ev.insight;
+    session.stats        = ev.stats;
+    session.crawledDataSummary = ev.crawledDataSummary;
+    session.businessInsights   = ev.businessInsights;
+    session.seoInsights        = ev.seoInsights;
+    session.contentInsights    = ev.contentInsights;
+    session.conversionInsights = ev.conversionInsights;
+    session.technicalInsights  = ev.technicalInsights;
+    session.topOpportunities   = ev.topOpportunities;
+    session.predictedEstimates = ev.predictedEstimates;
     sessionStorage.setItem('clicktrends_audit', JSON.stringify(session));
   }
 

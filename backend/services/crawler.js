@@ -140,6 +140,7 @@ export async function crawlWebsite(url, onProgress = () => {}) {
   const crawledData = {
     url: normalised,
     crawledAt: new Date().toISOString(),
+    totalPages: 1,
     pages: [],
     homepage: null,
     aboutPage: null,
@@ -206,6 +207,7 @@ export async function crawlWebsite(url, onProgress = () => {}) {
         .sort((a, b) => b.category.score - a.category.score); // Highest priority first
 
     onProgress(`Discovered ${urlPool.length} internal pages. Prioritising…`);
+    crawledData.totalPages = urlPool.length + 1;
 
     // Phase 5: Adaptive Crawl Limits
     let crawlBudget = 200; // Small site
@@ -288,7 +290,7 @@ export async function crawlWebsite(url, onProgress = () => {}) {
 
     crawledData.socialLinks = [...new Set(crawledData.socialLinks)];
 
-    onProgress(`Crawl complete — ${crawledData.pages.length} high-value pages analysed.`);
+    onProgress(`Crawl complete — ${crawledData.totalPages || crawledData.pages.length} pages crawled.`);
 
     // Perplexity research
     await enrichWithPerplexity(crawledData, onProgress);

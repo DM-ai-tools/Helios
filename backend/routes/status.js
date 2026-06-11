@@ -19,49 +19,9 @@ const router = Router();
 router.get('/:id([^/]+)/status', async (req, res) => {
   const { id: auditId } = req.params;
 
-  // Validate audit exists
-  const audit = await getAuditById(auditId).catch(() => null);
-  if (!audit) {
-    return res.status(404).json({ error: 'Audit not found' });
-  }
-
-  // If audit is already complete, send complete event over SSE and close
-  if (audit.status === 'complete') {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('X-Accel-Buffering', 'no');
-    res.flushHeaders();
-    res.write(`data: ${JSON.stringify({
-      type: 'complete',
-      auditId,
-      overallScore: audit.overall_score,
-      reportUrl: audit.report_url,
-      docxUrl: audit.docx_url,
-    })}\n\n`);
-    res.end();
-    return;
-  }
-
-  // If audit has failed, send error event over SSE and close
-  if (audit.status === 'failed') {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('X-Accel-Buffering', 'no');
-    res.flushHeaders();
-    res.write(`data: ${JSON.stringify({
-      type: 'error',
-      message: 'Audit execution failed. Please try again.',
-      auditId,
-    })}\n\n`);
-    res.end();
-    return;
-  }
-
-  // ── Set up SSE ────────────────────────────────────────────
+  // ── Always open SSE first, then validate ────────────────────
+  // IMPORTANT: Set SSE headers BEFORE any async work. If we send JSON
+  // on a connection the browser expects to be SSE, it gets ERR_CONNECTION_RESET.
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -69,23 +29,64 @@ router.get('/:id([^/]+)/status', async (req, res) => {
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
-  // Register client
+  const sendSSE = (obj) => {
+    try { res.write(`data: ${JSON.stringify(obj)}\n\n`); } catch (_) {}
+  };
+
+  // Validate audit exists
+  let audit;
+  try {
+    audit = await getAuditById(auditId);
+  } catch (err) {
+    console.error(`[SSE] DB error fetching audit ${auditId}:`, err.message);
+    sendSSE({ type: 'error', message: 'Database error — please refresh and try again.', auditId });
+    res.end();
+    return;
+  }
+
+  if (!audit) {
+    sendSSE({ type: 'error', message: 'Audit not found. Please start a new audit.', auditId });
+    res.end();
+    return;
+  }
+
+  // If audit is already complete, send complete event and close
+  if (audit.status === 'complete') {
+    sendSSE({
+      type: 'complete',
+      auditId,
+      overallScore: audit.overall_score,
+      reportUrl: audit.report_url,
+      docxUrl: audit.docx_url,
+    });
+    res.end();
+    return;
+  }
+
+  // If audit has failed, send error event and close
+  if (audit.status === 'failed') {
+    sendSSE({ type: 'error', message: 'Audit execution failed. Please try again.', auditId });
+    res.end();
+    return;
+  }
+
+  // ── Live audit: register client ───────────────────────────────
   if (!sseClients[auditId]) sseClients[auditId] = [];
   sseClients[auditId].push(res);
 
   // Send initial state
   const pluginStatuses = await getAuditPlugins(auditId).catch(() => []);
-  res.write(`data: ${JSON.stringify({
+  sendSSE({
     type: 'connected',
     message: 'Connected to live audit stream',
     auditId,
     pluginStatuses,
-  })}\n\n`);
+  });
 
-  // Heartbeat to keep connection alive (every 15s)
+  // Heartbeat to keep connection alive (every 20s)
   const heartbeat = setInterval(() => {
     try { res.write(': heartbeat\n\n'); } catch (_) { clearInterval(heartbeat); }
-  }, 15000);
+  }, 20000);
 
   // Cleanup on disconnect
   req.on('close', () => {
@@ -159,7 +160,7 @@ router.get('/:id([^/]+)', async (req, res) => {
       crawledStats = {
         pagesAudited: (cd.pages || []).length,
         stats: {
-          pages:    (cd.pages || []).length,
+          pages:    cd.totalPages || (cd.pages || []).length,
           keywords: cd.keywordStats?.total ?? 0,
           ranked:   cd.keywordStats?.ranked ?? 0,
         },

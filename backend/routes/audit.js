@@ -15,6 +15,8 @@ import { runAllPlugins, generateSynthesis, calculateOverallScore } from '../serv
 import { buildReport } from '../services/reportBuilder.js';
 import { sendAuditReport } from '../services/emailService.js';
 import redisClient from '../services/redisClient.js';
+import { runQuickAnalysis } from './initialAudit.js';
+import Anthropic from '@anthropic-ai/sdk';
 
 const router = Router();
 
@@ -155,32 +157,44 @@ async function runInitPipeline({ auditId, url, industry }) {
 
     emit(auditId, 'step', {
       step: 'crawl-complete',
-      message: `Crawled ${crawledData.pages.length} pages — ${crawledData.keywordStats?.total ?? 0} keywords found`,
+      message: `Crawled ${crawledData.totalPages || crawledData.pages.length} pages — ${crawledData.keywordStats?.total ?? 0} keywords found`,
       progress: 30,
       stats: {
-        pages:    crawledData.pages.length,
+        pages:    crawledData.totalPages || crawledData.pages.length,
         keywords: crawledData.keywordStats?.total ?? 0,
         ranked:   crawledData.keywordStats?.ranked ?? 0,
         signals:  Object.keys(crawledData.metaSignals || {}).length,
       },
     });
 
-    // ── Quick scoring from crawled + Perplexity data ─────────────
-    emit(auditId, 'step', { step: 'analysing', message: 'Scoring your digital presence…', progress: 50 });
-    const quickScore = computeQuickScore(crawledData);
+    // ── AI Consultant Quick Analysis ─────────────
+    emit(auditId, 'step', { step: 'analysing', message: 'Generating preliminary insights…', progress: 50 });
+    const aiAnalysis = await runQuickAnalysis(crawledData, industry);
 
     emit(auditId, 'init-analysis', {
-      score:        quickScore.score,
-      businessName: crawledData.perplexityBusiness?.businessName
-                    || crawledData.businessSummary?.name
-                    || new URL(crawledData.url).hostname.replace(/^www\./, ''),
-      insight:      quickScore.insight,
-      discoveries:  quickScore.discoveries,
-      competitors:  crawledData.perplexityCompetitors?.competitors?.length ?? 0,
+      score:              aiAnalysis.score,
+      businessName:       aiAnalysis.businessName,
+      insight:            aiAnalysis.insight,
+      businessInsights:   aiAnalysis.businessInsights || [],
+      seoInsights:        aiAnalysis.seoInsights || [],
+      contentInsights:    aiAnalysis.contentInsights || [],
+      conversionInsights: aiAnalysis.conversionInsights || [],
+      technicalInsights:  aiAnalysis.technicalInsights || [],
+      topOpportunities:   aiAnalysis.topOpportunities || [],
+      predictedEstimates: aiAnalysis.predictedEstimates || {},
       stats: {
-        pages:    crawledData.pages.length,
+        pages:    crawledData.totalPages || crawledData.pages.length,
         keywords: crawledData.keywordStats?.total ?? 0,
       },
+      crawledDataSummary: {
+        metaSignals: crawledData.metaSignals,
+        socialLinks: crawledData.socialLinks,
+        ctaText: crawledData.ctaText,
+        headings: crawledData.headings,
+        contentTypes: crawledData.contentTypes,
+        perplexityBusiness: crawledData.perplexityBusiness,
+        perplexityCompetitors: crawledData.perplexityCompetitors
+      }
     });
 
     emit(auditId, 'init-complete', { message: 'Initialization complete.' });
@@ -335,10 +349,10 @@ async function runAnalyzePipeline({ auditId, crawledData, url, industry, email, 
     // stored data. Without this emit the keyword counter stays at 0.
     emit(auditId, 'step', {
       step: 'crawl-complete',
-      message: `${crawledData.pages?.length || 0} pages crawled · ${crawledData.keywordStats?.total ?? 0} keywords found`,
+      message: `${crawledData.totalPages || crawledData.pages?.length || 0} pages crawled · ${crawledData.keywordStats?.total ?? 0} keywords found`,
       progress: 5,
       stats: {
-        pages:    crawledData.pages?.length    || 0,
+        pages:    crawledData.totalPages || crawledData.pages?.length    || 0,
         keywords: crawledData.keywordStats?.total  ?? 0,
         ranked:   crawledData.keywordStats?.ranked ?? 0,
       },
@@ -478,7 +492,7 @@ async function runAnalyzePipeline({ auditId, crawledData, url, industry, email, 
       pluginOutputs: pluginOutputsObj,
       pagesAudited: crawledData.pages?.length || 0,
       stats: {
-        pages:    crawledData.pages?.length || 0,
+        pages:    crawledData.totalPages || crawledData.pages?.length || 0,
         keywords: crawledData.keywordStats?.total ?? 0,
         ranked:   crawledData.keywordStats?.ranked ?? 0,
       },
@@ -548,5 +562,69 @@ async function runAnalyzePipeline({ auditId, crawledData, url, industry, email, 
     await updateAuditStatus(auditId, 'failed');
   }
 }
+
+/**
+ * POST /api/audit/:id/regenerate-email
+ * Regenerate an individual email using Claude based on user prompt
+ */
+router.post('/:id([^/]+)/regenerate-email', async (req, res) => {
+  const { id: auditId } = req.params;
+  const { emailIndex, emailData, prompt } = req.body;
+
+  if (!emailData || !prompt) {
+    return res.status(400).json({ error: 'Missing email data or prompt' });
+  }
+
+  try {
+    const systemPrompt = `You are an elite marketing copywriter. You are rewriting an email for an AI Marketing Audit tool.
+The user has provided a prompt to modify the email content.
+Keep the same general format (subject, preview text, body paragraphs, CTA).
+Return ONLY valid JSON matching this structure:
+{
+  "subject": "The new subject line",
+  "previewText": "The new preview text",
+  "bodyCopy": "The new body copy (use plain text with \\n\\n for paragraphs)",
+  "ctaText": "The new CTA button text",
+  "ctaUrl": "The new CTA URL (keep the same if not instructed otherwise)"
+}`;
+
+    const userPrompt = `Here is the current email data:
+Subject: ${emailData.userSubject || emailData.subject}
+Preview Text: ${emailData.userPreviewText || emailData.previewText}
+CTA Text: ${emailData.userCtaText || emailData.ctaText}
+CTA URL: ${emailData.userCtaUrl || emailData.ctaUrl}
+Body:
+${emailData.bodyCopy}
+
+Here is the instruction on how to modify it:
+"${prompt}"
+
+Rewrite the email accordingly. Ensure the tone fits a professional B2B/B2C email.`;
+
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 2000,
+      system: systemPrompt,
+      messages: [
+        { role: 'user', content: userPrompt },
+        { role: 'assistant', content: '{' }
+      ]
+    });
+    
+    const rawOutput = '{' + (message.content[0]?.text || '');
+    const generated = JSON.parse(rawOutput);
+    
+    // Validate output
+    if (!generated || !generated.subject || !generated.bodyCopy) {
+      throw new Error('Claude returned invalid JSON or missing fields');
+    }
+
+    res.json(generated);
+  } catch (err) {
+    console.error(`[Regenerate Email] Failed for ${auditId} index ${emailIndex}:`, err);
+    res.status(500).json({ error: 'Failed to regenerate email. Please try again.' });
+  }
+});
 
 export default router;

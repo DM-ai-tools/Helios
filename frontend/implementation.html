@@ -516,6 +516,51 @@
       border-radius: 99px;
       transition: width .6s ease;
     }
+
+    /* SUB-SERVICE PAGES PANEL */
+    #sub-services-panel { display: none; }
+    .ss-card {
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,.05);
+      margin-bottom: 20px;
+      overflow: hidden;
+      transition: box-shadow .2s, border-color .2s;
+    }
+    .ss-card:hover { box-shadow: 0 10px 15px -3px rgba(0,0,0,.08); border-color: rgba(249,115,22,.25); }
+    .ss-card.ss-approved { border-color: rgba(16,185,129,.4); background: rgba(16,185,129,.02); }
+    .ss-card.ss-rejected { border-color: rgba(244,63,94,.4); opacity: .7; }
+    .ss-card-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+    .ss-service-badge { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; background:rgba(249,115,22,.12); border:1px solid rgba(249,115,22,.25); color:var(--orange); border-radius:99px; padding:3px 10px; flex-shrink:0; }
+    .ss-title { font-size:15px; font-weight:800; color:var(--text-main); flex:1; }
+    .ss-status-badge { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; border-radius:99px; padding:3px 10px; }
+    .ss-status-pending { background:rgba(245,158,11,.1); color:#d97706; border:1px solid rgba(245,158,11,.3); }
+    .ss-status-approved { background:rgba(16,185,129,.1); color:#059669; border:1px solid rgba(16,185,129,.3); }
+    .ss-status-rejected { background:rgba(244,63,94,.1); color:#e11d48; border:1px solid rgba(244,63,94,.3); }
+    .ss-card-body { padding: 18px 20px; }
+    .ss-desc { font-size:12px; color:var(--text-muted); margin-bottom:14px; line-height:1.6; }
+    .ss-keywords { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:16px; }
+    .ss-kw { font-size:10px; font-weight:600; background:#f3f4f6; border-radius:99px; padding:2px 9px; color:#374151; }
+
+    /* PREVIEW IFRAME */
+    .preview-wrap { border: 1.5px solid var(--border); border-radius:12px; overflow:hidden; background:#fff; margin-bottom:16px; position:relative; }
+    .preview-iframe { width:100%; height:520px; border:none; display:block; }
+    .preview-placeholder { display:flex; flex-direction:column; align-items:center; justify-content:center; height:240px; gap:12px; color:var(--text-muted); }
+    .preview-placeholder svg { opacity:.3; }
+
+    /* CONTEXT BOX */
+    .context-box-label { font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+    .context-box { width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:12px; font-family:inherit; color:var(--text-main); resize:vertical; min-height:70px; transition:border-color .2s; background:#fff; line-height:1.6; }
+    .context-box:focus { outline:none; border-color:var(--orange); box-shadow:0 0 0 3px rgba(249,115,22,.15); }
+
+    /* ACTION ROW */
+    .ss-action-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:14px; padding-top:12px; border-top:1px dashed var(--border); }
+    .btn-gen { background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; box-shadow:0 2px 8px rgba(59,130,246,.3); }
+    .btn-gen:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(59,130,246,.4); }
+    .btn-regen { background:#f3f4f6; color:var(--text-main); border:1px solid var(--border); }
+    .btn-regen:hover { background:#e5e7eb; }
+    .btn-regen:disabled { opacity:.5; cursor:not-allowed; }
   </style>
 </head>
 <body>
@@ -565,6 +610,9 @@
     <button class="filter-tab" data-filter="pending"  onclick="setFilter('pending',this)">Pending</button>
     <button class="filter-tab" data-filter="approved" onclick="setFilter('approved',this)">Approved</button>
     <button class="filter-tab" data-filter="rejected" onclick="setFilter('rejected',this)">Rejected</button>
+    <button class="filter-tab" id="ss-tab-btn" data-filter="sub-services" onclick="showSubServicesTab(this)" style="display:none">
+      ✨ Sub-Service Pages
+    </button>
   </div>
   <div class="bulk-actions">
     <button class="btn btn-approve btn-sm" onclick="bulkAction('approved')">
@@ -581,6 +629,14 @@
   </div>
 </div>
 
+<!-- TESTING MODE TOGGLE -->
+<div style="max-width: 900px; margin: 16px auto 0; padding: 0 24px; display: flex; justify-content: flex-end;">
+  <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:var(--text-muted); cursor:pointer;">
+    <input type="checkbox" id="testing-mode-toggle" style="accent-color:var(--orange); width:16px; height:16px;" checked>
+    Enable Deployment Testing Mode (Verbose Logging & Verification)
+  </label>
+</div>
+
 <!-- MAIN CONTENT -->
 <main class="main">
   <div id="loading-overlay">
@@ -589,6 +645,7 @@
   </div>
 
   <div id="changes-container" style="display:none;"></div>
+  <div id="sub-services-panel"></div>
   <div id="empty-state" style="display:none;" class="empty-state">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
@@ -705,6 +762,16 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('integrations-link').href = '/settings/integrations?auditId=' + auditId + '&pluginId=' + pluginId;
   document.getElementById('history-link').href = '/implementation/history?auditId=' + auditId;
   document.title = 'Implement Changes — ' + name + ' | ClickTrends AI Audit';
+
+  // Show Sub-Service Pages tab only for SEO Audit
+  if (pluginId === 'seo-audit') {
+    var ssTabBtn = document.getElementById('ss-tab-btn');
+    if (ssTabBtn) ssTabBtn.style.display = '';
+  }
+
+  // Auto-activate sub-services tab if URL param says so
+  var tabParam = new URLSearchParams(window.location.search).get('tab');
+  var slugParam = new URLSearchParams(window.location.search).get('slug');
 
   var savedRole = localStorage.getItem('user_role') || 'Admin';
   var roleSelect = document.getElementById('role-select');
@@ -920,6 +987,12 @@ function setFilter(filter, el) {
   activeFilter = filter;
   document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
   el.classList.add('active');
+  // Hide sub-services panel, restore standard view
+  var ssPanel = document.getElementById('sub-services-panel');
+  if (ssPanel) ssPanel.style.display = 'none';
+  document.getElementById('changes-container').style.display = allChanges.length > 0 ? 'block' : 'none';
+  var deployPanel = document.getElementById('deploy-panel');
+  if (deployPanel && allChanges.length > 0) deployPanel.style.display = 'block';
   renderCards();
 }
 
@@ -1148,6 +1221,44 @@ async function trackSingleJob(jobId, changeId, platform, btn, originalHtml) {
         btn.innerHTML = 'Completed';
         toast('Deploy completed successfully!', 'success');
         
+        // Show diagnostics panel
+        var logs = data.job.response_payload || {};
+        var verifyColor = logs.verified ? 'var(--success)' : 'var(--warning)';
+        var verifyText = logs.verified ? 'Verified on Live Page' : 'Unverified / Soft Match';
+        
+        var panelHtml = `
+          <div style="margin-top: 16px; background: #faf9f6; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-size: 12px; text-align: left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <h4 style="font-size:13px; font-weight:800; color:var(--text-main);">Deployment Diagnostics</h4>
+              <span style="background:${verifyColor}22; color:${verifyColor}; border:1px solid ${verifyColor}55; padding:4px 8px; border-radius:99px; font-weight:700; font-size:10px; text-transform:uppercase;">
+                ${verifyText}
+              </span>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px; color:var(--text-muted);">
+              <div><strong>Status:</strong> Success</div>
+              <div><strong>Page ID:</strong> ${logs.platform_resource_id || 'N/A'}</div>
+              <div><strong>Timestamp:</strong> ${logs.timestamp ? new Date(logs.timestamp).toLocaleTimeString() : 'N/A'}</div>
+              <div><strong>URL:</strong> <a href="${logs.live_url || '#'}" target="_blank" style="color:var(--orange); font-weight:600;">View Live</a></div>
+              <div style="grid-column: 1 / -1; margin-top:4px;">
+                <strong>Page Updated:</strong> ${logs.targetTitle || 'Unknown Page'}
+              </div>
+            </div>
+            
+            <div style="margin-top:16px; display:flex; gap:8px;">
+              <button class="btn btn-sm" style="background:#fff; border:1px solid var(--border); color:var(--text-main);" onclick="window.open('/implementation/history', '_blank')">View Logs in History</button>
+              <button class="btn btn-sm" style="background:rgba(244, 63, 94, 0.1); color:var(--error); border:1px solid rgba(244, 63, 94, 0.2);" onclick="window.location.href='/implementation/history?auditId=${auditId}'">Rollback Deployment</button>
+            </div>
+          </div>
+        `;
+        
+        var container = document.getElementById('deploy-actions-' + changeId);
+        if (container) {
+          // Append the diagnostic panel
+          var div = document.createElement('div');
+          div.innerHTML = panelHtml;
+          container.appendChild(div);
+        }
+        
         setTimeout(async function() {
           await loadChanges();
           applyPermissions();
@@ -1181,6 +1292,293 @@ function toast(msg, type) {
   clearTimeout(el._t);
   el._t = setTimeout(function() { el.className = ''; }, 3000);
 }
+
+// ══════════════════════════════════════════════════════════════════
+// SUB-SERVICE PAGES TAB
+// ══════════════════════════════════════════════════════════════════
+var _ssData = [];     // cached sub-service list
+var _ssLoaded = false;
+
+async function showSubServicesTab(el, autoSlug) {
+  // Highlight tab
+  document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+
+  // Hide changes panel, show sub-services panel
+  document.getElementById('changes-container').style.display  = 'none';
+  document.getElementById('empty-state').style.display        = 'none';
+  if (document.getElementById('deploy-panel')) document.getElementById('deploy-panel').style.display = 'none';
+  var panel = document.getElementById('sub-services-panel');
+  panel.style.display = 'block';
+
+  if (!_ssLoaded) {
+    panel.innerHTML = '<div style="text-align:center;padding:48px 0;"><div class="spinner" style="margin:0 auto 12px"></div><p style="font-size:13px;color:var(--text-muted);font-weight:600;">Loading recommended sub-services…</p></div>';
+    try {
+      var res = await fetch('/api/implementation/' + auditId + '/seo-audit/sub-services');
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load sub-services');
+      _ssData = data.subServices || [];
+      _ssLoaded = true;
+    } catch (err) {
+      panel.innerHTML = '<div style="text-align:center;padding:48px;color:#dc2626"><p style="font-weight:700">' + err.message + '</p><button class="btn" style="margin-top:16px;background:#f97316;color:#fff;border:none" onclick="_ssLoaded=false;showSubServicesTab(document.getElementById(\''+'ss-tab-btn'+'\'))" >Retry</button></div>';
+      return;
+    }
+  }
+
+  renderSubServicesPanel(autoSlug);
+}
+
+function renderSubServicesPanel(highlightSlug) {
+  var panel = document.getElementById('sub-services-panel');
+  if (!_ssData.length) {
+    panel.innerHTML = '<div class="empty-state" style="background:#fff;border-radius:16px;border:1.5px solid #f3f4f6;"><h3>No sub-services found</h3><p>Run an SEO audit first so the AI can recommend sub-service pages for your website.</p></div>';
+    return;
+  }
+
+  // Group by service
+  var groups = {};
+  _ssData.forEach(function(ss) {
+    if (!groups[ss.serviceName]) groups[ss.serviceName] = [];
+    groups[ss.serviceName].push(ss);
+  });
+
+  var html = '<div style="margin-bottom:16px;"><p style="font-size:13px;color:var(--text-muted);line-height:1.6;">Generate, preview, and approve new sub-service pages for your website. Each page will be SEO-optimised and styled to match your brand.</p></div>';
+
+  _ssData.forEach(function(ss) {
+    var statusCls = ss.status === 'approved' ? 'ss-approved' : ss.status === 'rejected' ? 'ss-rejected' : '';
+    var statusBadgeCls = ss.status === 'approved' ? 'ss-status-approved' : ss.status === 'rejected' ? 'ss-status-rejected' : 'ss-status-pending';
+    var statusLabel = ss.status === 'approved' ? 'Approved' : ss.status === 'rejected' ? 'Rejected' : 'Pending';
+    var kwHtml = (ss.keywords || []).map(function(k) { return '<span class="ss-kw">' + escHtml(k) + '</span>'; }).join('');
+    var hasPreview = !!ss.generatedHtml;
+    var autoOpen = (highlightSlug && highlightSlug === ss.pageSlug);
+
+    html += '<div class="ss-card ' + statusCls + '" id="ss-card-' + ss.pageSlug + '">' +
+      '<div class="ss-card-header">' +
+        '<span class="ss-service-badge">' + escHtml(ss.serviceName) + '</span>' +
+        '<span class="ss-title">' + escHtml(ss.subServiceName) + '</span>' +
+        '<span class="ss-status-badge ' + statusBadgeCls + '" id="ss-status-' + ss.pageSlug + '">' + statusLabel + '</span>' +
+      '</div>' +
+      '<div class="ss-card-body">' +
+        (ss.briefDescription ? '<p class="ss-desc">' + escHtml(ss.briefDescription) + '</p>' : '') +
+        (kwHtml ? '<div class="ss-keywords">' + kwHtml + '</div>' : '') +
+
+        // Preview area
+        '<div class="preview-wrap" id="preview-wrap-' + ss.pageSlug + '">' +
+          (hasPreview
+            ? '<iframe class="preview-iframe" id="preview-' + ss.pageSlug + '" srcdoc="' + escHtml(ss.generatedHtml || '') + '"></iframe>'
+            : '<div class="preview-placeholder" id="preview-' + ss.pageSlug + '">' +
+                '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>' +
+                '<span style="font-size:13px;font-weight:600">Click Generate Preview to see the page</span>' +
+              '</div>') +
+        '</div>' +
+
+        // Context / instructions input
+        '<div style="margin-bottom:12px">' +
+          '<div class="context-box-label">Context or ideas for this page (optional — sent to AI)</div>' +
+          '<textarea class="context-box" id="ctx-' + ss.pageSlug + '" placeholder="E.g. \"Focus on enterprise clients in Melbourne, use a dark hero background, mention our 15 years experience…\""></textarea>' +
+        '</div>' +
+
+        // Action row
+        '<div class="ss-action-row">' +
+          '<button class="btn btn-gen btn-sm" onclick="generatePreview(\'' + ss.pageSlug + '\')" id="btn-gen-' + ss.pageSlug + '">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>' +
+            (hasPreview ? 'Regenerate Preview' : 'Generate Preview') +
+          '</button>' +
+          (hasPreview
+            ? '<button class="btn btn-approve btn-sm" onclick="approveSubService(\'' + ss.pageSlug + '\',\'approved\')" id="btn-approve-' + ss.pageSlug + '">' +
+                '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="20 6 9 17 4 12"></polyline></svg> Approve' +
+              '</button>' +
+              '<button class="btn btn-reject btn-sm" onclick="approveSubService(\'' + ss.pageSlug + '\',\'rejected\')" id="btn-reject-' + ss.pageSlug + '">' +
+                '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Reject' +
+              '</button>' +
+              (ss.status === 'approved'
+                ? '<button class="btn btn-deploy btn-sm" onclick="deploySubServicePage(\'' + ss.pageSlug + '\')">Deploy Page →</button>'
+                : '') +
+              '<button class="btn btn-sm" style="background:#f3f4f6;color:var(--text-muted);border:1px solid var(--border);" onclick="downloadPageHtml(\'' + ss.pageSlug + '\')">Download HTML</button>'
+            : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  });
+
+  panel.innerHTML = html;
+
+  // If a slug was deep-linked, scroll to it and auto-generate if no preview
+  if (highlightSlug) {
+    setTimeout(function() {
+      var card = document.getElementById('ss-card-' + highlightSlug);
+      if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      var ss = _ssData.find(function(s) { return s.pageSlug === highlightSlug; });
+      if (ss && !ss.generatedHtml) { generatePreview(highlightSlug); }
+    }, 300);
+  }
+}
+
+async function generatePreview(slug) {
+  var ss = _ssData.find(function(s) { return s.pageSlug === slug; });
+  if (!ss) return;
+
+  var btn = document.getElementById('btn-gen-' + slug);
+  var previewEl = document.getElementById('preview-' + slug);
+  var ctx = (document.getElementById('ctx-' + slug) || {}).value || '';
+
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></div>Generating…'; }
+
+  try {
+    var res = await fetch('/api/implementation/' + auditId + '/seo-audit/sub-services/' + slug + '/generate-page', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userContext: ctx, existingHtml: ss.generatedHtml || '' }),
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Generation failed');
+
+    // Update local cache
+    ss.generatedHtml  = data.html;
+    ss.pageTitle       = data.pageTitle;
+    ss.metaDescription = data.metaDescription;
+
+    // Update iframe
+    var wrap = document.getElementById('preview-wrap-' + slug);
+    if (wrap) {
+      wrap.innerHTML = '<iframe class="preview-iframe" id="preview-' + slug + '" srcdoc="' + escHtml(data.html) + '"></iframe>';
+    }
+
+    // Refresh card to show action buttons
+    _ssLoaded = false;
+    // Instead of full re-render, just add approve/reject buttons if not there
+    var actionRow = document.querySelector('#ss-card-' + slug + ' .ss-action-row');
+    if (actionRow) {
+      actionRow.innerHTML =
+        '<button class="btn btn-gen btn-sm" onclick="generatePreview(\'' + slug + '\')" id="btn-gen-' + slug + '">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>Regenerate Preview' +
+        '</button>' +
+        '<button class="btn btn-approve btn-sm" onclick="approveSubService(\'' + slug + '\',\'approved\')" id="btn-approve-' + slug + '">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="20 6 9 17 4 12"></polyline></svg> Approve' +
+        '</button>' +
+        '<button class="btn btn-reject btn-sm" onclick="approveSubService(\'' + slug + '\',\'rejected\')" id="btn-reject-' + slug + '">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Reject' +
+        '</button>' +
+        '<button class="btn btn-sm" style="background:#f3f4f6;color:var(--text-muted);border:1px solid var(--border);" onclick="downloadPageHtml(\'' + slug + '\')">Download HTML</button>';
+    }
+
+    toast('Preview generated!', 'success');
+  } catch (err) {
+    toast('Error: ' + err.message, 'error');
+  } finally {
+    var b = document.getElementById('btn-gen-' + slug);
+    if (b) { b.disabled = false; b.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>Regenerate Preview'; }
+  }
+}
+
+async function approveSubService(slug, status) {
+  var ss = _ssData.find(function(s) { return s.pageSlug === slug; });
+  if (!ss) return;
+
+  try {
+    var res = await fetch('/api/implementation/' + auditId + '/seo-audit/sub-services/' + slug + '/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: status,
+        html: ss.generatedHtml,
+        pageTitle: ss.pageTitle,
+        metaDescription: ss.metaDescription,
+        navigationParent: ss.serviceName,
+      }),
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    ss.status = status;
+    // Update card classes and badge
+    var card = document.getElementById('ss-card-' + slug);
+    if (card) {
+      card.className = 'ss-card ' + (status === 'approved' ? 'ss-approved' : status === 'rejected' ? 'ss-rejected' : '');
+    }
+    var badge = document.getElementById('ss-status-' + slug);
+    if (badge) {
+      badge.className = 'ss-status-badge ' + (status === 'approved' ? 'ss-status-approved' : status === 'rejected' ? 'ss-status-rejected' : 'ss-status-pending');
+      badge.textContent = status === 'approved' ? 'Approved' : status === 'rejected' ? 'Rejected' : 'Pending';
+    }
+    // Add deploy button if approved
+    if (status === 'approved') {
+      var actionRow = document.querySelector('#ss-card-' + slug + ' .ss-action-row');
+      if (actionRow && !document.getElementById('btn-deploy-' + slug)) {
+        var deployBtn = document.createElement('button');
+        deployBtn.id = 'btn-deploy-' + slug;
+        deployBtn.className = 'btn btn-deploy btn-sm';
+        deployBtn.textContent = 'Deploy Page →';
+        deployBtn.onclick = function() { deploySubServicePage(slug); };
+        actionRow.appendChild(deployBtn);
+      }
+    }
+    toast(status === 'approved' ? 'Sub-service page approved!' : 'Sub-service page rejected.', status === 'approved' ? 'success' : 'info');
+  } catch (err) {
+    toast('Error: ' + err.message, 'error');
+  }
+}
+
+async function deploySubServicePage(slug) {
+  var role = localStorage.getItem('user_role') || 'Admin';
+  if (role !== 'Admin') { toast('Permission Denied: Only Admins can deploy pages.', 'error'); return; }
+
+  var ss = _ssData.find(function(s) { return s.pageSlug === slug; });
+  if (!ss || !ss.generatedHtml) { toast('Generate and approve the preview before deploying.', 'error'); return; }
+
+  var targetPlatform = null;
+  var platforms = ['wordpress', 'shopify', 'webflow'];
+  for (var i = 0; i < platforms.length; i++) {
+    if (connectedIntegrations.some(function(c) { return c.platform === platforms[i]; })) {
+      targetPlatform = platforms[i]; break;
+    }
+  }
+
+  if (!targetPlatform) {
+    toast('No compatible integrations connected. Connect WordPress, Shopify, or Webflow first.', 'error');
+    return;
+  }
+
+  var btn = document.getElementById('btn-deploy-' + slug);
+  if (btn) { btn.disabled = true; btn.textContent = 'Deploying…'; }
+
+  try {
+    var activeBusinessId = getActiveBusinessId();
+    var res = await fetch('/api/deployment/queue', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-User-Role': role, 'X-Business-Id': activeBusinessId },
+      body: JSON.stringify({
+        auditId: auditId,
+        pluginId: 'seo-audit',
+        changeId: 'new-page-' + slug,
+        platform: targetPlatform,
+        assetType: 'new_page',
+        payload: { slug: slug, html: ss.generatedHtml, pageTitle: ss.pageTitle, metaDescription: ss.metaDescription, navigationParent: ss.serviceName },
+      }),
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    toast('Page deployment queued for ' + targetPlatform.toUpperCase() + '!', 'success');
+    if (btn) { btn.textContent = 'Queued ✓'; btn.style.background = 'var(--success)'; }
+  } catch (err) {
+    toast('Deploy failed: ' + err.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Deploy Page →'; }
+  }
+}
+
+function downloadPageHtml(slug) {
+  var ss = _ssData.find(function(s) { return s.pageSlug === slug; });
+  if (!ss || !ss.generatedHtml) { toast('Generate the preview first before downloading.', 'info'); return; }
+  var blob = new Blob([ss.generatedHtml], { type: 'text/html' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = slug + '.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast('Downloaded ' + slug + '.html', 'success');
+}
 </script>
 </body>
 </html>
+

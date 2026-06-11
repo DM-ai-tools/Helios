@@ -1,541 +1,893 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Generating Your Report · ClickTrends AI Audit</title>
   <meta name="description" content="Claude AI is generating your personalised audit report. Please wait." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #f97316;
+      --orange-dark: #ea6c0a;
+      --orange-glow: rgba(249,115,22,0.18);
+      --navy: #1a1a2e;
+      --navy-light: #16213e;
+      --bg: #faf9f6;
+      --white: #ffffff;
+      --border: rgba(0,0,0,0.07);
+      --text-muted: #6b7280;
+      --success: #22c55e;
     }
+
+    html { scroll-behavior: smooth; }
 
     body {
       font-family: 'Inter', sans-serif;
-      background: #faf9f6;
-      color: #1a1a2e;
-      -webkit-font-smoothing: antialiased;
+      background: var(--bg);
+      color: var(--navy);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow-x: hidden;
     }
 
-    /* ── Header ─────────────────────────────────────────── */
+    /* ── Animated background orbs ─────────────────────────────── */
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+      animation: orb-drift 18s ease-in-out infinite;
+    }
+    .bg-orb-1 { width: 520px; height: 520px; background: rgba(249,115,22,0.08); top: -120px; right: -100px; animation-delay: 0s; }
+    .bg-orb-2 { width: 400px; height: 400px; background: rgba(99,102,241,0.06); bottom: -80px; left: -80px; animation-delay: -9s; }
+    @keyframes orb-drift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(20px, -30px) scale(1.05); }
+      66% { transform: translate(-15px, 20px) scale(0.97); }
+    }
+
+    /* ── Header ────────────────────────────────────────────────── */
     header {
-      background: rgba(255, 255, 255, 0.92);
-      border-bottom: 1px solid rgba(0, 0, 0, 0.07);
-      backdrop-filter: blur(12px);
       position: sticky;
       top: 0;
       z-index: 50;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      background: rgba(250,249,246,0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
     }
-
     .header-inner {
       max-width: 1100px;
+      width: 100%;
       margin: 0 auto;
       padding: 0 28px;
-      height: 64px;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
+    .logo { font-weight: 800; font-size: 1.1rem; letter-spacing: -0.02em; color: var(--navy); text-decoration: none; }
+    .logo span { color: var(--orange); }
+    .logo em { font-style: normal; font-weight: 400; color: #9ca3af; font-size: 0.85rem; }
 
-    .logo {
-      font-size: 1.15rem;
-      font-weight: 800;
-      color: #1a1a2e;
-      text-decoration: none;
-      letter-spacing: -0.03em;
-    }
-
-    .logo .accent {
-      color: #f97316;
-    }
-
-    .logo .light {
-      font-weight: 400;
-      color: #9ca3af;
-      margin-left: 4px;
-      font-size: 0.88rem;
-    }
-
-    .status-pill {
+    .live-badge {
       display: flex;
       align-items: center;
-      gap: 8px;
-      background: #fff7ed;
-      border: 1px solid #fed7aa;
-      color: #ea580c;
-      padding: 5px 14px 5px 10px;
+      gap: 7px;
+      background: rgba(249,115,22,0.08);
+      border: 1px solid rgba(249,115,22,0.22);
+      color: var(--orange);
+      padding: 5px 14px;
       border-radius: 99px;
-      font-size: 0.76rem;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      transition: background .4s, color .4s, border-color .4s;
     }
-
+    .live-badge.done { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.3); color: #16a34a; }
     .live-dot {
-      width: 7px;
-      height: 7px;
-      background: #f97316;
+      width: 7px; height: 7px;
+      background: var(--orange);
       border-radius: 50%;
       animation: blink 1.2s infinite;
-    }
-
-    @keyframes blink {
-
-      0%,
-      100% {
-        opacity: 1;
-      }
-
-      50% {
-        opacity: 0.25;
-      }
-    }
-
-    /* ── Main ───────────────────────────────────────────── */
-    .main {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 48px 24px;
-    }
-
-    .card {
-      background: #ffffff;
-      border-radius: 24px;
-      padding: 56px 52px 48px;
-      max-width: 560px;
-      width: 100%;
-      box-shadow: 0 4px 32px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.04);
-      text-align: center;
-    }
-
-    /* Animated spinner */
-    .spinner-wrap {
-      width: 76px;
-      height: 76px;
-      background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 32px;
-      animation: pulse-ring 2.2s ease-in-out infinite;
-    }
-
-    @keyframes pulse-ring {
-
-      0%,
-      100% {
-        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.3);
-      }
-
-      50% {
-        box-shadow: 0 0 0 16px rgba(249, 115, 22, 0);
-      }
-    }
-
-    .spinner-icon {
-      width: 38px;
-      height: 38px;
-      border: 3.5px solid #fed7aa;
-      border-top-color: #f97316;
-      border-radius: 50%;
-      animation: spin 0.85s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    /* When complete, spinner turns green */
-    .spinner-wrap.done {
-      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-      animation: none;
-    }
-
-    .spinner-icon.done {
-      border-color: #bbf7d0;
-      border-top-color: #22c55e;
-      animation: none;
-    }
-
-    .eyebrow {
-      font-size: 0.68rem;
-      font-weight: 700;
-      color: #f97316;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 12px;
-    }
-
-    .card-title {
-      font-size: 1.8rem;
-      font-weight: 800;
-      color: #1a1a2e;
-      letter-spacing: -0.03em;
-      line-height: 1.2;
-      margin-bottom: 10px;
-    }
-
-    .card-title .highlight {
-      color: #f97316;
-    }
-
-    .card-sub {
-      font-size: 0.88rem;
-      color: #9ca3af;
-      line-height: 1.65;
-      margin-bottom: 40px;
-    }
-
-    /* ── Progress bar ────────────────────────────────────── */
-    .prog-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
-    .prog-label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #6b7280;
-      text-align: left;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 82%;
-    }
-
-    .prog-pct {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: #f97316;
       flex-shrink: 0;
-      transition: color 0.4s;
+      transition: background .4s;
     }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
 
+    .helios-badge {
+      display: flex; align-items: center; gap: 8px;
+      border-left: 1px solid #e5e7eb;
+      padding-left: 16px; margin-left: 16px;
+    }
+    .helios-name {
+      font-size: 13px; font-weight: 900; color: var(--orange);
+      letter-spacing: 0.06em; display: flex; align-items: center; gap: 5px;
+    }
+    .helios-sub { font-size: 11px; color: #6b7280; margin-top: 1px; }
+    .helios-sub strong { color: #1f2937; }
+
+    /* ── Progress bar ─────────────────────────────────────────── */
     .prog-track {
-      height: 10px;
-      background: #f3f4f6;
-      border-radius: 99px;
+      height: 3px;
+      background: rgba(0,0,0,0.05);
+      position: sticky;
+      top: 68px;
+      z-index: 40;
       overflow: hidden;
     }
-
     .prog-fill {
       height: 100%;
-      background: linear-gradient(90deg, #f97316 0%, #fb923c 60%, #fdba74 100%);
+      width: 0%;
+      background: linear-gradient(90deg, var(--orange) 0%, #fb923c 60%, #fde68a 100%);
+      box-shadow: 0 0 10px rgba(249,115,22,0.5);
+      transition: width 1s cubic-bezier(.4,0,.2,1);
+    }
+    .prog-fill.done {
+      background: linear-gradient(90deg, var(--success), #4ade80);
+      box-shadow: 0 0 10px rgba(34,197,94,0.5);
+    }
+
+    /* ── Main layout ───────────────────────────────────────────── */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 24px 80px;
+      position: relative;
+      z-index: 1;
+    }
+    .content-wrap { max-width: 860px; width: 100%; }
+
+    /* ── Hero section ──────────────────────────────────────────── */
+    .hero { text-align: center; margin-bottom: 40px; animation: fadeUp .5s ease both; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--orange); background: rgba(249,115,22,0.08); border: 1px solid rgba(249,115,22,0.2);
+      padding: 4px 12px; border-radius: 99px; margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 900; letter-spacing: -0.03em;
+      color: var(--navy); line-height: 1.15; margin-bottom: 12px;
+    }
+    .hero h1 .highlight { color: var(--orange); }
+    .hero-sub { font-size: 14px; color: var(--text-muted); line-height: 1.7; max-width: 440px; margin: 0 auto; }
+
+    /* ── Status card ───────────────────────────────────────────── */
+    .status-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 28px 22px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.06);
+      margin-bottom: 28px;
+      animation: fadeUp .5s .1s ease both;
+    }
+    .status-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .status-label { font-size: 13px; font-weight: 600; color: #374151; flex: 1; margin-right: 12px; }
+    .status-pct { font-size: 18px; font-weight: 900; color: var(--orange); min-width: 48px; text-align: right; transition: color .4s; }
+    .status-pct.done { color: var(--success); }
+
+    /* Mini progress bar inside card */
+    .mini-prog-track {
+      height: 8px; background: #f3f4f6; border-radius: 99px;
+      overflow: hidden; margin-bottom: 24px;
+    }
+    .mini-prog-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--orange), #fb923c);
       border-radius: 99px;
       width: 0%;
-      transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 0 12px rgba(249, 115, 22, 0.4);
+      transition: width 1s cubic-bezier(.4,0,.2,1);
+      box-shadow: 0 0 8px rgba(249,115,22,.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .mini-prog-fill::after {
+      content: '';
+      position: absolute; top: 0; left: -100%; bottom: 0;
+      width: 60%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: shimmer 1.8s infinite;
+    }
+    .mini-prog-fill.done { background: linear-gradient(90deg, var(--success), #4ade80); box-shadow: 0 0 8px rgba(34,197,94,.35); }
+    .mini-prog-fill.done::after { display: none; }
+    @keyframes shimmer { to { left: 150%; } }
+
+    /* Plugin steps */
+    .plugin-steps { display: flex; flex-direction: column; gap: 10px; }
+    .plugin-step {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; border-radius: 12px;
+      border: 1.5px solid #f3f4f6;
+      background: #fafafa;
+      transition: all .3s ease;
+      animation: fadeUp .35s ease both;
+    }
+    .plugin-step.running { border-color: rgba(249,115,22,.3); background: rgba(249,115,22,.04); }
+    .plugin-step.complete { border-color: rgba(34,197,94,.3); background: rgba(34,197,94,.04); }
+    .plugin-step.queued { opacity: .5; }
+
+    .step-icon-wrap {
+      width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; transition: background .3s;
+    }
+    .plugin-step.queued  .step-icon-wrap { background: #f3f4f6; }
+    .plugin-step.running .step-icon-wrap { background: rgba(249,115,22,.12); }
+    .plugin-step.complete .step-icon-wrap { background: rgba(34,197,94,.12); }
+
+    .step-info { flex: 1; }
+    .step-name { font-size: 12px; font-weight: 700; color: var(--navy); }
+    .step-status { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .plugin-step.running .step-status { color: var(--orange); font-weight: 600; }
+    .plugin-step.complete .step-status { color: #16a34a; font-weight: 600; }
+
+    .step-indicator { flex-shrink: 0; }
+    .step-spin {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2px solid rgba(249,115,22,.2);
+      border-top-color: var(--orange);
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .step-check {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--success); display: flex; align-items: center; justify-content: center;
+    }
+    .step-check svg { width: 10px; height: 10px; stroke: white; stroke-width: 3; }
+    .step-queue {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2px solid #e5e7eb;
     }
 
-    .prog-fill.done {
-      background: linear-gradient(90deg, #22c55e, #4ade80);
-      box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
-      transition: width 0.6s ease, background 0.4s ease, box-shadow 0.4s ease;
+    /* Completion button */
+    .completion-section { text-align: center; padding-top: 16px; margin-top: 4px; border-top: 1px dashed #e5e7eb; display: none; }
+    .btn-report {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+      color: white; font-weight: 800; font-size: 14px;
+      padding: 14px 32px; border-radius: 12px; text-decoration: none;
+      box-shadow: 0 4px 16px rgba(249,115,22,.35);
+      transition: all .2s; letter-spacing: -0.01em;
+    }
+    .btn-report:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(249,115,22,.45); }
+    .btn-report svg { width: 16px; height: 16px; }
+
+    .wait-note { font-size: 11px; color: #9ca3af; font-weight: 500; margin-top: 8px; }
+
+    /* ── URL Info strip ─────────────────────────────────────────── */
+    .url-strip {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--white); border: 1.5px solid var(--border);
+      border-radius: 14px; padding: 12px 18px;
+      margin-bottom: 28px;
+      animation: fadeUp .5s .15s ease both;
+      font-size: 12px; color: var(--text-muted);
+    }
+    .url-strip .domain-name { font-weight: 800; color: var(--navy); font-size: 13px; }
+    .url-sep { color: #e5e7eb; }
+    .industry-tag {
+      background: rgba(99,102,241,.08); border: 1px solid rgba(99,102,241,.2);
+      color: #4f46e5; font-weight: 700; font-size: 10px; text-transform: uppercase;
+      letter-spacing: .06em; padding: 2px 9px; border-radius: 99px;
+    }
+    .url-dot { width: 5px; height: 5px; background: #d1d5db; border-radius: 50%; }
+
+    /* ── Pre-score strip ─────────────────────────────────────────── */
+    .score-strip {
+      display: flex; align-items: center; gap: 20px;
+      background: linear-gradient(135deg, var(--navy) 0%, #16213e 100%);
+      border-radius: 20px; padding: 24px 28px; margin-bottom: 28px;
+      animation: fadeUp .5s .2s ease both; position: relative; overflow: hidden;
+    }
+    .score-strip::before {
+      content: '';
+      position: absolute; top: -40%; right: -10%;
+      width: 260px; height: 260px; border-radius: 50%;
+      background: rgba(249,115,22,0.12); filter: blur(60px);
+      pointer-events: none;
+    }
+    .score-ring-wrap { flex-shrink: 0; position: relative; }
+    .score-ring-wrap svg { display: block; }
+    .score-num {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 900; color: white;
+    }
+    .score-info { flex: 1; }
+    .score-eyebrow { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.45); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
+    .score-label { font-size: 17px; font-weight: 800; color: white; margin-bottom: 4px; }
+    .score-sub { font-size: 12px; color: rgba(255,255,255,.55); line-height: 1.5; }
+    .score-strip.hidden-strip { display: none; }
+
+    /* ── Insight cards grid ─────────────────────────────────────── */
+    .insights-section { animation: fadeUp .5s .25s ease both; }
+    .insights-title {
+      font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--text-muted); margin-bottom: 16px;
+    }
+    .insights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+    .insight-card {
+      background: var(--white); border: 1.5px solid var(--border);
+      border-radius: 16px; padding: 20px;
+      transition: box-shadow .2s, transform .2s;
+      animation: fadeUp .4s ease both;
+    }
+    .insight-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,.08); transform: translateY(-2px); }
+    .insight-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .insight-icon {
+      width: 34px; height: 34px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .insight-icon svg { width: 16px; height: 16px; }
+    .insight-card-title { font-size: 12px; font-weight: 800; color: var(--navy); }
+    .insight-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .insight-list li {
+      display: flex; gap: 8px; align-items: flex-start;
+      font-size: 12px; color: #374151; line-height: 1.5;
+    }
+    .insight-bullet { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+
+    /* ── Discoveries / findings ──────────────────────────────────── */
+    .findings-section { margin-bottom: 24px; animation: fadeUp .5s .3s ease both; }
+    .finding-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 11px 14px; border-radius: 12px;
+      margin-bottom: 8px; transition: transform .15s;
+    }
+    .finding-row:hover { transform: translateX(3px); }
+    .finding-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .finding-body { flex: 1; }
+    .finding-title { font-size: 12px; font-weight: 700; }
+    .finding-detail { font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+
+    /* ── Estimates strip ─────────────────────────────────────────── */
+    .estimates-card {
+      background: var(--white); border: 1.5px solid var(--border); border-radius: 16px;
+      padding: 20px 24px; margin-bottom: 20px;
+    }
+    .estimates-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 16px; }
+    .estimates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+    .estimate-item { display: flex; flex-direction: column; gap: 3px; }
+    .estimate-label { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+    .estimate-value { font-size: 18px; font-weight: 900; color: var(--navy); }
+    .estimates-note { font-size: 10px; color: #9ca3af; font-style: italic; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f3f4f6; text-align: center; }
+
+    /* ── Plugin meta map ─────────────────────────────────────────── */
+    .plugins-overview {
+      display: none;
+      margin-bottom: 28px;
     }
 
-    .bottom-note {
-      margin-top: 28px;
-      font-size: 0.74rem;
-      color: #d1d5db;
-      font-weight: 500;
+    /* ── Utilities ────────────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .hidden { display: none !important; }
+
+    @media (max-width: 600px) {
+      .score-strip { flex-direction: column; text-align: center; align-items: center; }
+      .estimates-grid { grid-template-columns: repeat(2, 1fr); }
+      .url-strip { flex-wrap: wrap; }
     }
   </style>
 </head>
-
 <body>
 
-  <!-- ── HEADER ───────────────────────────────────────────── -->
-  <header>
-    <div class="header-inner">
-      <a href="/" class="logo">Click<span class="accent">Trends</span><span class="light">AI Audit</span></a>
-      <div style="display: flex; align-items: center;">
-        <div class="status-pill">
-          <div class="live-dot" id="live-dot"></div>
-          <span id="header-status">Generating report…</span>
-        </div>
+<!-- Background orbs -->
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
 
-        <!-- HELIOS Branding -->
-        <div class="navbar-powered"
-          style="display: flex; align-items: center; border-left: 1px solid #d1d5db; padding-left: 12px; margin-left: 16px;">
-          <div style="display: flex; flex-direction: column; line-height: 1.1; font-family: 'Inter', sans-serif;">
-            <div
-              style="display: flex; align-items: center; gap: 4px; font-weight: 900; color: #f97316; font-size: 0.95rem; letter-spacing: 0.05em;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="5"></circle>
-                <line x1="12" y1="1" x2="12" y2="3"></line>
-                <line x1="12" y1="21" x2="12" y2="23"></line>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                <line x1="1" y1="12" x2="3" y2="12"></line>
-                <line x1="21" y1="12" x2="23" y2="12"></line>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-              </svg>
-              HELIOS
-            </div>
-            <div style="font-size: 0.75rem; color: #4b5563; font-weight: 500; margin-top: 2px;">
-              by <strong style="color: #111827;">Click Trends</strong>
-            </div>
+<!-- ─── HEADER ──────────────────────────────────────────────────── -->
+<header>
+  <div class="header-inner">
+    <a href="/" class="logo">Click<span>Trends</span> <em>AI Audit</em></a>
+    <div style="display:flex;align-items:center;gap:0">
+      <div class="live-badge" id="live-badge">
+        <div class="live-dot" id="live-dot"></div>
+        <span id="header-status">Scanning…</span>
+      </div>
+      <div class="helios-badge">
+        <div>
+          <div class="helios-name">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+            HELIOS
           </div>
+          <div class="helios-sub">by <strong>Click Trends</strong></div>
         </div>
       </div>
-    </div>
-  </header>
-
-  <!-- ── MAIN CARD ─────────────────────────────────────────── -->
-  <div class="main">
-    <div class="card">
-
-      <div class="spinner-wrap" id="spinner-wrap">
-        <div class="spinner-icon" id="spinner-icon"></div>
-      </div>
-
-      <div class="eyebrow">AI Analysis in Progress</div>
-      <h1 class="card-title">Analysing <span class="highlight" id="site-name">your website</span></h1>
-      <p class="card-sub" id="card-sub">
-        Claude AI is running your selected plugins and generating<br>
-        a personalised audit report. This takes 60 – 90 seconds.
-      </p>
-
-      <div class="prog-header">
-        <span class="prog-label" id="prog-label">Initialising pipeline…</span>
-        <span class="prog-pct" id="prog-pct">0%</span>
-      </div>
-      <div class="prog-track">
-        <div class="prog-fill" id="prog-fill"></div>
-      </div>
-
-      <p class="bottom-note">Don't close this tab — your report is being generated</p>
-
     </div>
   </div>
+</header>
 
-  <script>
-    // ── Read session & URL params ──────────────────────────────
-    const urlParams = new URLSearchParams(window.location.search);
-    const session = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
+<!-- Global progress bar -->
+<div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
 
-    // auditId: URL param takes priority (passed by plugin-select.html)
-    let auditId = urlParams.get('auditId') || session.auditId;
-    if (auditId === 'undefined') auditId = null;
+<!-- ─── MAIN ──────────────────────────────────────────────────────── -->
+<main>
+  <div class="content-wrap">
 
-    // Persist back to session
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-eyebrow">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        AI Analysis in Progress
+      </div>
+      <h1>Analysing <span class="highlight" id="site-name">your website</span></h1>
+      <p class="hero-sub" id="card-sub">Claude AI is running your selected plugins and crafting a personalised audit report. This takes 60–90 seconds.</p>
+    </div>
+
+    <!-- URL strip -->
+    <div class="url-strip" id="url-strip" style="display:none;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <span class="domain-name" id="url-domain">—</span>
+      <div class="url-dot"></div>
+      <span class="industry-tag" id="url-industry">General</span>
+      <div class="url-dot"></div>
+      <span id="url-pages-label" style="font-size:11px;color:#9ca3af"></span>
+    </div>
+
+    <!-- Status card with plugin steps -->
+    <div class="status-card">
+      <div class="status-header">
+        <div class="status-label" id="prog-label">Initialising pipeline…</div>
+        <div class="status-pct" id="prog-pct">0%</div>
+      </div>
+      <div class="mini-prog-track"><div class="mini-prog-fill" id="mini-prog-fill"></div></div>
+      <div class="plugin-steps" id="plugin-steps">
+        <!-- Populated by JS -->
+      </div>
+      <div class="completion-section" id="completion-action">
+        <a href="#" id="go-to-report-btn" class="btn-report">
+          View Your Report
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </a>
+        <p class="wait-note" id="bottom-note" style="margin-top:10px;">Don't close this tab — your report is being generated</p>
+      </div>
+    </div>
+
+    <!-- Pre-score strip (dark) -->
+    <div class="score-strip hidden-strip" id="score-strip">
+      <div class="score-ring-wrap">
+        <svg width="80" height="80" style="transform:rotate(-90deg)">
+          <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="7"/>
+          <circle id="pre-score-ring" cx="40" cy="40" r="34" fill="none"
+            stroke="#f97316" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="214" stroke-dashoffset="214"
+            style="transition:stroke-dashoffset 1.4s cubic-bezier(0.4,0,0.2,1),stroke 0.5s"/>
+        </svg>
+        <div class="score-num"><span id="pre-score-num">—</span></div>
+      </div>
+      <div class="score-info">
+        <div class="score-eyebrow">Preliminary Score</div>
+        <div class="score-label" id="pre-score-label">Analysing…</div>
+        <div class="score-sub" id="pre-score-sub">Based on initial web crawl data. Full analysis in progress.</div>
+      </div>
+    </div>
+
+    <!-- Findings / discoveries -->
+    <div class="findings-section hidden" id="findings-section">
+      <div class="insights-title">Key Findings from Web Crawl</div>
+      <div id="pre-discoveries"></div>
+    </div>
+
+    <!-- Performance estimates strip -->
+    <div class="estimates-card hidden" id="estimates-card">
+      <div class="estimates-title">Predicted Performance Estimates</div>
+      <div class="estimates-grid" id="estimates-grid"></div>
+      <div class="estimates-note">* Preliminary estimates from crawl data — may change after full AI analysis.</div>
+    </div>
+
+    <!-- Detailed insights grid -->
+    <div class="insights-section hidden" id="detailed-insights-section">
+      <div class="insights-title">Insights from Initial Scan</div>
+      <div class="insights-grid" id="detailed-insights-grid"></div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  // ── Read session & URL params ──────────────────────────────────
+  const urlParams = new URLSearchParams(window.location.search);
+  const session = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
+
+  let auditId = urlParams.get('auditId') || session.auditId;
+  if (auditId === 'undefined') auditId = null;
+  if (auditId) { session.auditId = auditId; sessionStorage.setItem('clicktrends_audit', JSON.stringify(session)); }
+
+  // ── Personalise with domain info ──────────────────────────────
+  const url      = session.url || '';
+  const domain   = url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] || 'your website';
+  const biz      = domain.split('.')[0];
+  const siteName = biz.charAt(0).toUpperCase() + biz.slice(1);
+
+  document.getElementById('site-name').textContent = siteName;
+  document.title = `Generating Report for ${siteName} · ClickTrends`;
+  document.getElementById('header-status').textContent = `Scanning ${domain}…`;
+
+  // URL strip
+  const industry = session.industry || 'General';
+  if (domain && domain !== 'your website') {
+    document.getElementById('url-strip').style.display = 'flex';
+    document.getElementById('url-domain').textContent = domain;
+    document.getElementById('url-industry').textContent = industry;
+    const pages = session.pages;
+    if (pages) document.getElementById('url-pages-label').textContent = pages + ' pages crawled';
+  }
+
+  // ── Plugin step definitions ────────────────────────────────────
+  const PLUGIN_META = {
+    'seo-audit':         { name: 'SEO Audit',                emoji: '🔍', desc: 'Technical, on-page & keyword analysis' },
+    'competitive-brief': { name: 'Competitive Intelligence', emoji: '📊', desc: 'Competitor gap & positioning analysis' },
+    'campaign-plan':     { name: 'Campaign Plan',            emoji: '🎯', desc: 'Strategic campaign recommendations' },
+    'content-copy':      { name: 'Content & Copy',           emoji: '✍️', desc: 'Messaging, tone & content strategy' },
+    'email-sequence':    { name: 'Email Sequence',           emoji: '📧', desc: 'Automated email flow recommendations' },
+    'brand-review':      { name: 'Brand Review',             emoji: '🎨', desc: 'Visual identity & brand consistency' },
+  };
+  const DEFAULT_PLUGINS = ['seo-audit', 'competitive-brief', 'campaign-plan', 'content-copy', 'email-sequence', 'brand-review'];
+
+  // Build plugin steps UI
+  function buildPluginSteps() {
+    const plugins = (session.selectedPlugins || DEFAULT_PLUGINS).filter(p => PLUGIN_META[p]);
+    const container = document.getElementById('plugin-steps');
+    container.innerHTML = '';
+    plugins.forEach((pid, idx) => {
+      const m = PLUGIN_META[pid];
+      const el = document.createElement('div');
+      el.className = 'plugin-step queued';
+      el.id = 'step-' + pid;
+      el.style.animationDelay = (idx * 0.05) + 's';
+      el.innerHTML = `
+        <div class="step-icon-wrap"><span style="font-size:16px">${m.emoji}</span></div>
+        <div class="step-info">
+          <div class="step-name">${m.name}</div>
+          <div class="step-status" id="step-status-${pid}">Queued</div>
+        </div>
+        <div class="step-indicator" id="step-ind-${pid}"><div class="step-queue"></div></div>
+      `;
+      container.appendChild(el);
+    });
+  }
+
+  function setPluginRunning(pid) {
+    const el = document.getElementById('step-' + pid);
+    const st = document.getElementById('step-status-' + pid);
+    const ind = document.getElementById('step-ind-' + pid);
+    if (!el) return;
+    el.className = 'plugin-step running';
+    if (st) st.textContent = 'Running…';
+    if (ind) ind.innerHTML = '<div class="step-spin"></div>';
+  }
+
+  function setPluginComplete(pid) {
+    const el = document.getElementById('step-' + pid);
+    const st = document.getElementById('step-status-' + pid);
+    const ind = document.getElementById('step-ind-' + pid);
+    if (!el) return;
+    el.className = 'plugin-step complete';
+    if (st) st.textContent = 'Complete';
+    if (ind) ind.innerHTML = '<div class="step-check"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></div>';
+  }
+
+  buildPluginSteps();
+
+  // ── Populate initial scan insights ────────────────────────────
+  const preScore = session.preScore;
+  if (preScore != null) {
+    // Score ring
+    const scoreStrip = document.getElementById('score-strip');
+    scoreStrip.classList.remove('hidden-strip');
+    setTimeout(() => {
+      const circ = 2 * Math.PI * 34;
+      const offset = circ - (preScore / 100) * circ;
+      const ring = document.getElementById('pre-score-ring');
+      ring.style.strokeDasharray  = circ;
+      ring.style.strokeDashoffset = offset;
+      ring.style.stroke = preScore >= 75 ? '#22c55e' : preScore >= 55 ? '#f59e0b' : '#ef4444';
+      document.getElementById('pre-score-num').textContent  = preScore;
+      document.getElementById('pre-score-label').textContent = preScore >= 75 ? 'Solid foundation' : preScore >= 55 ? 'Several issues detected' : 'Needs significant attention';
+      document.getElementById('pre-score-sub').textContent = preScore >= 75
+        ? 'Great starting point. Claude AI will surface targeted optimisations.'
+        : preScore >= 55
+        ? 'A number of improvements are available. Deep analysis in progress.'
+        : 'Critical issues detected. Detailed recommendations being generated.';
+    }, 400);
+
+    // Discoveries / findings
+    const disc = (session.discoveries || []).slice(0, 5);
+    const SEV = {
+      critical:    { bg: '#fef2f2', dot: '#ef4444', text: '#dc2626' },
+      warning:     { bg: '#fffbeb', dot: '#f59e0b', text: '#d97706' },
+      opportunity: { bg: '#f0fdf4', dot: '#22c55e', text: '#16a34a' },
+    };
+    if (disc.length > 0) {
+      document.getElementById('findings-section').classList.remove('hidden');
+      const discEl = document.getElementById('pre-discoveries');
+      disc.forEach((d, idx) => {
+        const s = SEV[d.severity] || { bg: '#f9fafb', dot: '#9ca3af', text: '#374151' };
+        const row = document.createElement('div');
+        row.className = 'finding-row';
+        row.style.cssText = `background:${s.bg}; animation-delay:${idx * 0.07}s`;
+        row.innerHTML = `
+          <div class="finding-dot" style="background:${s.dot}"></div>
+          <div class="finding-body">
+            <div class="finding-title" style="color:${s.text}">${d.title || ''}</div>
+            ${d.detail ? `<div class="finding-detail">${d.detail}</div>` : ''}
+          </div>`;
+        discEl.appendChild(row);
+      });
+    } else if (session.insight) {
+      document.getElementById('findings-section').classList.remove('hidden');
+      document.getElementById('pre-discoveries').innerHTML = `<div class="finding-row" style="background:#f0f9ff"><div class="finding-dot" style="background:#3b82f6"></div><div class="finding-body"><div class="finding-title" style="color:#1d4ed8">${session.insight}</div></div></div>`;
+    }
+
+    // Performance estimates
+    if (session.predictedEstimates && Object.keys(session.predictedEstimates).length > 0) {
+      const est = session.predictedEstimates;
+      const fields = [
+        { key: 'seoReadiness',       label: 'SEO Readiness' },
+        { key: 'contentQuality',     label: 'Content Quality' },
+        { key: 'technicalHealth',    label: 'Technical Health' },
+        { key: 'conversionReadiness',label: 'Conversion' },
+        { key: 'brandConsistency',   label: 'Brand Score' },
+      ];
+      const hasAny = fields.some(f => est[f.key]);
+      if (hasAny) {
+        document.getElementById('estimates-card').classList.remove('hidden');
+        document.getElementById('estimates-grid').innerHTML = fields
+          .filter(f => est[f.key])
+          .map(f => `<div class="estimate-item"><div class="estimate-label">${f.label}</div><div class="estimate-value">${est[f.key]}</div></div>`)
+          .join('');
+      }
+    }
+
+    // Detailed insights grid
+    const categories = [
+      { key: 'businessInsights',  title: 'Business Insights',    color: '#f97316', bg: 'rgba(249,115,22,.08)',  icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
+      { key: 'seoInsights',       title: 'SEO Insights',         color: '#3b82f6', bg: 'rgba(59,130,246,.08)',  icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
+      { key: 'contentInsights',   title: 'Content Insights',     color: '#8b5cf6', bg: 'rgba(139,92,246,.08)',  icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
+      { key: 'conversionInsights',title: 'Conversion Insights',  color: '#10b981', bg: 'rgba(16,185,129,.08)', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+      { key: 'technicalInsights', title: 'Technical Insights',   color: '#64748b', bg: 'rgba(100,116,139,.08)', icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4' },
+      { key: 'topOpportunities',  title: 'Top Opportunities',    color: '#f59e0b', bg: 'rgba(245,158,11,.08)',  icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' },
+    ];
+
+    let gridHTML = '';
+    let hasInsights = false;
+    categories.forEach((cat, ci) => {
+      const items = session[cat.key];
+      if (items && items.length > 0) {
+        hasInsights = true;
+        gridHTML += `
+          <div class="insight-card" style="animation-delay:${ci * 0.07}s">
+            <div class="insight-card-header">
+              <div class="insight-icon" style="background:${cat.bg}">
+                <svg fill="none" stroke="${cat.color}" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${cat.icon}"></path></svg>
+              </div>
+              <div class="insight-card-title">${cat.title}</div>
+            </div>
+            <ul class="insight-list">
+              ${items.slice(0, 4).map(item => `<li><div class="insight-bullet" style="background:${cat.color}"></div><span>${item}</span></li>`).join('')}
+            </ul>
+          </div>`;
+      }
+    });
+
+    if (hasInsights) {
+      document.getElementById('detailed-insights-section').classList.remove('hidden');
+      document.getElementById('detailed-insights-grid').innerHTML = gridHTML;
+    }
+  }
+
+  // ── Progress state ─────────────────────────────────────────────
+  let displayedPct = 0;
+  let tickTimer    = null;
+  let tickCeiling  = 45;
+
+  function setProgress(pct, msg) {
+    const next = Math.min(Math.max(Math.round(pct), displayedPct), 99);
+    if (next > displayedPct) {
+      displayedPct = next;
+      document.getElementById('prog-fill').style.width      = next + '%';
+      document.getElementById('mini-prog-fill').style.width = next + '%';
+      document.getElementById('prog-pct').textContent       = next + '%';
+    }
+    if (msg) document.getElementById('prog-label').textContent = msg;
+  }
+
+  function raiseCeiling(upTo) { tickCeiling = Math.max(tickCeiling, Math.min(upTo, 97)); }
+
+  function startTicker() {
+    if (tickTimer) return;
+    tickTimer = setInterval(() => {
+      if (displayedPct < tickCeiling) setProgress(displayedPct + 0.4, null);
+    }, 600);
+  }
+
+  function stopTicker() { if (tickTimer) { clearInterval(tickTimer); tickTimer = null; } }
+
+  // ── Completion ──────────────────────────────────────────────────
+  function onComplete(dest) {
+    stopTicker();
+    displayedPct = 100;
+    ['prog-fill', 'mini-prog-fill'].forEach(id => {
+      const el = document.getElementById(id);
+      el.style.width = '100%';
+      el.classList.add('done');
+    });
+    document.getElementById('prog-pct').textContent = '100%';
+    document.getElementById('prog-pct').classList.add('done');
+    document.getElementById('prog-label').textContent = '✓ Report generation complete';
+    document.getElementById('card-sub').textContent = 'Your AI audit report is complete and ready to view.';
+
+    const badge = document.getElementById('live-badge');
+    badge.classList.add('done');
+    document.getElementById('live-dot').style.background = 'var(--success)';
+    document.getElementById('header-status').textContent = 'Report ready!';
+
+    document.getElementById('bottom-note').classList.add('hidden');
+    const completionEl = document.getElementById('completion-action');
+    completionEl.style.display = 'block';
+    document.getElementById('go-to-report-btn').href = dest || ('report.html?auditId=' + auditId);
+
+    // Mark all plugins complete
+    (session.selectedPlugins || DEFAULT_PLUGINS).forEach(pid => {
+      if (PLUGIN_META[pid]) setPluginComplete(pid);
+    });
+  }
+
+  // ── SSE listener ───────────────────────────────────────────────
+  let reconnects = 0;
+  let lastErrMsg = '';
+
+  function showError(msg, fatal) {
+    const label = document.getElementById('prog-label');
+    label.innerHTML = `<span style="color:#ef4444;font-weight:700;">⚠ ${msg}</span>`;
+    if (fatal) {
+      stopTicker();
+      // Show a retry button
+      const completionEl = document.getElementById('completion-action');
+      completionEl.style.display = 'block';
+      const btn = document.getElementById('go-to-report-btn');
+      btn.textContent = '↻ Retry';
+      btn.style.background = '#6b7280';
+      btn.href = 'plugin-scanning.html?auditId=' + auditId + '&from=select';
+    }
+  }
+
+  function listenSSE() {
+    const sse = new EventSource('/api/audit/' + auditId + '/status');
+    let connected = false;
+
+    sse.onmessage = function (e) {
+      // Ignore SSE comment heartbeats (lines starting with ':')
+      if (!e.data || e.data.trim() === '') return;
+      try {
+        const ev = JSON.parse(e.data);
+        connected = true;
+        reconnects = 0; // reset on successful message
+
+        if (typeof ev.progress === 'number') {
+          raiseCeiling(ev.progress + 8);
+          setProgress(ev.progress, ev.message || null);
+        } else if (ev.message && ev.type !== 'error') {
+          document.getElementById('prog-label').textContent = ev.message;
+        }
+
+        if (ev.type === 'plugin-running' && ev.pluginId) {
+          const m = PLUGIN_META[ev.pluginId];
+          const name = m ? m.name : ev.pluginId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          document.getElementById('prog-label').textContent = '⚙ Running ' + name + '…';
+          setPluginRunning(ev.pluginId);
+        }
+        if (ev.type === 'plugin-complete' && ev.pluginId) {
+          raiseCeiling(displayedPct + 6);
+          setPluginComplete(ev.pluginId);
+        }
+        if (ev.type === 'complete') {
+          sse.close();
+          onComplete(ev.reportUrl || ('report.html?auditId=' + (ev.auditId || auditId)));
+        }
+        if (ev.type === 'error') {
+          sse.close(); stopTicker();
+          showError(ev.message || 'Analysis failed. Please try again.', true);
+        }
+      } catch (_) { }
+    };
+
+    sse.onerror = function () {
+      sse.close();
+      reconnects++;
+      // If we've never got a message from this attempt, the server may not be
+      // ready yet — back off gently rather than hammering it.
+      const delay = connected
+        ? Math.min(reconnects * 2000, 12000)   // progressive back-off after a live connection drops
+        : Math.min(reconnects * 3000, 15000);  // slower if we never connected (server may still be starting)
+
+      if (reconnects <= 8) {
+        document.getElementById('prog-label').textContent =
+          reconnects <= 2 ? 'Connecting to audit stream…' : `Reconnecting (attempt ${reconnects})…`;
+        setTimeout(listenSSE, delay);
+      } else {
+        showError('Connection lost after multiple retries — please refresh.', true);
+      }
+    };
+  }
+
+  // ── Boot ────────────────────────────────────────────────────────
+  async function boot() {
     if (auditId) {
+      try {
+        const res  = await fetch('/api/audit/' + auditId);
+        const data = res.ok ? await res.json() : null;
+        const fromSelect = urlParams.get('from') === 'select';
+        if (data && data.status === 'complete' && !fromSelect) {
+          onComplete('report.html?auditId=' + auditId);
+          return;
+        }
+      } catch (_) { }
+      setProgress(10, 'Claude AI modules are running…');
+      raiseCeiling(48); startTicker(); listenSSE();
+      return;
+    }
+
+    if (!session.url) { window.location.replace('/'); return; }
+
+    setProgress(5, 'Setting up your audit…');
+    raiseCeiling(20); startTicker();
+
+    try {
+      const initRes  = await fetch('/api/audit/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: session.url, industry: session.industry || 'General', email: session.email }),
+      });
+      const initData = await initRes.json();
+      if (initData.error) throw new Error(initData.error);
+
+      auditId = initData.auditId;
       session.auditId = auditId;
       sessionStorage.setItem('clicktrends_audit', JSON.stringify(session));
-    }
+      history.replaceState(null, '', 'plugin-scanning.html?auditId=' + auditId);
 
-    // Personalise header/title with domain name
-    const url = session.url || '';
-    const domain = url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] || 'your website';
-    const biz = domain.split('.')[0];
-    const siteName = biz.charAt(0).toUpperCase() + biz.slice(1);
+      setProgress(15, 'Starting AI analysis…');
+      raiseCeiling(48);
 
-    document.getElementById('site-name').textContent = siteName;
-    document.title = `Generating Report for ${siteName} · ClickTrends`;
-    document.getElementById('header-status').textContent = `Scanning ${domain}…`;
+      const plugins = session.selectedPlugins || [];
+      await fetch('/api/audit/' + auditId + '/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: session.email, selectedPlugins: plugins }),
+      });
 
-    // ── Progress state — single high-water mark ────────────────
-    // The bar NEVER moves backwards. All updates go through setProgress().
-    let displayedPct = 0;
-    let tickTimer = null;
-    let tickCeiling = 45;   // ticker won't go past this until raised by real events
-
-    function setProgress(pct, msg) {
-      // Enforce high-water mark: never go below what's already shown
-      const next = Math.min(Math.max(Math.round(pct), displayedPct), 99);
-      if (next > displayedPct) {
-        displayedPct = next;
-        document.getElementById('prog-fill').style.width = next + '%';
-        document.getElementById('prog-pct').textContent = next + '%';
-      }
-      if (msg) document.getElementById('prog-label').textContent = msg;
-    }
-
-    // Raise the ceiling so ticker can advance a little past current position
-    function raiseCeiling(upTo) {
-      tickCeiling = Math.max(tickCeiling, Math.min(upTo, 97));
-    }
-
-    function startTicker() {
-      if (tickTimer) return;
-      tickTimer = setInterval(() => {
-        if (displayedPct < tickCeiling) {
-          setProgress(displayedPct + 0.4, null);
-        }
-      }, 600);
-    }
-
-    function stopTicker() {
-      if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
-    }
-
-    // ── Completion ────────────────────────────────────────────
-    function onComplete(dest) {
+      setProgress(22, 'Claude is generating your report…');
+      listenSSE();
+    } catch (err) {
+      console.error('[plugin-scan] Boot failed:', err);
+      document.getElementById('prog-label').textContent = 'Something went wrong — please refresh.';
       stopTicker();
-      displayedPct = 100;
-      document.getElementById('prog-fill').style.width = '100%';
-      document.getElementById('prog-pct').textContent = '100%';
-      document.getElementById('prog-label').textContent = '✓ Report ready — opening now…';
-      document.getElementById('prog-fill').classList.add('done');
-      document.getElementById('prog-pct').style.color = '#22c55e';
-      document.getElementById('spinner-wrap').classList.add('done');
-      document.getElementById('spinner-icon').classList.add('done');
-      document.getElementById('card-sub').textContent = 'Your AI audit report is complete and ready to view.';
-      document.getElementById('header-status').textContent = 'Report ready!';
-      document.getElementById('live-dot').style.background = '#22c55e';
-      setTimeout(() => {
-        window.location.href = dest || ('report.html?auditId=' + auditId);
-      }, 1800);
     }
+  }
 
-    // ── SSE listener ─────────────────────────────────────────
-    let reconnects = 0;
-    function listenSSE() {
-      const sse = new EventSource('/api/audit/' + auditId + '/status');
-
-      sse.onmessage = function (e) {
-        try {
-          const ev = JSON.parse(e.data);
-
-          // Real progress from backend — high-water mark enforced inside setProgress()
-          if (typeof ev.progress === 'number') {
-            raiseCeiling(ev.progress + 8);   // let ticker advance a bit past this milestone
-            setProgress(ev.progress, ev.message || null);
-          } else if (ev.message) {
-            document.getElementById('prog-label').textContent = ev.message;
-          }
-
-          // Plugin step labels
-          if (ev.type === 'plugin-running' && ev.pluginId) {
-            const name = ev.pluginId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            document.getElementById('prog-label').textContent = '⚙ Running ' + name + '…';
-          }
-          if (ev.type === 'plugin-complete') {
-            raiseCeiling(displayedPct + 6);  // nudge ceiling up after each plugin finishes
-          }
-
-          // Done
-          if (ev.type === 'complete') {
-            sse.close();
-            onComplete(ev.reportUrl || ('report.html?auditId=' + (ev.auditId || auditId)));
-          }
-
-          // Error from backend
-          if (ev.type === 'error') {
-            sse.close();
-            stopTicker();
-            document.getElementById('prog-label').innerHTML = `<span style="color:#ef4444; font-weight:700;">⚠ ${ev.message || 'Analysis failed. Please try again.'}</span>`;
-            document.getElementById('spinner-wrap').style.animation = 'none';
-            document.getElementById('spinner-icon').style.borderColor = '#fca5a5';
-            document.getElementById('spinner-icon').style.borderTopColor = '#ef4444';
-            document.getElementById('spinner-icon').style.animation = 'none';
-          }
-        } catch (_) { }
-      };
-
-      sse.onerror = function () {
-        sse.close();
-        reconnects++;
-        if (reconnects <= 10) {
-          setTimeout(listenSSE, Math.min(reconnects * 2000, 10000));
-        } else {
-          document.getElementById('prog-label').textContent = 'Connection lost — please refresh.';
-          stopTicker();
-        }
-      };
-    }
-
-    // ── Boot ─────────────────────────────────────────────────
-    async function boot() {
-      // Case A: auditId already exists (normal flow from plugin-select.html)
-      if (auditId) {
-        try {
-          const res = await fetch('/api/audit/' + auditId);
-          const data = res.ok ? await res.json() : null;
-
-          // Only skip to report if truly complete AND we didn't just arrive from
-          // plugin-select.html (which means a new run was just triggered)
-          const fromSelect = urlParams.get('from') === 'select';
-          if (data && data.status === 'complete' && !fromSelect) {
-            window.location.replace('report.html?auditId=' + auditId);
-            return;
-          }
-        } catch (_) { }
-        setProgress(10, 'Claude AI modules are running…');
-        raiseCeiling(48);
-        startTicker();
-        listenSSE();
-        return;
-      }
-
-
-      // Case B: no auditId — recover from session
-      if (!session.url) {
-        window.location.replace('/');
-        return;
-      }
-
-      setProgress(5, 'Setting up your audit…');
-      raiseCeiling(20);
-      startTicker();
-
-      try {
-        const initRes = await fetch('/api/audit/init', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: session.url, industry: session.industry || 'General', email: session.email }),
-        });
-        const initData = await initRes.json();
-        if (initData.error) throw new Error(initData.error);
-
-        auditId = initData.auditId;
-        session.auditId = auditId;
-        sessionStorage.setItem('clicktrends_audit', JSON.stringify(session));
-        history.replaceState(null, '', 'plugin-scanning.html?auditId=' + auditId);
-
-        setProgress(15, 'Starting AI analysis…');
-        raiseCeiling(48);
-
-        const plugins = session.selectedPlugins || [];
-        await fetch('/api/audit/' + auditId + '/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: session.email, selectedPlugins: plugins }),
-        });
-
-        setProgress(22, 'Claude is generating your report…');
-        listenSSE();
-
-      } catch (err) {
-        console.error('[plugin-scan] Recovery failed:', err);
-        document.getElementById('prog-label').textContent = 'Something went wrong — please refresh.';
-        stopTicker();
-      }
-    }
-
-    boot();
-
-
-
-  </script>
+  boot();
+</script>
 </body>
-
 </html>

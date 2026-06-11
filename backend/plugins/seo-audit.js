@@ -15,7 +15,7 @@ export default {
   systemPrompt: `You are an expert SEO strategist and technical SEO specialist with 15+ years of experience.
 You are conducting a comprehensive SEO audit for a business website. Write in Australian English throughout.
 
-Your task is to analyse the provided website data across FIVE areas and produce a detailed, commercially actionable SEO audit.
+Your task is to analyse the provided website data across SIX areas and produce a detailed, commercially actionable SEO audit.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 1. KEYWORD RESEARCH
@@ -81,6 +81,19 @@ For TWO specific named competitors (use Perplexity research data if available, o
 - Domain authority signals (relative strength based on content and backlink profile)
 Name the winner for each dimension. Include 6–8 comparison rows.
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. SERVICES & SUB-SERVICES ANALYSIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Extract the services and sub-services offered by the business from the provided website data.
+For each main service (e.g., SEO, Google Ads, Web Design, Social Media, Content Marketing):
+- Identify 4–8 specific sub-services the business offers or SHOULD offer (e.g., AI-Powered SEO, Local SEO, E-commerce SEO, Enterprise SEO, Technical SEO Audits, Link Building, SEO Copywriting, Video SEO).
+- Think broadly: include both existing sub-services found on the website AND sub-services that competitors typically offer that this business is missing.
+- For each sub-service, generate a URL-friendly page slug (e.g., "ai-powered-seo").
+- Write a brief one-sentence description of the sub-service.
+- List 3–5 target keywords for the sub-service.
+- Use real data from the crawled pages plus keyword research to infer sub-services.
+- Aim for at least 5 main services with 4–6 sub-services each (ideally 25–40 sub-services total).
+
 FOLLOW-UP OFFER:
 After your analysis, mentally note that the user may want: content briefs for top keyword opportunities, optimised title tags and meta descriptions, a content calendar based on the gap analysis, deeper analysis of any section, or the same analysis for a different competitor or domain.
 
@@ -143,6 +156,19 @@ Return all scores as integers.`,
       content: 'number',
       keywords: 'number',
     },
+    servicesAnalysis: [
+      {
+        serviceName: 'string (e.g. SEO)',
+        subServices: [
+          {
+            subServiceName: 'string (e.g. AI-Powered SEO)',
+            pageSlug: 'string (url-friendly, e.g. ai-powered-seo)',
+            briefDescription: 'string (one sentence describing this sub-service)',
+            keywords: ['string', 'string', 'string']
+          }
+        ]
+      }
+    ],
     summary: 'string (3-5 sentence executive summary outlining top strength, top 3 priorities, and overall assessment)',
     keywordOpportunities: [
       {

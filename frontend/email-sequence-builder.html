@@ -887,7 +887,13 @@ function renderDetailsPanel(em, idx) {
     '<label class="edit-field-label" for="edit-url-' + idx + '">CTA URL</label>' +
     '<input type="text" class="edit-field" id="edit-url-' + idx + '" value="' + escAttr(pendEdit.ctaUrl != null ? pendEdit.ctaUrl : ctaUrlVal) + '" oninput="stagePendingEdit(' + idx + ')" placeholder="https://…" style="min-height:auto;resize:none">' +
 
-    '<button class="btn btn-save-edit" onclick="saveEdit(' + idx + ')">💾 Save &amp; Update Preview</button>';
+    '<button class="btn btn-save-edit" onclick="saveEdit(' + idx + ')">💾 Save &amp; Update Preview</button>' +
+    
+    '<hr class="section-divider">' +
+    '<div class="section-title">✨ Regenerate with AI</div>' +
+    '<label class="edit-field-label" for="regen-prompt-' + idx + '">Prompt Claude to rewrite</label>' +
+    '<textarea class="edit-field" id="regen-prompt-' + idx + '" rows="3" placeholder="E.g., Make it more casual, or focus on pricing..." style="margin-bottom:8px"></textarea>' +
+    '<button class="btn btn-save-edit" id="btn-regen-' + idx + '" onclick="regenerateEmail(' + idx + ')" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); box-shadow: 0 2px 10px rgba(139,92,246,0.3);">✨ Regenerate Email</button>';
 }
 
 function escAttr(s) {
@@ -932,6 +938,59 @@ function saveEdit(idx) {
   selectEmail(idx);  // re-render preview with updates
   renderEmailList();
   toast('✓ Email updated!', 'success');
+}
+
+async function regenerateEmail(idx) {
+  var promptEl = document.getElementById('regen-prompt-' + idx);
+  var btnEl = document.getElementById('btn-regen-' + idx);
+  var prompt = promptEl ? promptEl.value.trim() : '';
+  
+  if (!prompt) {
+    toast('Please enter instructions for Claude', 'error');
+    return;
+  }
+  
+  btnEl.disabled = true;
+  btnEl.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:8px;border-top-color:#fff"></span> Regenerating...';
+  
+  try {
+    var em = emails[idx];
+    var res = await fetch('/api/audit/' + auditId + '/regenerate-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        emailIndex: idx, 
+        emailData: em,
+        prompt: prompt 
+      })
+    });
+    
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to regenerate email');
+    
+    // Update email with new generated content
+    em.userSubject = data.subject || em.userSubject;
+    em.userPreviewText = data.previewText || em.userPreviewText;
+    em.bodyCopy = data.bodyCopy || em.bodyCopy;
+    em.userCtaText = data.ctaText || em.userCtaText;
+    em.userCtaUrl = data.ctaUrl || em.userCtaUrl;
+    
+    // Clear userHtml so it forces a re-render from the new bodyCopy
+    em.userHtml = null; 
+    
+    // Clear the pending edits and prompt
+    if (editPending[idx]) editPending[idx] = {};
+    if (promptEl) promptEl.value = '';
+    
+    selectEmail(idx);
+    renderEmailList();
+    toast('✨ Email regenerated successfully!', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    btnEl.disabled = false;
+    btnEl.innerHTML = '✨ Regenerate Email';
+  }
 }
 
 // ── Email approval ────────────────────────────────────────────

@@ -31,6 +31,7 @@ import integrationsRouter from './routes/integrations.js';
 import deploymentRouter from './routes/deployment.js';
 import { initDatabase } from './db/dbInit.js';
 import redisClient from './services/redisClient.js';
+import { deploymentWorker } from './services/deploymentWorker.js'; // Start background worker
 import { generateReportPDF } from './services/puppeteerService.js';
 import fs from 'fs';
 
@@ -163,7 +164,7 @@ app.get('*', (req, res) => {
 // ─── Initialize DB and Start Server ───────────────────────────
 (async () => {
   await initDatabase();
-  app.listen(PORT, '0.0.0.0', () => {
+  app.listen(PORT, () => {
     console.log(`
 ╔═══════════════════════════════════════════╗
 ║   ClickTrends AI Audit Server             ║
@@ -179,3 +180,4 @@ app.get('*', (req, res) => {
 })();
 
 export default app;
+// Manual restart trigger

@@ -11,7 +11,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.0",
     "@sparticuz/chromium": "^131.0.0",
-    "cheerio": "^1.0.0",
+    "axios": "^1.17.0",
+    "bullmq": "^5.78.0",
+    "cheerio": "^1.2.0",
     "cors": "^2.8.5",
     "docx": "^8.5.0",
     "dotenv": "^17.4.2",
@@ -35,4 +37,3 @@
     "node": ">=18.0.0"
   }
 }
-

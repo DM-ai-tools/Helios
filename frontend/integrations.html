@@ -1069,11 +1069,15 @@
       const activeBusinessId = getActiveBusinessId();
 
       let accountName = `Main ${plat.name} Account`;
-      if (metadataObj.domain) accountName = `${plat.name} (${metadataObj.domain})`;
-      else if (metadataObj.storeName) accountName = `${plat.name} (${metadataObj.storeName})`;
-      else if (metadataObj.organization) accountName = `${plat.name} (Org: ${metadataObj.organization})`;
-      else if (metadataObj.pageName) accountName = `${plat.name} (Page: ${metadataObj.pageName})`;
-      else if (metadataObj.username) accountName = `${plat.name} (@${metadataObj.username})`;
+      if (platform === 'wordpress') {
+        accountName = metadataObj.domain;
+      } else {
+        if (metadataObj.domain) accountName = `${plat.name} (${metadataObj.domain})`;
+        else if (metadataObj.storeName) accountName = `${plat.name} (${metadataObj.storeName})`;
+        else if (metadataObj.organization) accountName = `${plat.name} (Org: ${metadataObj.organization})`;
+        else if (metadataObj.pageName) accountName = `${plat.name} (Page: ${metadataObj.pageName})`;
+        else if (metadataObj.username) accountName = `${plat.name} (@${metadataObj.username})`;
+      }
       
       try {
         const res = await fetch('/api/integrations/connect', {
@@ -1086,7 +1090,7 @@
           body: JSON.stringify({
             platform,
             accountName,
-            accountId: `acc_${Math.random().toString(36).substring(2, 9)}`,
+            accountId: metadataObj.username || `acc_${Math.random().toString(36).substring(2, 9)}`,
             accessToken: bodyAccessToken || `access_${Math.random().toString(36).substring(2, 15)}`,
             refreshToken: bodyRefreshToken || `refresh_${Math.random().toString(36).substring(2, 15)}`,
             tokenExpiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
