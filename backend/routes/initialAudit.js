@@ -179,6 +179,8 @@ IMPORTANT RULES:
 5. Return 10-20 high-quality preliminary insights that provide immediate value while users wait for the complete audit report.
 OUTPUT: Valid JSON only — no markdown, no explanation outside the JSON.`;
 
+  const calculated = computeQuickScore(crawledData);
+
   const userPrompt = `Website: ${crawledData.url}
 Industry: ${industry}
 Pages crawled: ${crawledData.pages.length}
@@ -199,9 +201,14 @@ Top competitors (Perplexity): ${(crawledData.businessSummary?.topCompetitors || 
 Business reputation: ${crawledData.businessSummary?.reputation?.overallSentiment ?? 'Unknown'}
 Market context: ${crawledData.businessSummary?.marketContext ?? 'Not available'}
 
+CRITICAL INSTRUCTION:
+The overall health score has been mathematically calculated as: ${calculated.score}.
+You MUST return EXACTLY this number in the "score" field of your JSON.
+For the "insight" field, you may use or refine this mathematically-derived insight: "${calculated.insight}"
+
 Return this exact JSON structure:
 {
-  "score": <number 0-100 reflecting overall digital marketing health>,
+  "score": ${calculated.score},
   "businessName": "<clean business name>",
   "insight": "<one punchy sentence summarising the site's biggest opportunity>",
   "businessInsights": ["insight 1", "insight 2"],
@@ -248,15 +255,12 @@ Return this exact JSON structure:
 
   } catch (err) {
     console.error('[InitialAudit] Perplexity error:', err.message);
-    const meta = crawledData.metaSignals || {};
-    const total = meta.totalPages || 1;
-    const issues = (meta.missingMetaDescriptions || 0) + (meta.missingH1 || 0);
-    const score = Math.max(20, Math.round(100 - (issues / total) * 60));
+    const calculated = computeQuickScore(crawledData);
     
     return {
-      score,
+      score: calculated.score,
       businessName: crawledData.businessSummary?.name || extractDomain(crawledData.url),
-      insight: 'Several technical and content improvements identified.',
+      insight: calculated.insight,
       businessInsights: ['The website appears to focus on local or online services.', 'Further analysis may reveal deeper customer segment focus.'],
       seoInsights: [
         ((meta.missingMetaDescriptions || 0) > 0 ? `Several pages may benefit from stronger metadata (${meta.missingMetaDescriptions} missing).` : 'Most pages appear to have metadata.'),
@@ -323,6 +327,138 @@ function parseJSON(text) {
 
 function extractDomain(url) {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch (_) { return url; }
+}
+
+// ── Quick score (positive model — starts at 0, max 100) ──────────────
+function computeQuickScore(data) {
+  const meta   = data.metaSignals || {};
+  const total  = Math.max(meta.totalPages || 1, 1);
+  const pages  = data.pages || [];
+  const biz    = data.perplexityBusiness  || {};
+  const comp   = data.perplexityCompetitors || {};
+  const trends = data.perplexityIndustry  || {};
+
+  let score = 0;
+  const discoveries = [];
+
+  // ── CATEGORY 1: On-Page SEO (35 pts) ────────────────────────────
+  // Meta descriptions (0–10)
+  const metaScore = Math.round((1 - (meta.missingMetaDescriptions || 0) / total) * 10);
+  score += metaScore;
+  if ((meta.missingMetaDescriptions || 0) > 0)
+    discoveries.push({ severity: 'warning', title: `${meta.missingMetaDescriptions} pages missing meta descriptions`, detail: 'Missing meta descriptions reduce click-through rates from search results.' });
+
+  // Title tags (0–8)
+  const titleScore = Math.round((1 - (meta.missingTitles || 0) / total) * 8);
+  score += titleScore;
+
+  // H1 tags (0–8)
+  const h1Score = Math.round((1 - (meta.missingH1 || 0) / total) * 8);
+  score += h1Score;
+  if ((meta.missingH1 || 0) > 0)
+    discoveries.push({ severity: 'warning', title: `${meta.missingH1} pages missing H1 tags`, detail: 'H1 tags signal page topic to Google and should be on every page.' });
+
+  // Image alt text (0–9) — estimate total images from pages
+  const totalImages = pages.reduce((acc, p) => acc + (p.images?.length ?? 0), 0);
+  const missingAlt  = meta.missingImageAlt || 0;
+  const altRatio    = totalImages > 0 ? Math.max(0, 1 - missingAlt / totalImages) : (missingAlt === 0 ? 1 : 0.5);
+  const altScore    = Math.round(altRatio * 9);
+  score += altScore;
+  if (missingAlt > 0)
+    discoveries.push({ severity: 'warning', title: `${missingAlt} images missing alt text`, detail: 'Alt text is critical for accessibility and image-search SEO.' });
+
+  // ── CATEGORY 2: Technical SEO (25 pts) ──────────────────────────
+  // Structured data (0–10)
+  if (meta.hasStructuredData) {
+    score += 10;
+  } else {
+    discoveries.push({ severity: 'opportunity', title: 'No structured data (schema.org) detected', detail: 'Schema markup can earn rich snippets and lift click-through rates by up to 30%.' });
+  }
+
+  // Canonical tag coverage (0–8)
+  const [canonCovered, canonTotal] = (meta.canonicalCoverage || '0/1').split('/').map(Number);
+  const canonScore = Math.round((canonCovered / Math.max(canonTotal, 1)) * 8);
+  score += canonScore;
+  if (canonCovered < canonTotal)
+    discoveries.push({ severity: 'warning', title: `${canonTotal - canonCovered} pages missing canonical tags`, detail: 'Canonical tags prevent duplicate-content penalties from Google.' });
+
+  // Internal linking depth (0–7) — proxy: number of pages crawled
+  const linkScore = pages.length >= 10 ? 7 : pages.length >= 5 ? 5 : pages.length >= 3 ? 3 : 1;
+  score += linkScore;
+
+  // ── CATEGORY 3: Content & UX (20 pts) ───────────────────────────
+  // Social media presence (0–8): 2 pts per platform, max 8
+  const socialPlatforms = new Set(
+    (data.socialLinks || []).map(l => {
+      if (/facebook/i.test(l))   return 'facebook';
+      if (/instagram/i.test(l))  return 'instagram';
+      if (/linkedin/i.test(l))   return 'linkedin';
+      if (/youtube/i.test(l))    return 'youtube';
+      if (/twitter|x\.com/i.test(l)) return 'twitter';
+      if (/tiktok/i.test(l))    return 'tiktok';
+      return null;
+    }).filter(Boolean)
+  );
+  const socialScore = Math.min(8, socialPlatforms.size * 2);
+  score += socialScore;
+  if (socialPlatforms.size === 0)
+    discoveries.push({ severity: 'opportunity', title: 'No social media links detected', detail: 'Linking to active social profiles builds trust and supports brand searches.' });
+
+  // CTAs present (0–6)
+  const ctaScore = (data.ctaText?.length || 0) >= 3 ? 6 : (data.ctaText?.length || 0) > 0 ? 3 : 0;
+  score += ctaScore;
+
+  // Content variety (0–6): blog, case studies, video, FAQ etc.
+  const contentTypeScore = Math.min(6, (data.contentTypes?.length || 0) * 2);
+  score += contentTypeScore;
+  if ((data.contentTypes?.length || 0) === 0)
+    discoveries.push({ severity: 'opportunity', title: 'No content marketing detected', detail: 'Sites with blogs or case studies rank for 3× more keywords on average.' });
+
+  // ── CATEGORY 4: Reputation & Trust (15 pts) ─────────────────────
+  // Online reputation sentiment (0–10)
+  const sentiment = biz?.reputation?.overallSentiment || 'unknown';
+  const sentimentMap = { positive: 10, neutral: 6, mixed: 4, unknown: 3, negative: 0 };
+  const repScore = sentimentMap[sentiment] ?? 3;
+  score += repScore;
+  if (sentiment === 'positive')
+    discoveries.push({ severity: 'opportunity', title: 'Strong online reputation', detail: biz.reputation?.reviewSummary || 'Positive sentiment detected — leverage this in marketing copy.' });
+  else if (sentiment === 'negative')
+    discoveries.push({ severity: 'critical', title: 'Negative online reputation detected', detail: biz.reputation?.reviewSummary || 'Negative reviews found — address before scaling paid traffic.' });
+  else if (sentiment === 'unknown')
+    discoveries.push({ severity: 'opportunity', title: 'No reputation signals found online', detail: 'Actively collecting Google reviews builds trust and improves local rankings.' });
+
+  // Awards & recognition (0–5)
+  const awardScore = (biz?.awards?.length || 0) > 0 ? 5 : 0;
+  score += awardScore;
+
+  // ── CATEGORY 5: Competitive Readiness (5 pts) ───────────────────
+  // Competitive gaps identified (0–5)
+  const gapScore = (comp?.competitiveGaps?.length || 0) > 0 ? 5 : 0;
+  score += gapScore;
+  if ((comp?.competitiveGaps?.length || 0) > 0)
+    discoveries.push({ severity: 'opportunity', title: 'Competitive gap identified', detail: comp.competitiveGaps[0] });
+
+  // Industry trends (discovery only, no score change)
+  if (trends?.keyTrends?.length > 0) {
+    const topTrend = trends.keyTrends.find(t => t.impact === 'HIGH') || trends.keyTrends[0];
+    if (topTrend?.opportunity)
+      discoveries.push({ severity: 'opportunity', title: `Industry trend: ${topTrend.trend}`, detail: topTrend.opportunity });
+  }
+
+  // Competitor count context
+  const compCount = comp?.competitors?.length ?? 0;
+  if (compCount >= 5)
+    discoveries.push({ severity: 'warning', title: `High competition — ${compCount} direct competitors identified`, detail: 'Strong differentiation and content depth are essential to stand out.' });
+
+  // Clamp 0–100
+  score = Math.max(0, Math.min(100, score));
+
+  const insight = score >= 75 ? 'Strong digital foundation — focused improvements can make you the market leader.' :
+                  score >= 50 ? 'Solid base with clear SEO and content gaps to close.' :
+                  score >= 30 ? 'Significant issues identified — fixing these will meaningfully improve search visibility.' :
+                  'Major foundational gaps across SEO, content, and reputation — high priority action required.';
+
+  return { score, insight, discoveries: discoveries.slice(0, 6) };
 }
 
 export default router;

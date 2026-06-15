@@ -24,6 +24,30 @@ const router = Router();
 // Format: { [auditId]: [res, res, ...] }
 export const sseClients = {};
 
+/**
+ * GET /api/audit/history
+ * Fetch user's audit history
+ */
+router.get('/history', async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  try {
+    const query = `
+      SELECT id, url, industry, status, overall_score, created_at, completed_at
+      FROM audits
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+    `;
+    const { pool } = await import('../db/db.js');
+    const { rows } = await pool.query(query, [userId]);
+    res.json(rows);
+  } catch (err) {
+    console.error('[Audit History] Error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 const emit = (auditId, type, data) => {
   const clients = sseClients[auditId] || [];
   const payload = JSON.stringify({ type, ...data, timestamp: Date.now() });
@@ -35,10 +59,10 @@ const emit = (auditId, type, data) => {
 
 /**
  * POST /api/audit/init
- * Body: { url, industry, email }
+ * Body: { url, industry }
  */
 router.post('/init', async (req, res) => {
-  const { url, industry, email } = req.body;
+  const { url, industry } = req.body;
 
   // Validate required fields
   if (!url) {
@@ -46,9 +70,8 @@ router.post('/init', async (req, res) => {
   }
 
   try {
-    // 1. Upsert user
-    const userEmail = email || 'anonymous@clicktrends.com.au';
-    const user = await upsertUser(userEmail);
+    // 1. Get user from JWT middleware
+    const user = req.user; // populated by requireAuthAPI middleware
 
     // 2. Create audit record
     const audit = await createAudit({ userId: user.id, url, industry });
@@ -79,12 +102,15 @@ router.post('/init', async (req, res) => {
 // Using a regex suffix :id([^/]+) forces Express to capture the full UUID including any dots.
 router.post('/:id([^/]+)/analyze', async (req, res) => {
   const auditId = req.params.id;
-  const { selectedPlugins = [], email } = req.body;
+  const { selectedPlugins = [], campaignInputs } = req.body;
+  const email = req.user?.email || 'anonymous@clicktrends.com.au';
 
   const audit = await getAuditById(auditId);
   if (!audit) {
     return res.status(404).json({ error: 'Audit not found' });
   }
+
+  // Validation: campaignInputs are now completely optional.
 
   // ── Reset audit state so plugin-scanning.html always waits for the new run ──
   // If this audit was previously complete, the old Redis cache would cause
@@ -101,13 +127,11 @@ router.post('/:id([^/]+)/analyze', async (req, res) => {
   // Run the wait and pipeline in the background
   (async () => {
     try {
-      // If crawled_data isn't ready yet (init pipeline still running),
-      // wait up to 3 minutes for it to finish before starting analyze.
       let resolvedAudit = audit;
       if (!resolvedAudit.crawled_data) {
         emit(auditId, 'step', { step: 'waiting', message: 'Waiting for website crawl to finish…', progress: 48 });
-        const MAX_WAIT_MS   = 3 * 60 * 1000; // 3 minutes
-        const POLL_INTERVAL = 3000;           // check every 3s
+        const MAX_WAIT_MS   = 3 * 60 * 1000;
+        const POLL_INTERVAL = 3000;
         const deadline      = Date.now() + MAX_WAIT_MS;
 
         while (!resolvedAudit.crawled_data && Date.now() < deadline) {
@@ -123,6 +147,14 @@ router.post('/:id([^/]+)/analyze', async (req, res) => {
       }
 
       const crawledData = typeof resolvedAudit.crawled_data === 'string' ? JSON.parse(resolvedAudit.crawled_data) : resolvedAudit.crawled_data;
+
+      // Merge campaign inputs into crawledData so they persist in DB + flow to plugins
+      if (campaignInputs) {
+        crawledData.campaignInputs = campaignInputs;
+        // Persist to DB so reports can be regenerated with original inputs
+        await updateAuditCrawledData(auditId, crawledData);
+      }
+
       runAnalyzePipeline({ auditId, crawledData, url: resolvedAudit.url, industry: resolvedAudit.industry, email, selectedPlugins });
     } catch (err) {
       console.error(`[Analyze Queue] Error for ${auditId}:`, err);
@@ -204,138 +236,6 @@ async function runInitPipeline({ auditId, url, industry }) {
     emit(auditId, 'error', { message: `Init failed: ${err.message}` });
     await updateAuditStatus(auditId, 'failed');
   }
-}
-
-// ── Quick score (positive model — starts at 0, max 100) ──────────────
-function computeQuickScore(data) {
-  const meta   = data.metaSignals || {};
-  const total  = Math.max(meta.totalPages || 1, 1);
-  const pages  = data.pages || [];
-  const biz    = data.perplexityBusiness  || {};
-  const comp   = data.perplexityCompetitors || {};
-  const trends = data.perplexityIndustry  || {};
-
-  let score = 0;
-  const discoveries = [];
-
-  // ── CATEGORY 1: On-Page SEO (35 pts) ────────────────────────────
-  // Meta descriptions (0–10)
-  const metaScore = Math.round((1 - (meta.missingMetaDescriptions || 0) / total) * 10);
-  score += metaScore;
-  if ((meta.missingMetaDescriptions || 0) > 0)
-    discoveries.push({ severity: 'warning', title: `${meta.missingMetaDescriptions} pages missing meta descriptions`, detail: 'Missing meta descriptions reduce click-through rates from search results.' });
-
-  // Title tags (0–8)
-  const titleScore = Math.round((1 - (meta.missingTitles || 0) / total) * 8);
-  score += titleScore;
-
-  // H1 tags (0–8)
-  const h1Score = Math.round((1 - (meta.missingH1 || 0) / total) * 8);
-  score += h1Score;
-  if ((meta.missingH1 || 0) > 0)
-    discoveries.push({ severity: 'warning', title: `${meta.missingH1} pages missing H1 tags`, detail: 'H1 tags signal page topic to Google and should be on every page.' });
-
-  // Image alt text (0–9) — estimate total images from pages
-  const totalImages = pages.reduce((acc, p) => acc + (p.images?.length ?? 0), 0);
-  const missingAlt  = meta.missingImageAlt || 0;
-  const altRatio    = totalImages > 0 ? Math.max(0, 1 - missingAlt / totalImages) : (missingAlt === 0 ? 1 : 0.5);
-  const altScore    = Math.round(altRatio * 9);
-  score += altScore;
-  if (missingAlt > 0)
-    discoveries.push({ severity: 'warning', title: `${missingAlt} images missing alt text`, detail: 'Alt text is critical for accessibility and image-search SEO.' });
-
-  // ── CATEGORY 2: Technical SEO (25 pts) ──────────────────────────
-  // Structured data (0–10)
-  if (meta.hasStructuredData) {
-    score += 10;
-  } else {
-    discoveries.push({ severity: 'opportunity', title: 'No structured data (schema.org) detected', detail: 'Schema markup can earn rich snippets and lift click-through rates by up to 30%.' });
-  }
-
-  // Canonical tag coverage (0–8)
-  const [canonCovered, canonTotal] = (meta.canonicalCoverage || '0/1').split('/').map(Number);
-  const canonScore = Math.round((canonCovered / Math.max(canonTotal, 1)) * 8);
-  score += canonScore;
-  if (canonCovered < canonTotal)
-    discoveries.push({ severity: 'warning', title: `${canonTotal - canonCovered} pages missing canonical tags`, detail: 'Canonical tags prevent duplicate-content penalties from Google.' });
-
-  // Internal linking depth (0–7) — proxy: number of pages crawled
-  const linkScore = pages.length >= 10 ? 7 : pages.length >= 5 ? 5 : pages.length >= 3 ? 3 : 1;
-  score += linkScore;
-
-  // ── CATEGORY 3: Content & UX (20 pts) ───────────────────────────
-  // Social media presence (0–8): 2 pts per platform, max 8
-  const socialPlatforms = new Set(
-    (data.socialLinks || []).map(l => {
-      if (/facebook/i.test(l))   return 'facebook';
-      if (/instagram/i.test(l))  return 'instagram';
-      if (/linkedin/i.test(l))   return 'linkedin';
-      if (/youtube/i.test(l))    return 'youtube';
-      if (/twitter|x\.com/i.test(l)) return 'twitter';
-      if (/tiktok/i.test(l))    return 'tiktok';
-      return null;
-    }).filter(Boolean)
-  );
-  const socialScore = Math.min(8, socialPlatforms.size * 2);
-  score += socialScore;
-  if (socialPlatforms.size === 0)
-    discoveries.push({ severity: 'opportunity', title: 'No social media links detected', detail: 'Linking to active social profiles builds trust and supports brand searches.' });
-
-  // CTAs present (0–6)
-  const ctaScore = (data.ctaText?.length || 0) >= 3 ? 6 : (data.ctaText?.length || 0) > 0 ? 3 : 0;
-  score += ctaScore;
-
-  // Content variety (0–6): blog, case studies, video, FAQ etc.
-  const contentTypeScore = Math.min(6, (data.contentTypes?.length || 0) * 2);
-  score += contentTypeScore;
-  if ((data.contentTypes?.length || 0) === 0)
-    discoveries.push({ severity: 'opportunity', title: 'No content marketing detected', detail: 'Sites with blogs or case studies rank for 3× more keywords on average.' });
-
-  // ── CATEGORY 4: Reputation & Trust (15 pts) ─────────────────────
-  // Online reputation sentiment (0–10)
-  const sentiment = biz?.reputation?.overallSentiment || 'unknown';
-  const sentimentMap = { positive: 10, neutral: 6, mixed: 4, unknown: 3, negative: 0 };
-  const repScore = sentimentMap[sentiment] ?? 3;
-  score += repScore;
-  if (sentiment === 'positive')
-    discoveries.push({ severity: 'opportunity', title: 'Strong online reputation', detail: biz.reputation?.reviewSummary || 'Positive sentiment detected — leverage this in marketing copy.' });
-  else if (sentiment === 'negative')
-    discoveries.push({ severity: 'critical', title: 'Negative online reputation detected', detail: biz.reputation?.reviewSummary || 'Negative reviews found — address before scaling paid traffic.' });
-  else if (sentiment === 'unknown')
-    discoveries.push({ severity: 'opportunity', title: 'No reputation signals found online', detail: 'Actively collecting Google reviews builds trust and improves local rankings.' });
-
-  // Awards & recognition (0–5)
-  const awardScore = (biz?.awards?.length || 0) > 0 ? 5 : 0;
-  score += awardScore;
-
-  // ── CATEGORY 5: Competitive Readiness (5 pts) ───────────────────
-  // Competitive gaps identified (0–5)
-  const gapScore = (comp?.competitiveGaps?.length || 0) > 0 ? 5 : 0;
-  score += gapScore;
-  if ((comp?.competitiveGaps?.length || 0) > 0)
-    discoveries.push({ severity: 'opportunity', title: 'Competitive gap identified', detail: comp.competitiveGaps[0] });
-
-  // Industry trends (discovery only, no score change)
-  if (trends?.keyTrends?.length > 0) {
-    const topTrend = trends.keyTrends.find(t => t.impact === 'HIGH') || trends.keyTrends[0];
-    if (topTrend?.opportunity)
-      discoveries.push({ severity: 'opportunity', title: `Industry trend: ${topTrend.trend}`, detail: topTrend.opportunity });
-  }
-
-  // Competitor count context
-  const compCount = comp?.competitors?.length ?? 0;
-  if (compCount >= 5)
-    discoveries.push({ severity: 'warning', title: `High competition — ${compCount} direct competitors identified`, detail: 'Strong differentiation and content depth are essential to stand out.' });
-
-  // Clamp 0–100
-  score = Math.max(0, Math.min(100, score));
-
-  const insight = score >= 75 ? 'Strong digital foundation — focused improvements can make you the market leader.' :
-                  score >= 50 ? 'Solid base with clear SEO and content gaps to close.' :
-                  score >= 30 ? 'Significant issues identified — fixing these will meaningfully improve search visibility.' :
-                  'Major foundational gaps across SEO, content, and reputation — high priority action required.';
-
-  return { score, insight, discoveries: discoveries.slice(0, 6) };
 }
 
 
@@ -460,7 +360,7 @@ async function runAnalyzePipeline({ auditId, crawledData, url, industry, email, 
     try {
       const built = await buildReport(auditId, {
         url, industry, email,
-        pagesAnalysed: crawledData.pages?.length || 0,
+        pagesAnalysed: crawledData.totalPages || crawledData.pages?.length || 0,
         duration,
       }, pluginResults, synthesis, overallScore);
       reportUrl = built.reportUrl;
@@ -490,7 +390,7 @@ async function runAnalyzePipeline({ auditId, crawledData, url, industry, email, 
       executiveSummary: synthesis.executiveSummary,
       synthesis,
       pluginOutputs: pluginOutputsObj,
-      pagesAudited: crawledData.pages?.length || 0,
+      pagesAudited: crawledData.totalPages || crawledData.pages?.length || 0,
       stats: {
         pages:    crawledData.totalPages || crawledData.pages?.length || 0,
         keywords: crawledData.keywordStats?.total ?? 0,
@@ -553,7 +453,7 @@ async function runAnalyzePipeline({ auditId, crawledData, url, industry, email, 
       reportUrl:    frontendReportUrl,   // → report.html?auditId=...
       docxUrl,
       duration,
-      pagesAudited: crawledData.pages?.length || 0,
+      pagesAudited: crawledData.totalPages || crawledData.pages?.length || 0,
     });
 
   } catch (err) {

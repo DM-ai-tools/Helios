@@ -122,14 +122,14 @@ CRITICAL JSON RULES — failure to follow these causes a parse error:
 ════════════════════════════════════════════════════════
 IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
 ════════════════════════════════════════════════════════
-You MUST include "implementationChanges" — 1-2 entries focusing ONLY on improvements to the website's email capture forms, popups, or lead magnets. Do NOT include entries for the email copies here (as they are already in the sequences field). Keep these entries short.
-- "location": proper location name derived from page URL (e.g., "home page of click trends", "about us page") where the change is located.
-- All changes MUST ONLY consist of content, code, or settings that can be directly modified on the user's website. Do NOT propose off-site changes.
-- "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
-- "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
-- "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
-- "proposedChange": describe the complete proposed optimization (e.g. copy for a popup or a new form field configuration)
-- "currentState": describe what currently exists or does not exist on the website`,
+You MUST include "implementationChanges" with 3-5 complete email drafts.
+- The "implementationChanges" MUST directly implement the specific "recommendations" you provide in your analysis. Each change should be the actual execution of a corresponding recommendation.
+- For Email Sequence, these changes MUST consist of actual email drafts (subject line + body copy) or specific opt-in form rewrites that can be directly used by the business.
+- "title" must be the name of the email (e.g., "Welcome Email 1", "Win-back Email").
+- "location" must be the sequence or form where the change belongs (e.g., "Onboarding Sequence", "Exit Popup").
+- "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data) if applicable, or "Email Automation Platform".
+- "proposedChange": COMPLETE email: subject line + preview text + full body copy + CTA text, ready to send.
+- "currentState": what currently exists or does not exist on the website.`,
 
   scoringPrompt: `Score this business's email marketing readiness (0–100):
 
@@ -243,12 +243,20 @@ Score = (emailCapture × 0.30) + (leadMagnet × 0.25) + (contentForNurture × 0.
 
     return `Design complete email sequences for this business using the full /email-sequence protocol.
 
-════════════════════════════════════════════════════════
+================================================================
 BUSINESS INFORMATION
-════════════════════════════════════════════════════════
+================================================================
 Website URL:  ${crawledData.url}
 Industry:     ${crawledData.industry || 'Not specified'}
 Pages crawled: ${(crawledData.pages || []).length}
+
+================================================================
+CRAWLED PAGE URL MAP -- CRITICAL
+You MUST use ONLY these exact URLs for "sourceUrl" in every implementationChange.
+Copy the URL character-for-character. Do NOT invent or modify these URLs.
+================================================================
+${(crawledData.pages || []).map(p => `  - ${p.url}  ->  "${p.title || 'Untitled'}"`).join('\n') || `  - ${crawledData.url}  ->  "Home page"`}
+================================================================
 
 BUSINESS SUMMARY (from Perplexity web research):
 ${JSON.stringify(crawledData.perplexityBusiness || crawledData.businessSummary || {}, null, 2)}

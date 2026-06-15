@@ -581,6 +581,8 @@
     <ul class="navbar-links">
       <li><a href="#how-it-works">How it works</a></li>
       <li><a href="#whats-included">What's included</a></li>
+      <li><a href="/my-history.html">History</a></li>
+      <li><a href="javascript:void(0);" onclick="logout()">Sign Out</a></li>
       <li><a href="https://clicktrends.com.au/" target="_blank" rel="noopener noreferrer" class="navbar-cta">Book a Free Call ▾</a></li>
     </ul>
 
@@ -957,6 +959,15 @@
     e.preventDefault();
     document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
     setTimeout(() => document.getElementById('website-url').focus(), 600);
+  }
+
+  async function logout() {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/login.html';
+    } catch (err) {
+      console.error(err);
+    }
   }
 </script>
 

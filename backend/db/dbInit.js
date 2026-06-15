@@ -18,6 +18,8 @@ export async function initDatabase() {
     await pool.query(`
       ALTER TABLE implementation_changes ADD COLUMN IF NOT EXISTS location TEXT;
       ALTER TABLE implementation_changes ADD COLUMN IF NOT EXISTS source_url TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name TEXT;
     `);
 
     console.log('[PostgreSQL] Database tables initialized successfully.');

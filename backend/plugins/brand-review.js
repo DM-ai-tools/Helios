@@ -99,12 +99,13 @@ OUTPUT RULES — READ CAREFULLY
 IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
 ════════════════════════════════════════════════════════
 You MUST include an "implementationChanges" array with 6–12 copy-paste-ready fixes.
-- All changes MUST ONLY consist of content, code, or metadata that can be directly modified on the user's website. Do NOT propose off-site changes.
+- The "implementationChanges" MUST directly implement the specific "recommendations" you provide in your analysis. Each change should be the actual execution of a corresponding recommendation.
+- For Brand Review, all changes MUST ONLY consist of content rewrites, voice adjustments, or legal/compliance fixes that can be directly modified on the user's website. Do NOT propose off-site changes.
 - "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
 - "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
 - "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
-- "currentState": EXACT quote of the problematic text as it appears on the site
-- "proposedChange": COMPLETE rewritten version — no placeholders, no "...", fully finished
+- "currentState": EXACT quote of the problematic text as it appears on the site.
+- "proposedChange": COMPLETE rewritten version — no placeholders, no "...", fully finished.
 - Bad: "Rewrite the hero headline to be clearer"
 - Good: currentState="We help businesses grow" proposedChange="Data-driven digital marketing that generates measurable ROI — for Australian businesses ready to scale"`,
 
@@ -213,16 +214,24 @@ You MUST include an "implementationChanges" array with 6–12 copy-paste-ready f
 
     return `Conduct a full /brand-review audit for this business website.
 
-════════════════════════════════════════════════════════
+================================================================
 WEBSITE INFORMATION
-════════════════════════════════════════════════════════
+================================================================
 URL:           ${crawledData.url}
 Industry:      ${crawledData.industry || 'Not specified'}
 Pages crawled: ${pagesCopy.length}
 
-════════════════════════════════════════════════════════
+================================================================
+CRAWLED PAGE URL MAP -- CRITICAL
+You MUST use ONLY these exact URLs for "sourceUrl" in every implementationChange.
+Copy the URL character-for-character. Do NOT invent or modify these URLs.
+================================================================
+${pagesCopy.map(p => `  - ${p.url}  ->  "${p.title || 'Untitled'}"`).join('\n')}
+================================================================
+
+================================================================
 ALL PAGE COPY
-════════════════════════════════════════════════════════
+================================================================
 ${allCopyFlat}
 
 ════════════════════════════════════════════════════════

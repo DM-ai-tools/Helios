@@ -55,13 +55,14 @@ CRITICAL JSON RULES — failure to follow these causes a parse error:
 IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
 ════════════════════════════════════════════════════════
 You MUST include "implementationChanges" with 8–15 copy-and-paste-ready content pieces.
-- All changes MUST ONLY consist of content, code, or metadata that can be directly modified on the user's website. Do NOT propose off-site changes (such as off-site social posts or email copy).
+- The "implementationChanges" MUST directly implement the specific "recommendations" you provide in your analysis. Each change should be the actual execution of a corresponding recommendation.
+- For Content & Copy, all changes MUST ONLY consist of content rewrites, landing page copy, or blog outlines that can be directly modified on the user's website. Do NOT propose off-site changes (such as off-site social posts or email copy).
 - "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
 - "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
 - "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
-- "currentState" must quote the EXACT existing copy from the website (not a description of it)
-- "proposedChange" must be the COMPLETE finished piece of content — full social post, full headline+subheadline+CTA, full email subject line + preview text + body opening
-- No ellipsis, no [brackets], no "to be written later" — write the entire content piece`,
+- "currentState" must quote the EXACT existing copy from the website (not a description of it).
+- "proposedChange" must be the COMPLETE finished piece of content — full headline+subheadline+CTA, full body section, etc.
+- No ellipsis, no [brackets], no "to be written later" — write the entire content piece.`,
 
   scoringPrompt: `Score this business's content and copy quality (0–100):
 
@@ -161,16 +162,29 @@ Categories (each 0–100):
   },
 
   buildUserPrompt(crawledData) {
+    const pages = crawledData.pages || [];
+    const urlMap = pages.length > 0
+      ? pages.map(p => `  - ${p.url}  ->  "${p.title || 'Untitled'}"`).join('\n')
+      : `  - ${crawledData.url}  ->  "Home page"`;
+
     return `Audit and create a content strategy for this business:
 
 WEBSITE URL: ${crawledData.url}
 INDUSTRY: ${crawledData.industry}
 
+================================================================
+CRAWLED PAGE URL MAP -- CRITICAL
+You MUST use ONLY these exact URLs for "sourceUrl" in every implementationChange.
+Copy the URL character-for-character. Do NOT invent or modify these URLs.
+================================================================
+${urlMap}
+================================================================
+
 HOMEPAGE COPY:
 ${JSON.stringify(crawledData.homepage?.copy || {}, null, 2)}
 
 ALL PAGE CONTENT (titles, descriptions, body):
-${JSON.stringify(crawledData.pages?.slice(0, 15) || [], null, 2)}
+${JSON.stringify(pages.slice(0, 15), null, 2)}
 
 EXISTING CTAs FOUND:
 ${JSON.stringify(crawledData.ctaText || [], null, 2)}
@@ -181,5 +195,6 @@ ${JSON.stringify(crawledData.brandSignals || {}, null, 2)}
 Return your content audit and strategy as valid JSON matching the outputFormat exactly.`;
   },
 };
+
 
 

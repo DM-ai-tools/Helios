@@ -108,6 +108,9 @@ function slimCrawledData(crawledData) {
     leadMagnets:      (crawledData.leadMagnets     || []).slice(0, MAX_ITEMS),
     brandVoice:       crawledData.brandVoice       || null,
 
+    // Campaign Plan user-provided inputs — passed through verbatim
+    campaignInputs:   crawledData.campaignInputs   || null,
+
     // Perplexity research — hard-truncated
     perplexityBusiness:    crawledData.perplexityBusiness
       ? JSON.stringify(crawledData.perplexityBusiness   ).slice(0, MAX_PERPLX) : null,

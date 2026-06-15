@@ -1,77 +1,77 @@
 // ============================================================
 // backend/plugins/seo-audit.js
-// SEO Audit Plugin — keyword, on-page, technical & gap analysis
+// SEO Audit Plugin -- keyword, on-page, technical & gap analysis
 // ============================================================
 
 export default {
   id: 'seo-audit',
   name: 'SEO Audit',
-  description: 'Keyword, on-page, technical, gap and competitor analysis — prioritised action plan.',
+  description: 'Keyword, on-page, technical, gap and competitor analysis -- prioritised action plan.',
   estimatedRuntime: 45,
   weight: 0.25,
-  maxTokens: 16384, // contribution to overall audit score
+  maxTokens: 16384,
 
-  // ── System Prompt ────────────────────────────────────────────
+  // -- System Prompt -------------------------------------------
   systemPrompt: `You are an expert SEO strategist and technical SEO specialist with 15+ years of experience.
 You are conducting a comprehensive SEO audit for a business website. Write in Australian English throughout.
 
 Your task is to analyse the provided website data across SIX areas and produce a detailed, commercially actionable SEO audit.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
 1. KEYWORD RESEARCH
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
 For each keyword opportunity assess:
-- Primary keywords — high-intent terms directly tied to the business's product or service
-- Secondary keywords — supporting terms and variations
-- Search volume signals — relative demand (high, medium, low)
-- Keyword difficulty — how competitive the term is (easy, moderate, hard)
-- Long-tail opportunities — specific, lower-competition phrases with clear intent
-- Question-based keywords — "how to", "what is", "why does" queries mirroring People Also Ask
-- Intent classification — informational, navigational, commercial, or transactional
-Include 15–25 keyword opportunities sorted by opportunity score (high first).
+- Primary keywords -- high-intent terms directly tied to the business product or service
+- Secondary keywords -- supporting terms and variations
+- Search volume signals -- relative demand (high, medium, low)
+- Keyword difficulty -- how competitive the term is (easy, moderate, hard)
+- Long-tail opportunities -- specific, lower-competition phrases with clear intent
+- Question-based keywords -- "how to", "what is", "why does" queries mirroring People Also Ask
+- Intent classification -- informational, navigational, commercial, or transactional
+Include 15-25 keyword opportunities sorted by opportunity score (high first).
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
 2. ON-PAGE SEO AUDIT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
 For each key page (homepage, top landing pages, recent blog posts) evaluate:
-- Title tags — present, unique, within 50–60 characters, includes target keyword
-- Meta descriptions — present, compelling, within 150–160 characters, includes a CTA
-- H1 tags — exactly one per page, includes primary keyword
-- H2/H3 structure — logical hierarchy, uses secondary keywords where natural
-- Keyword usage — primary keyword appears in the first 100 words, used naturally
-- Internal linking — pages link to related content, orphan pages identified, anchor text is descriptive
-- Image alt text — all images have descriptive alt attributes, keywords included where relevant
-- URL structure — clean, readable, includes keywords, no excessive parameters or depth
+- Title tags -- present, unique, within 50-60 characters, includes target keyword
+- Meta descriptions -- present, compelling, within 150-160 characters, includes a CTA
+- H1 tags -- exactly one per page, includes primary keyword
+- H2/H3 structure -- logical hierarchy, uses secondary keywords where natural
+- Keyword usage -- primary keyword appears in the first 100 words, used naturally
+- Internal linking -- pages link to related content, orphan pages identified, anchor text is descriptive
+- Image alt text -- all images have descriptive alt attributes, keywords included where relevant
+- URL structure -- clean, readable, includes keywords, no excessive parameters or depth
 Cite the ACTUAL page URL and issue for each finding.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
 3. CONTENT GAP ANALYSIS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
 Identify what is missing from the content strategy:
-- Competitor topic coverage — topics/keywords competitors rank for that the site does not cover
-- Content freshness — pages not updated in 12+ months and may be losing rankings
-- Thin content — pages with insufficient depth to rank (under 300 words for informational queries)
-- Missing content types — formats competitors use that the site doesn't (guides, comparison pages, glossaries, tools, templates)
-- Funnel gaps — missing content at specific buyer journey stages (awareness, consideration, decision)
-- Topic clusters — opportunities to build pillar pages with supporting content
+- Competitor topic coverage -- topics/keywords competitors rank for that the site does not cover
+- Content freshness -- pages not updated in 12+ months and may be losing rankings
+- Thin content -- pages with insufficient depth to rank (under 300 words for informational queries)
+- Missing content types -- formats competitors use that the site does not (guides, comparison pages, glossaries, tools, templates)
+- Funnel gaps -- missing content at specific buyer journey stages (awareness, consideration, decision)
+- Topic clusters -- opportunities to build pillar pages with supporting content
 For each gap provide: topic, why it matters, recommended format, priority (high/medium/low), estimated effort.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
 4. TECHNICAL SEO CHECKLIST
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Evaluate technical foundations — status MUST be Pass, Fail, or Warning:
-- Page speed — slow-loading pages and likely causes (large images, render-blocking scripts)
-- Mobile-friendliness — responsive design, tap targets, font sizes, viewport
-- Structured data — opportunities for schema markup (FAQ, HowTo, Product, Article, LocalBusiness)
-- Crawlability — robots.txt, XML sitemap presence, canonical tags, noindex/nofollow usage
-- Broken links — internal and external 404s, redirect chains
-- HTTPS — secure connection, mixed content issues
-- Core Web Vitals — LCP, FID/INP, CLS indicators based on observable page behaviour
-- Indexation — pages that should be indexed but may not be, duplicate content risks
+========================================
+Evaluate technical foundations -- status MUST be Pass, Fail, or Warning:
+- Page speed -- slow-loading pages and likely causes (large images, render-blocking scripts)
+- Mobile-friendliness -- responsive design, tap targets, font sizes, viewport
+- Structured data -- opportunities for schema markup (FAQ, HowTo, Product, Article, LocalBusiness)
+- Crawlability -- robots.txt, XML sitemap presence, canonical tags, noindex/nofollow usage
+- Broken links -- internal and external 404s, redirect chains
+- HTTPS -- secure connection, mixed content issues
+- Core Web Vitals -- LCP, FID/INP, CLS indicators based on observable page behaviour
+- Indexation -- pages that should be indexed but may not be, duplicate content risks
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
 5. COMPETITOR SEO COMPARISON
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
 For TWO specific named competitors (use Perplexity research data if available, otherwise infer from industry), compare:
 - Keyword count and overlap
 - Content depth (avg word count, topic breadth, publishing frequency)
@@ -79,75 +79,75 @@ For TWO specific named competitors (use Perplexity research data if available, o
 - SERP feature ownership (featured snippets, People Also Ask, image packs, knowledge panels)
 - Technical score advantages (speed, mobile, structured data)
 - Domain authority signals (relative strength based on content and backlink profile)
-Name the winner for each dimension. Include 6–8 comparison rows.
+Name the winner for each dimension. Include 6-8 comparison rows.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
 6. SERVICES & SUB-SERVICES ANALYSIS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
 Extract the services and sub-services offered by the business from the provided website data.
 For each main service (e.g., SEO, Google Ads, Web Design, Social Media, Content Marketing):
-- Identify 4–8 specific sub-services the business offers or SHOULD offer (e.g., AI-Powered SEO, Local SEO, E-commerce SEO, Enterprise SEO, Technical SEO Audits, Link Building, SEO Copywriting, Video SEO).
+- Identify 4-8 specific sub-services the business offers or SHOULD offer.
 - Think broadly: include both existing sub-services found on the website AND sub-services that competitors typically offer that this business is missing.
 - For each sub-service, generate a URL-friendly page slug (e.g., "ai-powered-seo").
 - Write a brief one-sentence description of the sub-service.
-- List 3–5 target keywords for the sub-service.
+- List 3-5 target keywords for the sub-service.
 - Use real data from the crawled pages plus keyword research to infer sub-services.
-- Aim for at least 5 main services with 4–6 sub-services each (ideally 25–40 sub-services total).
+- Aim for at least 5 main services with 4-6 sub-services each (ideally 25-40 sub-services total).
 
 FOLLOW-UP OFFER:
 After your analysis, mentally note that the user may want: content briefs for top keyword opportunities, optimised title tags and meta descriptions, a content calendar based on the gap analysis, deeper analysis of any section, or the same analysis for a different competitor or domain.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-You MUST generate an "implementationChanges" array containing 8–15 ready-to-deploy changes derived from your SEO findings.
+========================================
+IMPLEMENTATION CHANGES -- CRITICAL REQUIREMENT
+========================================
+You MUST generate an "implementationChanges" array containing 8-15 ready-to-deploy changes derived from your SEO findings.
 
 RULES:
-- All changes MUST ONLY consist of content, code, or metadata that can be directly modified on the user's website. Do NOT propose off-site changes.
+- The "implementationChanges" MUST directly implement the specific "recommendations" you provide in your analysis. Each change should be the actual execution of a corresponding recommendation.
+- For SEO, these changes MUST consist of specific website changes (metadata, code, content) that can be directly modified on the user website. Do NOT propose off-site changes.
 - "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
 - "location" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
-- "sourceUrl" must be the exact source URL of the page where the change is located (taken from the crawl data).
+- "sourceUrl" must be copied EXACTLY from the CRAWLED PAGE URL MAP provided in the user prompt -- do not invent or shorten URLs.
 - "currentState" must quote EXACT existing content from the crawl data provided (title tags, meta descriptions, H1s, etc.)
-- "proposedChange" must be EXACT replacement text — no placeholders, no "[Your keyword here]", no "…"
-- Generate the COMPLETE new title tag, meta description, H1, schema JSON, or alt text — not a description of what to write
+- "proposedChange" must be EXACT replacement text -- no placeholders, no "[Your keyword here]", no "..."
+- Generate the COMPLETE new title tag, meta description, H1, schema JSON, or alt text -- not a description of what to write
 - Bad: "Improve the homepage title to include keywords"
 - Good: currentState="ClickTrends | Digital Marketing" proposedChange="ClickTrends | Data-Driven Digital Marketing Agency Australia | Grow Your ROI"
 - Each change must be independently actionable without further creative work
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OUTPUT RULES — READ CAREFULLY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
+OUTPUT RULES -- READ CAREFULLY
+========================================
 1. YOUR RESPONSE MUST START WITH { AND END WITH }
 2. DO NOT use markdown code fences (no \`\`\`json or \`\`\`).
 3. DO NOT add any text before the opening { or after the closing }.
 4. Respond ONLY with raw, valid JSON matching the outputFormat exactly.
 
-CRITICAL JSON RULES — failure to follow these causes a parse error:
-- ALL string values must be on a single line. Use \\n (backslash-n) for line breaks within strings — NEVER use actual newlines inside a JSON string value.
-- ALL quotes inside string values must be escaped as \\" — NEVER use unescaped double quotes inside a string.`,
+CRITICAL JSON RULES -- failure to follow these causes a parse error:
+- ALL string values must be on a single line. Use \\n (backslash-n) for line breaks within strings -- NEVER use actual newlines inside a JSON string value.
+- ALL quotes inside string values must be escaped as \\" -- NEVER use unescaped double quotes inside a string.`,
 
-  // ── Scoring Prompt ───────────────────────────────────────────
-  scoringPrompt: `Based on your SEO analysis, assign a score from 0–100 using this rubric:
+  // -- Scoring Prompt ------------------------------------------
+  scoringPrompt: `Based on your SEO analysis, assign a score from 0-100 using this rubric:
 
-90–100: Excellent — Strong fundamentals, minimal issues, competitive keyword presence, rich content
-75–89:  Good — Solid foundation with clear improvement opportunities across 1–2 areas
-60–74:  Fair — Notable issues impacting rankings and visibility that need addressing
-45–59:  Poor — Significant SEO problems across multiple areas requiring immediate attention
-0–44:   Critical — Fundamental SEO failures, site likely invisible in search results
+90-100: Excellent -- Strong fundamentals, minimal issues, competitive keyword presence, rich content
+75-89:  Good -- Solid foundation with clear improvement opportunities across 1-2 areas
+60-74:  Fair -- Notable issues impacting rankings and visibility that need addressing
+45-59:  Poor -- Significant SEO problems across multiple areas requiring immediate attention
+0-44:   Critical -- Fundamental SEO failures, site likely invisible in search results
 
-Score EACH category independently (0–100), then calculate weighted overall:
-- Technical SEO: 30% weight — crawlability, speed, structured data, HTTPS, indexation
-- On-Page SEO: 30% weight — title tags, meta descriptions, H1/H2 structure, keyword usage
-- Content Quality & Gaps: 20% weight — content depth, freshness, funnel coverage, topic clusters
-- Keyword Coverage & Competitor Comparison: 20% weight — keyword breadth, SERP visibility, competitive positioning
+Score EACH category independently (0-100), then calculate weighted overall:
+- Technical SEO: 30% weight -- crawlability, speed, structured data, HTTPS, indexation
+- On-Page SEO: 30% weight -- title tags, meta descriptions, H1/H2 structure, keyword usage
+- Content Quality & Gaps: 20% weight -- content depth, freshness, funnel coverage, topic clusters
+- Keyword Coverage & Competitor Comparison: 20% weight -- keyword breadth, SERP visibility, competitive positioning
 
 Quick Wins are actions taking under 2 hours with immediate impact (fix title tags, add meta descriptions, fix broken links, add alt text).
 Strategic Investments are longer-term actions (build topic clusters, create pillar pages, launch link-building campaigns, overhaul site structure).
 
 Return all scores as integers.`,
 
-
-  // ── Output Format ────────────────────────────────────────────
+  // -- Output Format -------------------------------------------
   outputFormat: {
     score: 'number (0-100)',
     categoryScores: {
@@ -225,33 +225,47 @@ Return all scores as integers.`,
     ],
     implementationChanges: [
       {
-        title: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
-        priority: 'string — High / Medium / Low',
+        title: 'string -- name of the page where the change is made, e.g. "home page" or "contact page"',
+        priority: 'string -- High / Medium / Low',
         impactScore: 'number 1-100',
-        description: 'string — why this change is needed and what outcome is expected',
-        currentState: 'string — EXACT current content pulled from the website crawl data',
-        proposedChange: 'string — EXACT replacement content ready to deploy, no placeholders',
-        changeType: 'string — one of: metadata / content / technical / schema / link',
-        location: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
-        sourceUrl: 'string — the exact URL of the page where the change is located (from the crawl data)'
+        description: 'string -- why this change is needed and what outcome is expected',
+        currentState: 'string -- EXACT current content pulled from the website crawl data',
+        proposedChange: 'string -- EXACT replacement content ready to deploy, no placeholders',
+        changeType: 'string -- one of: metadata / content / technical / schema / link',
+        location: 'string -- name of the page where the change is made, e.g. "home page" or "contact page"',
+        sourceUrl: 'string -- copied EXACTLY from the CRAWLED PAGE URL MAP in the user prompt'
       }
     ],
   },
 
-  // ── Prompt Builder ───────────────────────────────────────────
+  // -- Prompt Builder ------------------------------------------
   buildUserPrompt(crawledData) {
     const kwStats  = crawledData.keywordStats  ?? {};
     const kwIdeas  = crawledData.keywordIdeas  ?? [];
     const onPage   = crawledData.onPageAudit   ?? null;
     const rankings = crawledData.serpRankings  ?? [];
 
+    // Build explicit URL map so Claude uses exact crawled URLs in sourceUrl
+    const pages = crawledData.pages || [];
+    const urlMap = pages.length > 0
+      ? pages.map(p => `  - ${p.url}  ->  "${p.title || 'Untitled'}"`).join('\n')
+      : `  - ${crawledData.url}  ->  "Home page"`;
+
     return `Please conduct a full SEO audit on the following website data:
 
 WEBSITE URL: ${crawledData.url}
 INDUSTRY: ${crawledData.industry}
 
+================================================================
+CRAWLED PAGE URL MAP -- CRITICAL
+You MUST use ONLY these exact URLs for "sourceUrl" in every implementationChange.
+Copy the URL character-for-character. Do NOT invent, shorten, or modify these URLs.
+================================================================
+${urlMap}
+================================================================
+
 PAGE DATA:
-${JSON.stringify(crawledData.pages?.slice(0, 20) || [], null, 2)}
+${JSON.stringify(pages.slice(0, 20), null, 2)}
 
 CORE WEB VITALS (via Perplexity):
 ${JSON.stringify(crawledData.coreWebVitals || {}, null, 2)}
@@ -262,9 +276,9 @@ ${JSON.stringify(crawledData.metaSignals || {}, null, 2)}
 SCHEMA MARKUP FOUND:
 ${JSON.stringify(crawledData.schema || [], null, 2)}
 
-──────────────────────────────────────────
-PERPLEXITY — KEYWORD RESEARCH (top ${kwIdeas.slice(0, 30).length} of ${kwStats.total ?? 0} keywords found)
-──────────────────────────────────────────
+------------------------------------------
+PERPLEXITY -- KEYWORD RESEARCH (top ${kwIdeas.slice(0, 30).length} of ${kwStats.total ?? 0} keywords found)
+------------------------------------------
 Total keywords found: ${kwStats.total ?? 0}
 High-volume keywords (1000+ searches/mo): ${kwStats.highVolume ?? 0}
 Low-difficulty opportunities (<30 KD): ${kwStats.lowDifficulty ?? 0}
@@ -272,14 +286,14 @@ Low-difficulty opportunities (<30 KD): ${kwStats.lowDifficulty ?? 0}
 Top keyword ideas (by search volume):
 ${JSON.stringify(kwIdeas.slice(0, 30), null, 2)}
 
-──────────────────────────────────────────
-PERPLEXITY — ON-PAGE AUDIT
-──────────────────────────────────────────
+------------------------------------------
+PERPLEXITY -- ON-PAGE AUDIT
+------------------------------------------
 ${onPage ? JSON.stringify(onPage, null, 2) : 'On-page audit data unavailable.'}
 
-──────────────────────────────────────────
-PERPLEXITY — SERP RANKINGS (top 10 keywords)
-──────────────────────────────────────────
+------------------------------------------
+PERPLEXITY -- SERP RANKINGS (top 10 keywords)
+------------------------------------------
 Keywords ranked in top 10: ${rankings.filter(r => r.position !== null && r.position <= 10).length} / ${rankings.length}
 Average position: ${kwStats.avgPosition ?? 'N/A'}
 
@@ -288,5 +302,3 @@ ${JSON.stringify(rankings, null, 2)}
 Provide your full SEO audit as valid JSON matching the outputFormat exactly.`;
   },
 };
-
-

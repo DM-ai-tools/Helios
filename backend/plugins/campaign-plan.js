@@ -14,14 +14,14 @@ export default {
   systemPrompt: `You are a senior digital marketing strategist with expertise in multi-channel campaign planning.
 You specialise in creating data-driven campaign plans for businesses based on the Campaign Framework: Objective, Audience, Message, Channel, Measure.
 
-Your task is to produce a comprehensive 90-day marketing campaign brief based on the business website data provided.
+Your task is to produce a comprehensive marketing campaign brief based on the business website data and user-provided campaign information.
 
 CAMPAIGN BRIEF DELIVERABLES:
 1. Campaign Overview: Campaign name, 1-sentence summary, primary SMART objective (Awareness/Consideration/Conversion/Retention), and secondary objectives.
 2. Target Audience: Primary and secondary segments (Demographics, Psychographics, Buying Stage), pain points, and where they spend time.
 3. Key Messages: Core message, 3-4 supporting messages, proof points, and differentiators.
 4. Channel Strategy: Recommended Owned, Earned, and Paid channels with rationale, content formats, effort level, and budget allocation suggestion (%).
-5. Content Calendar: Week-by-week (1-12) timeline mapping content pieces to channels and milestones.
+5. Content Calendar: Week-by-week timeline mapping content pieces to channels and milestones.
 6. Content Pieces Needed: Comprehensive list of required assets with descriptions and priority.
 7. Success Metrics: Primary KPI and 3-5 secondary KPIs.
 8. Budget Allocation: High-level percentage breakdown (e.g. Paid 40%, Content 30%, Events 15%, Tools 10%, Testing 5%).
@@ -29,6 +29,8 @@ CAMPAIGN BRIEF DELIVERABLES:
 10. Next Steps: Immediate action items to kick off the campaign.
 
 IMPORTANT RULES:
+- ABSOLUTE ADHERENCE TO USER DIRECTIVES: If the user explicitly provided a Budget, Product, Audience, Goal, or Duration, you MUST base your entire campaign around those exact inputs. Ignore any website data that conflicts with the user's specific inputs.
+- BUDGET REALISM: Your channel choices MUST reflect the specific user budget. If the budget is small, you must cut out expensive paid ads.
 - Base channel recommendations on where the target audience spends time, not generic lists.
 - Be specific with KPIs — avoid vanity metrics unless justified for awareness.
 - Calendar must have specific week numbers and action items. Keep the calendar concise by including at most 6 key weeks (e.g., Weeks 1, 3, 5, 7, 9, 11) to avoid token truncation.
@@ -39,25 +41,25 @@ IMPORTANT RULES:
 ════════════════════════════════════════════════════════
 IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
 ════════════════════════════════════════════════════════
-You MUST include an "implementationChanges" array with 3–5 deployment-ready campaign assets.
-- "location": proper location name derived from page URL (e.g., "home page of click trends", "about us page") where the change is located.
-- All changes MUST ONLY consist of content, code, or campaign copy that can be directly modified on the user's website (such as home page promotional banner copy, landing page copy, website banner ads, etc.). Do NOT propose off-site campaign assets (such as off-site social posts or ad network copies) here.
-- "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
-- "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
-- "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
-- "currentState" describes what the business currently does (or lacks) in that area
-- "proposedChange" must be COMPLETE, ready-to-publish content — actual LinkedIn post copy, actual email subject line + body, actual ad headline + description
+You MUST include an "implementationChanges" array with 3-5 deployment-ready campaign assets.
+- The "implementationChanges" MUST directly implement the specific "recommendations" you provide in your analysis. Each change should be the actual execution of a corresponding recommendation.
+- For a Campaign Plan, these changes MUST consist of actual content or copy for the campaign, focusing on social media posts, email drafts, and ad copy.
+- "title" must describe the asset (e.g., "Facebook Launch Post", "LinkedIn Announcement").
+- "location": proper location name (e.g., "Facebook Page", "LinkedIn Profile", "Instagram account").
+- "sourceUrl": the platform URL if available, otherwise just the platform name.
+- "currentState": what the business currently does or does not do in this area.
+- "proposedChange": must be COMPLETE, ready-to-publish content — actual LinkedIn post copy, actual email subject line + body, actual ad headline + description.
 - No placeholders. No [INSERT NAME]. No lorem ipsum. Write the actual copy.`,
 
-  scoringPrompt: `Assess the business's current marketing readiness and campaign potential (0–100):
+  scoringPrompt: `Assess the business's current marketing readiness and campaign potential (0-100):
 
-90–100: Launch-ready — Strong brand assets, clear audience, proven channels
-75–89:  Ready — Good foundation, minor gaps to address before launch
-60–74:  Needs work — Some assets exist, significant strategy gaps
-45–59:  Weak foundation — Marketing starts nearly from scratch
-0–44:   No foundation — No clear marketing signals found
+90-100: Launch-ready — Strong brand assets, clear audience, proven channels
+75-89:  Ready — Good foundation, minor gaps to address before launch
+60-74:  Needs work — Some assets exist, significant strategy gaps
+45-59:  Weak foundation — Marketing starts nearly from scratch
+0-44:   No foundation — No clear marketing signals found
 
-Categories (each 0–100):
+Categories (each 0-100):
 - Content Readiness: 25% weight
 - Channel Presence Signals: 25% weight
 - Audience Clarity: 25% weight
@@ -72,6 +74,13 @@ Categories (each 0–100):
       brandAssetQuality: 'number',
     },
     summary: 'string (Executive summary)',
+    campaignInputs: {
+      budget: 'string -- the monthly marketing budget as provided by the user',
+      product: 'string -- the product/service/offer as provided by the user',
+      audience: 'string -- the target audience as provided by the user',
+      goal: 'string -- the campaign goal as provided by the user',
+      duration: 'string -- the campaign duration as provided by the user',
+    },
     campaignOverview: {
       campaignName: 'string',
       summary: 'string',
@@ -94,6 +103,7 @@ Categories (each 0–100):
       {
         channel: 'string',
         rationale: 'string',
+        personalizationRationale: 'string -- EXPLICITLY explain how this channel and budget fits the EXACT User-Provided Budget and Target Audience',
         contentFormats: ['string'],
         effortLevel: 'string (Low/Medium/High)',
         budgetAllocationSuggestion: 'string'
@@ -143,25 +153,67 @@ Categories (each 0–100):
     ],
     implementationChanges: [
       {
-        title: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
-        priority: 'string — High / Medium / Low',
+        title: 'string -- name of the page in the URL, e.g. "home page" or "contact page"',
+        priority: 'string -- High / Medium / Low',
         impactScore: 'number 1-100',
-        description: 'string — what this achieves and why now',
-        currentState: 'string — what the business currently does or does not do in this area',
-        proposedChange: 'string — EXACT campaign brief, post copy, email draft, or ad copy ready to use',
-        changeType: 'string — one of: social / email / paid / content / seo / event',
-        location: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
-        sourceUrl: 'string — the exact URL of the page where the change is located (from the crawl data)'
+        description: 'string -- what this achieves and why now',
+        currentState: 'string -- what the business currently does or does not do in this area',
+        proposedChange: 'string -- EXACT campaign brief, post copy, email draft, or ad copy ready to use',
+        changeType: 'string -- one of: social / email / paid / content / seo / event',
+        location: 'string -- name of the page in the URL, e.g. "home page" or "contact page"',
+        sourceUrl: 'string -- the exact URL of the page where the change is located (from the crawl data)'
       }
     ]
   },
 
   buildUserPrompt(crawledData) {
-    const industryResearch  = crawledData.perplexityIndustry    ?? null;
+    const industryResearch   = crawledData.perplexityIndustry    ?? null;
     const competitorResearch = crawledData.perplexityCompetitors ?? null;
     const businessResearch   = crawledData.perplexityBusiness    ?? null;
+    const ci = crawledData.campaignInputs || null;
 
-    return `Create a 90-day campaign plan for this business:
+    // Check if user actually provided custom inputs
+    const hasCustomInputs = ci && (ci.budget || ci.product || ci.audience);
+
+    // Build campaign inputs context block — injected as the PRIMARY context
+    const campaignContext = hasCustomInputs ? `
+========================================================
+THE DIRECTIVE (ABSOLUTE LAW)
+========================================================
+The business owner has explicitly provided the following campaign parameters.
+These constraints OVERRIDE all other information. The entire campaign MUST be
+tailored specifically to these exact inputs:
+
+Monthly Budget:    ${ci.budget || 'Not specified'}
+Product/Service:   ${ci.product || 'Not specified'}
+Target Audience:   ${ci.audience || 'Not specified'}
+Campaign Goal:     ${ci.goal || 'Lead Generation'}
+Campaign Duration: ${ci.duration || '90 days'}
+========================================================
+
+BUDGET GUIDANCE:
+- Budget ${ci.budget || 'Not specified'} should strictly limit your channel selection. Be extremely specific and realistic.
+
+AUDIENCE GUIDANCE:
+- You MUST aggressively target: "${ci.audience || 'the target audience'}". Do not target generic audiences found on the website if they differ from this.
+
+GOAL & DURATION:
+- Optimise for ${ci.goal || 'Lead Generation'} across the full ${ci.duration || '90 days'}.
+
+` : `
+========================================================
+DEFAULT CAMPAIGN PLANNING MODE
+========================================================
+The user has not provided specific campaign constraints. 
+Operate in discovery mode: invent a sensible 90-day Lead Generation campaign based entirely on the business website and industry data.
+========================================================
+`;
+
+    return `${campaignContext}
+========================================================
+THE CONTEXT (BACKGROUND INFORMATION)
+========================================================
+Use the following website and industry data ONLY to understand the brand voice, existing assets, and industry landscape. Discard any context that distracts from THE DIRECTIVE above.
 
 WEBSITE URL: ${crawledData.url}
 INDUSTRY: ${crawledData.industry}
@@ -181,26 +233,25 @@ ${JSON.stringify(crawledData.socialLinks || [], null, 2)}
 TARGET GEOGRAPHY SIGNALS:
 ${JSON.stringify(crawledData.geography || 'Australia', null, 2)}
 
-──────────────────────────────────────────
-PERPLEXITY WEB RESEARCH — INDUSTRY TRENDS
+------------------------------------------
+PERPLEXITY WEB RESEARCH -- INDUSTRY TRENDS
 (Use these to inform channel choices and campaign themes)
-──────────────────────────────────────────
+------------------------------------------
 ${industryResearch ? JSON.stringify(industryResearch, null, 2) : 'Industry trend data unavailable.'}
 
-──────────────────────────────────────────
-PERPLEXITY WEB RESEARCH — COMPETITOR ACTIVITY
+------------------------------------------
+PERPLEXITY WEB RESEARCH -- COMPETITOR ACTIVITY
 (Use these to differentiate the campaign strategy)
-──────────────────────────────────────────
+------------------------------------------
 ${competitorResearch ? JSON.stringify(competitorResearch, null, 2) : 'Competitor data unavailable.'}
 
-──────────────────────────────────────────
-PERPLEXITY WEB RESEARCH — BUSINESS REPUTATION
+------------------------------------------
+PERPLEXITY WEB RESEARCH -- BUSINESS REPUTATION
 (Use reputation signals to inform audience trust-building tactics)
-──────────────────────────────────────────
+------------------------------------------
 ${businessResearch ? JSON.stringify(businessResearch, null, 2) : 'Business reputation data unavailable.'}
 
-Return your campaign plan as valid JSON matching the outputFormat exactly.`;
+Return your campaign plan as valid JSON matching the outputFormat exactly.
+IMPORTANT: Echo the campaignInputs exactly as provided by the user in the campaignInputs field of your JSON response.`;
   },
 };
-
-

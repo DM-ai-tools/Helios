@@ -558,6 +558,11 @@
           <span class="text-xs bg-pink-50 text-pink-600 border border-pink-100 px-2 py-0.5 rounded-full">Calendar</span>
         </div>
       </div>
+      <!-- Campaign inputs required badge -->
+      <div id="campaign-inputs-badge" style="display:none;margin-top:12px;padding:6px 10px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.25);border-radius:8px;font-size:11px;font-weight:600;color:#ea6c0a;display:none;align-items:center;gap:6px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Campaign details saved
+      </div>
     </div>
 
     <!-- 4: Content & Copy -->
@@ -745,10 +750,18 @@
 <script>
   // ── State ─────────────────────────────────────────────────────
   const selectedPlugins = new Set();
+  let campaignInputsCompleted = false;
+  let campaignInputs = null;
 
   // ── Session data from previous page ───────────────────────────
   const sessionData = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
   const { url = '', industry = '', email = '' } = sessionData;
+
+  // Restore campaign inputs from session if they exist
+  if (sessionData.campaignInputs) {
+    campaignInputs = sessionData.campaignInputs;
+    campaignInputsCompleted = true;
+  }
 
   // Display website in header pill
   if (url) {
@@ -778,10 +791,18 @@
       selectedPlugins.delete(id);
       tile.classList.remove('selected');
       tile.setAttribute('aria-checked', 'false');
+      // If deselecting campaign plan, remove the badge
+      if (id === 'campaign-plan') {
+        updateCampaignBadge(false);
+      }
     } else {
       selectedPlugins.add(id);
       tile.classList.add('selected');
       tile.setAttribute('aria-checked', 'true');
+      // If selecting campaign plan, open the inputs modal
+      if (id === 'campaign-plan') {
+        openCampaignModal();
+      }
     }
 
     updateUI();
@@ -867,14 +888,63 @@
     }
   }
 
+  // ── Campaign Inputs Modal ─────────────────────────────────────
+  function openCampaignModal() {
+    const overlay = document.getElementById('campaign-modal-overlay');
+    if (!overlay) return;
+    // Pre-fill if we already have inputs
+    if (campaignInputs) {
+      document.getElementById('ci-budget').value = campaignInputs.budget || '';
+      document.getElementById('ci-product').value = campaignInputs.product || '';
+      document.getElementById('ci-audience').value = campaignInputs.audience || '';
+      document.getElementById('ci-goal').value = campaignInputs.goal || 'Lead Generation';
+      document.getElementById('ci-duration').value = campaignInputs.duration || '90 days';
+    }
+    overlay.classList.add('show');
+    document.getElementById('ci-budget').focus();
+  }
+
+  function closeCampaignModal(cancelled) {
+    const overlay = document.getElementById('campaign-modal-overlay');
+    if (overlay) overlay.classList.remove('show');
+  }
+
+  function confirmCampaignInputs() {
+    const budget   = document.getElementById('ci-budget').value.trim();
+    const product  = document.getElementById('ci-product').value.trim();
+    const audience = document.getElementById('ci-audience').value.trim();
+    const goal     = document.getElementById('ci-goal').value;
+    const duration = document.getElementById('ci-duration').value;
+
+    document.getElementById('ci-error').style.display = 'none';
+
+    campaignInputs = { budget, product, audience, goal, duration };
+    campaignInputsCompleted = true;
+
+    // Save to session
+    const current = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
+    sessionStorage.setItem('clicktrends_audit', JSON.stringify({ ...current, campaignInputs }));
+
+    updateCampaignBadge(true);
+    closeCampaignModal(false);
+  }
+
+  function updateCampaignBadge(show) {
+    const badge = document.getElementById('campaign-inputs-badge');
+    if (badge) badge.style.display = show ? 'inline-flex' : 'none';
+  }
+
   // ── Submit Audit ──────────────────────────────────────────────
   async function submitAudit(useSelected) {
     const plugins = useSelected ? [...selectedPlugins] : [];
+
+    const hasCampaignPlan = plugins.includes('campaign-plan') || (!useSelected);
 
     // Store in session for scanning page
     sessionStorage.setItem('clicktrends_audit', JSON.stringify({
       ...sessionData,
       selectedPlugins: plugins,
+      campaignInputs: campaignInputs || null,
     }));
 
     // Show loading state on button
@@ -888,52 +958,44 @@
     const auditId = sessionData.auditId;
 
     if (!auditId) {
-      // auditId was never created — user likely landed here without going through
-      // processing.html first (e.g. direct navigation, new tab, session cleared).
-      // Redirect back to processing.html to create a fresh audit.
       console.warn('[plugin-select] No auditId in session — redirecting to processing to create one');
       const currentSession = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
       if (!currentSession.url) {
-        // No URL either — go all the way back to the start
         window.location.href = '/';
       } else {
-        // URL exists but no auditId — re-run init
         window.location.href = 'plugin-scanning.html';
-
       }
       return;
     }
 
-
-
-
-    // Fire analyze pipeline then go straight to report page
+    // Fire analyze pipeline then go straight to scanning page
     try {
       const r = await fetch(`/api/audit/${auditId}/analyze`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email: sessionData.email, selectedPlugins: plugins }),
+        body:    JSON.stringify({
+          email: sessionData.email,
+          selectedPlugins: plugins,
+          campaignInputs: campaignInputs || null,
+        }),
       });
       const data = await r.json();
       if (data.error) throw new Error(data.error);
       console.log('[plugin-select] Analyze triggered:', data.message);
-      
+
       // Navigate to plugin scanning page only if successful
       window.location.href = `plugin-scanning.html?auditId=${auditId}&from=select`;
     } catch (err) {
       console.warn('[plugin-select] Analyze trigger failed:', err.message);
       alert('Failed to start audit: ' + err.message + '\n\nPlease try again.');
-      
-      // Restore button state
-      const btn = event?.currentTarget || document.getElementById('run-btn');
-      if (btn) {
-        btn.textContent = 'Run AI Plugins →'; // Will be updated by updateUI anyway
-        btn.disabled = false;
-        btn.style.opacity = '1';
+
+      const btn2 = event?.currentTarget || document.getElementById('run-btn');
+      if (btn2) {
+        btn2.disabled = false;
+        btn2.style.opacity = '1';
         updateUI();
       }
     }
-
   }
 
   // ── Init ──────────────────────────────────────────────────────
@@ -1001,6 +1063,134 @@
     }, delay);
   });
 </script>
+
+<!-- ─── CAMPAIGN INPUTS MODAL ──────────────────────────────────── -->
+<div id="campaign-modal-overlay" style="
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(15,23,42,0.45);
+  backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;
+  z-index:1000;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.3s ease;
+" onclick="closeCampaignModal(true)">
+  <div onclick="event.stopPropagation()" style="
+    background:#fff;
+    border-radius:20px;
+    width:90%;max-width:500px;
+    max-height:90vh;
+    overflow-y:auto;
+    box-shadow:0 24px 48px -8px rgba(0,0,0,0.18),0 0 0 1px rgba(0,0,0,0.06);
+    transform:scale(0.95);
+    transition:transform 0.3s ease;
+    font-family:'Inter',sans-serif;
+  ">
+    <!-- Modal Header -->
+    <div style="background:linear-gradient(135deg,#fff7ed,#fef3e6);padding:28px 28px 20px;border-bottom:1px solid #f3f4f6;border-radius:20px 20px 0 0;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+        <div style="width:40px;height:40px;background:linear-gradient(135deg,#f97316,#ea6c0a);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;">📣</div>
+        <div>
+          <h3 style="font-size:17px;font-weight:800;color:#111827;margin:0 0 2px;">Campaign Plan Details</h3>
+          <p style="font-size:12px;color:#6b7280;margin:0;">This information personalises your campaign strategy</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Body -->
+    <div style="padding:24px 28px;">
+      <!-- Error -->
+      <div id="ci-error" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:12px;color:#dc2626;font-weight:600;margin-bottom:16px;"></div>
+
+      <!-- Budget -->
+      <div style="margin-bottom:18px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">Monthly Marketing Budget (Optional)</label>
+        <input id="ci-budget" type="text" placeholder="e.g. $3,000/month" style="
+          width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;
+          font-size:14px;font-family:'Inter',sans-serif;color:#111827;
+          outline:none;transition:border-color 0.2s;
+        " onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'" />
+      </div>
+
+      <!-- Product / Service -->
+      <div style="margin-bottom:18px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">Product / Service / Offer (Optional)</label>
+        <textarea id="ci-product" rows="2" placeholder="e.g. Solar panel installation for residential homes" style="
+          width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;
+          font-size:14px;font-family:'Inter',sans-serif;color:#111827;
+          outline:none;resize:vertical;transition:border-color 0.2s;
+        " onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+      </div>
+
+      <!-- Target Audience -->
+      <div style="margin-bottom:18px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">Target Audience (Optional)</label>
+        <textarea id="ci-audience" rows="2" placeholder="e.g. Homeowners aged 35–60 in suburban Queensland" style="
+          width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;
+          font-size:14px;font-family:'Inter',sans-serif;color:#111827;
+          outline:none;resize:vertical;transition:border-color 0.2s;
+        " onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+      </div>
+
+      <!-- Goal + Duration row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:6px;">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">Campaign Goal</label>
+          <select id="ci-goal" style="
+            width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;
+            font-size:13px;font-family:'Inter',sans-serif;color:#111827;
+            outline:none;background:#fff;cursor:pointer;transition:border-color 0.2s;
+          " onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'">
+            <option>Awareness</option>
+            <option selected>Lead Generation</option>
+            <option>Sales / Conversions</option>
+            <option>Customer Retention</option>
+            <option>Brand Building</option>
+            <option>Event Promotion</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">Campaign Duration</label>
+          <select id="ci-duration" style="
+            width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;
+            font-size:13px;font-family:'Inter',sans-serif;color:#111827;
+            outline:none;background:#fff;cursor:pointer;transition:border-color 0.2s;
+          " onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'">
+            <option>30 days</option>
+            <option>60 days</option>
+            <option selected>90 days</option>
+            <option>6 months</option>
+            <option>12 months</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div style="display:flex;gap:12px;padding:0 28px 28px;">
+      <button onclick="closeCampaignModal(true)" style="
+        flex:1;padding:12px;border-radius:10px;font-size:13px;font-weight:700;
+        cursor:pointer;border:1.5px solid #e5e7eb;background:#f9fafb;color:#6b7280;
+        font-family:'Inter',sans-serif;transition:all 0.2s;
+      " onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='#f9fafb'">Skip Details</button>
+      <button onclick="confirmCampaignInputs()" style="
+        flex:2;padding:12px;border-radius:10px;font-size:13px;font-weight:700;
+        cursor:pointer;border:none;background:linear-gradient(135deg,#f97316,#ea6c0a);
+        color:#fff;font-family:'Inter',sans-serif;
+        box-shadow:0 4px 12px rgba(249,115,22,0.3);transition:all 0.2s;
+      " onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">Save Campaign Details →</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  #campaign-modal-overlay.show {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+  #campaign-modal-overlay.show > div {
+    transform: scale(1) !important;
+  }
+</style>
 
 </body>
 </html>

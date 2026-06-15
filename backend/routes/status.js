@@ -50,6 +50,12 @@ router.get('/:id([^/]+)/status', async (req, res) => {
     return;
   }
 
+  if (audit.user_id && audit.user_id !== req.user?.id) {
+    sendSSE({ type: 'error', message: 'Forbidden. You do not have access to this audit.', auditId });
+    res.end();
+    return;
+  }
+
   // If audit is already complete, send complete event and close
   if (audit.status === 'complete') {
     sendSSE({
@@ -115,6 +121,7 @@ router.get('/:id([^/]+)', async (req, res) => {
 
   const audit = await getAuditById(auditId).catch(() => null);
   if (!audit) return res.status(404).json({ error: 'Audit not found' });
+  if (audit.user_id && audit.user_id !== req.user?.id) return res.status(403).json({ error: 'Forbidden' });
 
   const plugins = await getAuditPlugins(req.params.id).catch(() => []);
 
@@ -158,7 +165,7 @@ router.get('/:id([^/]+)', async (req, res) => {
     try {
       const cd = typeof audit.crawled_data === 'string' ? JSON.parse(audit.crawled_data) : audit.crawled_data;
       crawledStats = {
-        pagesAudited: (cd.pages || []).length,
+        pagesAudited: cd.totalPages || (cd.pages || []).length,
         stats: {
           pages:    cd.totalPages || (cd.pages || []).length,
           keywords: cd.keywordStats?.total ?? 0,

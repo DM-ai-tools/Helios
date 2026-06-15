@@ -85,11 +85,13 @@ router.post('/queue', requireAdmin, async (req, res) => {
       const matched = changes.find(c => c.id === changeId);
       if (matched) {
         payload = {
-          title: matched.title,
-          currentState: matched.currentState,
+          title:         matched.title,
+          currentState:  matched.currentState,
           proposedChange: matched.userEdit || matched.proposedChange,
-          description: matched.description,
-          changeType: matched.changeType
+          description:   matched.description,
+          changeType:    matched.changeType,
+          sourceUrl:     matched.sourceUrl   || null,
+          location:      matched.location    || null,
         };
       }
     }

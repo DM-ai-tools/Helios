@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Audits — ClickTrends AI Audit</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange: #f97316;
+      --navy: #111827;
+      --navy-mid: #1f2937;
+      --gray-text: #6b7280;
+      --border: #e5e7eb;
+      --white: #ffffff;
+      --bg: #fdf8f3;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Navbar */
+    .navbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .navbar-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .navbar-logo {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--navy);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+    .navbar-logo span { color: var(--orange); }
+    .navbar-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+    .navbar-links a {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--gray-text);
+      text-decoration: none;
+    }
+    .navbar-links a:hover { color: var(--navy); }
+
+    /* Content */
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 24px;
+      flex: 1;
+      width: 100%;
+    }
+    .header {
+      margin-bottom: 32px;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+    .header p {
+      color: var(--gray-text);
+      font-size: 0.95rem;
+    }
+
+    /* History Table */
+    .table-container {
+      background: var(--white);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th {
+      background: #f9fafb;
+      padding: 16px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--gray-text);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 16px;
+      font-size: 0.9rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--navy-mid);
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .status-complete { background: #dcfce7; color: #166534; }
+    .status-failed { background: #fee2e2; color: #991b1b; }
+    .status-processing { background: #fef3c7; color: #92400e; }
+
+    .btn-view {
+      display: inline-block;
+      padding: 6px 14px;
+      background: var(--navy);
+      color: var(--white);
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .btn-view:hover {
+      background: var(--orange);
+    }
+
+    .empty-state {
+      padding: 40px;
+      text-align: center;
+      color: var(--gray-text);
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="/" class="navbar-logo">Click<span>Trends</span> AI Audit</a>
+      <ul class="navbar-links">
+        <li><a href="/">New Audit</a></li>
+        <li><a href="javascript:void(0);" onclick="logout()">Sign Out</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="header">
+      <h1>My Audits</h1>
+      <p>View your past website audits and reports.</p>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>URL</th>
+            <th>Industry</th>
+            <th>Date</th>
+            <th>Score</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="history-tbody">
+          <tr><td colspan="6" class="empty-state">Loading your audits...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    async function logout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        window.location.href = '/login.html';
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch('/api/audit/history');
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            window.location.href = '/login.html';
+            return;
+          }
+          throw new Error('Failed to fetch history');
+        }
+        
+        const audits = await res.json();
+        const tbody = document.getElementById('history-tbody');
+        
+        if (audits.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty-state">You have not run any audits yet. <a href="/">Start one here.</a></td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = audits.map(a => {
+          let badgeClass = 'status-processing';
+          if (a.status === 'complete') badgeClass = 'status-complete';
+          if (a.status === 'failed') badgeClass = 'status-failed';
+
+          const dateStr = new Date(a.created_at).toLocaleDateString(undefined, {
+            year: 'numeric', month: 'short', day: 'numeric'
+          });
+
+          return `
+            <tr>
+              <td style="font-weight: 500; color: var(--navy);">${a.url}</td>
+              <td>${a.industry}</td>
+              <td>${dateStr}</td>
+              <td><strong style="color: ${a.overall_score >= 80 ? '#16a34a' : (a.overall_score >= 50 ? '#ca8a04' : '#dc2626')}">${a.overall_score || '-'}</strong>/100</td>
+              <td><span class="status-badge ${badgeClass}">${a.status}</span></td>
+              <td>
+                ${a.status === 'complete' 
+                  ? `<a href="/report.html?auditId=${a.id}" class="btn-view" target="_blank">View Report</a>` 
+                  : `<a href="/processing.html?auditId=${a.id}&mode=resume" class="btn-view">View Status</a>`}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error(err);
+        document.getElementById('history-tbody').innerHTML = '<tr><td colspan="6" class="empty-state">Failed to load audits.</td></tr>';
+      }
+    }
+
+    loadHistory();
+  </script>
+</body>
+</html>

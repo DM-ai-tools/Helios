@@ -34,6 +34,9 @@ import redisClient from './services/redisClient.js';
 import { deploymentWorker } from './services/deploymentWorker.js'; // Start background worker
 import { generateReportPDF } from './services/puppeteerService.js';
 import fs from 'fs';
+import cookieParser from 'cookie-parser';
+import authRouter from './routes/auth.js';
+import { requireAuthAPI, requireAuthHTML } from './middleware/auth.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -46,20 +49,33 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-// Serve frontend static files
+// ─── Public Routes & Assets ───────────────────────────────────
+app.get('/login.html', (req, res) => res.sendFile(resolve(__dirname, '../frontend/login.html')));
+app.get('/register.html', (req, res) => res.sendFile(resolve(__dirname, '../frontend/register.html')));
+
+// Serve assets so login/register can look nice
+app.use('/css', express.static(resolve(__dirname, '../frontend/css')));
+app.use('/js', express.static(resolve(__dirname, '../frontend/js')));
+app.use('/logos', express.static(resolve(__dirname, '../frontend/logos')));
+
+app.use('/api/auth', authRouter);
+
+// ─── Protected Frontend HTML ──────────────────────────────────
+app.use(requireAuthHTML);
 app.use(express.static(resolve(__dirname, '../frontend')));
 
-// ─── Routes ───────────────────────────────────────────────────
-app.use('/api/audit', initialAuditRouter);   // initial quick audit (pre-score)
-app.use('/api/audit', auditRouter);
-app.use('/api/audit', statusRouter);
-app.use('/api/implementation', implementationRouter);  // implementation approval workflow
-app.use('/api/integrations', integrationsRouter);
-app.use('/api/deployment', deploymentRouter);
+// ─── Protected API Routes ─────────────────────────────────────
+app.use('/api/audit', requireAuthAPI, initialAuditRouter);   // initial quick audit (pre-score)
+app.use('/api/audit', requireAuthAPI, auditRouter);
+app.use('/api/audit', requireAuthAPI, statusRouter);
+app.use('/api/implementation', requireAuthAPI, implementationRouter);  // implementation approval workflow
+app.use('/api/integrations', requireAuthAPI, integrationsRouter);
+app.use('/api/deployment', requireAuthAPI, deploymentRouter);
 
 // Integrations Settings Page
-app.get('/settings/integrations', (req, res) => {
+app.get('/settings/integrations', requireAuthHTML, (req, res) => {
   res.sendFile(resolve(__dirname, '../frontend/integrations.html'));
 });
 
@@ -180,4 +196,4 @@ app.get('*', (req, res) => {
 })();
 
 export default app;
-// Manual restart trigger
+// Manual restart trigger 2

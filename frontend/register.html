@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register — ClickTrends AI Audit</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange: #f97316;
+      --orange-dark: #ea6c0a;
+      --navy: #111827;
+      --navy-mid: #1f2937;
+      --gray-text: #6b7280;
+      --border: #e5e7eb;
+      --white: #ffffff;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #fdf8f3 0%, #fef9f4 60%, #fff7ee 100%);
+      color: var(--navy);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .form-card {
+      background: var(--white);
+      border-radius: 20px;
+      padding: 40px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05), 0 24px 64px rgba(0,0,0,0.08);
+      position: relative;
+      z-index: 2;
+    }
+    .brand {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--navy);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+      display: block;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .brand span { color: var(--orange); }
+    
+    .form-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 8px;
+      text-align: center;
+      letter-spacing: -0.02em;
+    }
+    .form-sub {
+      font-size: 0.9rem;
+      color: var(--gray-text);
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .form-group { margin-bottom: 20px; }
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--navy-mid);
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+    }
+    .error-msg {
+      color: #ef4444;
+      font-size: 0.85rem;
+      margin-top: 6px;
+      display: none;
+      text-align: center;
+    }
+    .btn-submit {
+      width: 100%;
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .btn-submit:hover {
+      background: var(--orange-dark);
+      transform: translateY(-1px);
+    }
+    .auth-links {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 0.85rem;
+      color: var(--gray-text);
+    }
+    .auth-links a {
+      color: var(--orange);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .auth-links a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <div class="form-card">
+    <a href="#" class="brand">Click<span>Trends</span> AI Audit</a>
+    
+    <div class="form-title">Create an Account</div>
+    <div class="form-sub">Sign up to run and track your website audits</div>
+
+    <form id="register-form">
+      <div class="form-group">
+        <label class="form-label" for="fullName">Full Name</label>
+        <input type="text" id="fullName" class="form-input" placeholder="Jane Doe">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <input type="email" id="email" class="form-input" placeholder="you@example.com" required>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" class="form-input" placeholder="••••••••" required>
+        <div style="font-size:0.75rem; color:#9ca3af; margin-top:4px;">Min 8 chars, 1 uppercase, 1 lowercase, 1 number</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="confirmPassword">Confirm Password</label>
+        <input type="password" id="confirmPassword" class="form-input" placeholder="••••••••" required>
+      </div>
+
+      <div id="error-alert" class="error-msg"></div>
+
+      <button type="submit" class="btn-submit" id="submit-btn">Create Account</button>
+    </form>
+
+    <div class="auth-links">
+      Already have an account? <a href="/login.html">Sign in</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const fullName = document.getElementById('fullName').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      
+      const btn = document.getElementById('submit-btn');
+      const err = document.getElementById('error-alert');
+      
+      if (password !== confirmPassword) {
+        err.textContent = 'Passwords do not match';
+        err.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Creating account...';
+      err.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, fullName })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to register');
+        }
+
+        window.location.href = '/';
+      } catch (error) {
+        err.textContent = error.message;
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    });
+  </script>
+</body>
+</html>

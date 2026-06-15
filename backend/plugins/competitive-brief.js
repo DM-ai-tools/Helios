@@ -41,13 +41,14 @@ IMPORTANT RULES:
 IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
 ════════════════════════════════════════════════════════
 You MUST include an "implementationChanges" array with 6–12 ready-to-execute competitive actions.
-- All changes MUST ONLY consist of content, code, or messaging that can be directly modified on the user's website (such as updating differentiators on pricing or homepage hero text). Do NOT propose off-site sales enablement or response scripts here.
+- The "implementationChanges" MUST directly implement the specific "recommendations" you provide in your analysis. Each change should be the actual execution of a corresponding recommendation.
+- For Competitive Brief, all changes MUST ONLY consist of content, code, or messaging that can be directly modified on the user's website (such as updating differentiators on pricing or homepage hero text). Do NOT propose off-site sales enablement or response scripts here.
 - "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
 - "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
 - "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
-- "currentState" must reference actual language found on the website (exact quotes)
-- "proposedChange" must be EXACT rewritten copy, battlecard text, positioning statement, or response script
-- No vague suggestions — write the finished deliverable`,
+- "currentState" must reference actual language found on the website (exact quotes).
+- "proposedChange" must be EXACT rewritten copy or positioning statement, ready to publish with no edits required.
+- No vague suggestions — write the finished deliverable.`,
 
   scoringPrompt: `Score this brand's competitive positioning from 0–100:
 
@@ -154,6 +155,14 @@ Categories (each 0–100):
 WEBSITE URL: ${crawledData.url}
 INDUSTRY: ${crawledData.industry}
 
+================================================================
+CRAWLED PAGE URL MAP -- CRITICAL
+You MUST use ONLY these exact URLs for "sourceUrl" in every implementationChange.
+Copy the URL character-for-character. Do NOT invent or modify these URLs.
+================================================================
+${(crawledData.pages || []).map(p => `  - ${p.url}  ->  "${p.title || 'Untitled'}"`).join('\n') || `  - ${crawledData.url}  ->  "Home page"`}
+================================================================
+
 HOMEPAGE CONTENT:
 ${JSON.stringify(crawledData.homepage || {}, null, 2)}
 
@@ -161,7 +170,7 @@ ABOUT PAGE:
 ${JSON.stringify(crawledData.aboutPage || {}, null, 2)}
 
 KEY PAGES ANALYSED:
-${JSON.stringify(crawledData.pages?.slice(0, 10) || [], null, 2)}
+${JSON.stringify((crawledData.pages || []).slice(0, 10), null, 2)}
 
 ALL HEADLINES & SUBHEADLINES:
 ${JSON.stringify(crawledData.headings || [], null, 2)}

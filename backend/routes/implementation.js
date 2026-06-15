@@ -141,28 +141,28 @@ function getMockChanges(auditId, pluginId) {
     ],
     'campaign-plan': [
       {
-        title: 'home page',
+        title: 'Facebook Launch Post',
         priority: 'High',
-        impactScore: 80,
-        description: 'Retargeting campaign requires a high-converting on-site promo banner to lift CTR for warming prospects.',
-        currentState: '(No promo banner)',
-        proposedChange: '💥 FREE Audit: We are offering 5 free website growth audits this week. Claim yours below.',
-        changeType: 'content',
-        location: 'home page',
-        sourceUrl: 'https://clicktrends.com.au/',
+        impactScore: 85,
+        description: 'Launch post for the upcoming free audit campaign.',
+        currentState: 'No current Facebook campaign active.',
+        proposedChange: '🚀 Ready to scale your website traffic?\n\nWe are giving away 5 FREE growth audits this week! Our data-driven process will uncover exactly where you are losing leads and how to fix it.\n\n👇 Click the link below to claim yours before they are gone!\n[Link]',
+        changeType: 'social',
+        location: 'Facebook Page',
+        sourceUrl: 'Facebook',
       }
     ],
     'email-sequence': [
       {
-        title: 'contact page',
+        title: 'Welcome Email 1',
         priority: 'High',
         impactScore: 90,
-        description: 'Email capture rate can be significantly increased by offering instant lead magnet checklist value.',
-        currentState: 'Subscribe to newsletter',
-        proposedChange: 'Get our weekly checklist of 3 quick SEO fixes to double your website traffic (Subscribe below)',
-        changeType: 'capture-form',
-        location: 'contact page',
-        sourceUrl: 'https://clicktrends.com.au/contact',
+        description: 'First email in the onboarding sequence to deliver the lead magnet and set expectations.',
+        currentState: 'No welcome email currently sent.',
+        proposedChange: 'Subject: Your SEO Checklist is inside! 🚀\nPreview: Here is exactly what you need to do...\n\nHi there,\n\nThanks for downloading our SEO checklist! I am thrilled to share these strategies with you.\n\n[Link to Download]\n\nBest,\nClickTrends Team',
+        changeType: 'email',
+        location: 'Onboarding Sequence',
+        sourceUrl: 'Email Automation Platform',
       }
     ]
   };
