@@ -32,6 +32,7 @@ import deploymentRouter from './routes/deployment.js';
 import { initDatabase } from './db/dbInit.js';
 import redisClient from './services/redisClient.js';
 import { deploymentWorker } from './services/deploymentWorker.js'; // Start background worker
+import { pageWorker } from './services/pageWorker.js'; // Start landing page generation background worker
 import { generateReportPDF } from './services/puppeteerService.js';
 import fs from 'fs';
 import cookieParser from 'cookie-parser';
@@ -50,6 +51,9 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// ─── Healthcheck ──────────────────────────────────────────────
+app.get('/health', (req, res) => res.status(200).send('OK'));
 
 // ─── Public Routes & Assets ───────────────────────────────────
 app.get('/login.html', (req, res) => res.sendFile(resolve(__dirname, '../frontend/login.html')));

@@ -28,8 +28,11 @@ Redis-x64.zip
 
 # Temp / test files
 temp.js
-check-db.js
 check-latest.mjs
+scratch/
+claude_debug.txt
+claude_final.html
+*.log
 drop-db.mjs
 dump-crawled-data.mjs
 fetch-audit-result.mjs

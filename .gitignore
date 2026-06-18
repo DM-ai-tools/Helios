@@ -29,6 +29,10 @@ Redis-x64.zip
 test.pdf
 install.log
 temp.js
+scratch/
+claude_debug.txt
+claude_final.html
+*.log
 
 # Dev/debug utility scripts (local only)
 clear-pdf-cache.js
@@ -40,6 +44,9 @@ dump-crawled-data.mjs
 fetch-audit-result.mjs
 fetch-failed-audit.mjs
 print-debug.mjs
+get-deployments.js
+inspect-page.js
+inspect-settings.js
 show-live-results.mjs
 show-redis.mjs
 show-results.mjs

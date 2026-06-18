@@ -916,10 +916,18 @@ function buildCard(c, idx) {
         '</div>' +
       '</div>' +
       '<div class="edit-section">' +
-        '<div class="edit-label">Edit proposed change (optional — your version will be used)</div>' +
-        '<textarea class="edit-area" id="edit-' + c.id + '" placeholder="Paste your edited version here…">' + escHtml(c.userEdit || c.proposedChange || '') + '</textarea>' +
+        '<div class="before-after" style="margin-bottom: 12px;">' +
+          '<div>' +
+            '<div class="edit-label">Current State (Search Term for Elementor)</div>' +
+            '<textarea class="edit-area" id="edit-current-' + c.id + '" placeholder="This exact text will be searched for in Elementor...">' + escHtml(c.currentState || '') + '</textarea>' +
+          '</div>' +
+          '<div>' +
+            '<div class="edit-label">Proposed Change (Replacement Text)</div>' +
+            '<textarea class="edit-area" id="edit-' + c.id + '" placeholder="Paste your edited version here…">' + escHtml(c.userEdit || c.proposedChange || '') + '</textarea>' +
+          '</div>' +
+        '</div>' +
         '<div class="edit-save-row">' +
-          '<button class="btn-save-edit" onclick="saveEdit(\'' + c.id + '\')">Save Edit</button>' +
+          '<button class="btn-save-edit" onclick="saveEdit(\'' + c.id + '\')">Save Changes</button>' +
         '</div>' +
       '</div>' +
       '<div class="deploy-action-row" style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);" id="deploy-actions-' + c.id + '">' +
@@ -1056,14 +1064,16 @@ async function bulkAction(status) {
 // ── Save edit ────────────────────────────────────────────────────
 async function saveEdit(changeId) {
   var ta = document.getElementById('edit-' + changeId);
+  var taCurrent = document.getElementById('edit-current-' + changeId);
   if (!ta) return;
   var userEdit = ta.value.trim();
+  var currentState = taCurrent ? taCurrent.value.trim() : '';
 
   try {
     var res  = await fetch('/api/implementation/' + auditId + '/' + pluginId + '/' + changeId, {
       method:  'PATCH',
       headers: {'Content-Type': 'application/json'},
-      body:    JSON.stringify({ userEdit }),
+      body:    JSON.stringify({ userEdit, currentState }),
     });
     var data = await res.json();
     if (!res.ok) throw new Error(data.error);
@@ -1071,7 +1081,7 @@ async function saveEdit(changeId) {
     var idx = allChanges.findIndex(c => c.id === changeId);
     if (idx !== -1) allChanges[idx] = data.change;
     renderAll();
-    toast('Edit saved!', 'success');
+    toast('Changes saved!', 'success');
   } catch(err) {
     toast('Save failed: ' + err.message, 'error');
   }
@@ -1553,7 +1563,15 @@ async function deploySubServicePage(slug) {
         changeId: 'new-page-' + slug,
         platform: targetPlatform,
         assetType: 'new_page',
-        payload: { slug: slug, html: ss.generatedHtml, pageTitle: ss.pageTitle, metaDescription: ss.metaDescription, navigationParent: ss.serviceName },
+        payload: { 
+          slug: slug, 
+          html: ss.generatedHtml, 
+          pageTitle: ss.pageTitle, 
+          metaDescription: ss.metaDescription, 
+          navigationParent: ss.serviceName,
+          title: ss.subServiceName,
+          subServiceName: ss.subServiceName
+        },
       }),
     });
     var data = await res.json();

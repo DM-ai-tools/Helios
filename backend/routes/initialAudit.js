@@ -54,18 +54,21 @@ router.get('/initial/:id/status', (req, res) => {
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('X-Accel-Buffering', 'no');
+    req.socket.setTimeout(0);
+    req.socket.setKeepAlive(true);
     res.flushHeaders();
     res.write(`data: ${JSON.stringify({ type: 'complete', ...entry.result })}\n\n`);
     res.end();
     return;
   }
 
-  // Set up SSE
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('X-Accel-Buffering', 'no');
+  req.socket.setTimeout(0);
+  req.socket.setKeepAlive(true);
   res.flushHeaders();
 
   entry.clients.push(res);

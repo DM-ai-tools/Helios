@@ -215,3 +215,20 @@ CREATE TABLE IF NOT EXISTS implementation_jobs (
   updated_at       TIMESTAMPTZ DEFAULT NOW()
 );
 
+/* SUB SERVICE PAGES */
+CREATE TABLE IF NOT EXISTS sub_service_pages (
+  audit_id          UUID NOT NULL REFERENCES audits(id) ON DELETE CASCADE,
+  slug              TEXT NOT NULL,
+  service_name      TEXT NOT NULL,
+  sub_service_name  TEXT NOT NULL,
+  page_title        TEXT,
+  meta_description  TEXT,
+  status            TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  content_json      JSONB,
+  rendered_html     TEXT,
+  created_at        TIMESTAMPTZ DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (audit_id, slug)
+);
+
+

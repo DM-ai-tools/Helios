@@ -20,6 +20,21 @@ export async function initDatabase() {
       ALTER TABLE implementation_changes ADD COLUMN IF NOT EXISTS source_url TEXT;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name TEXT;
+      
+      CREATE TABLE IF NOT EXISTS sub_service_pages (
+        audit_id          UUID NOT NULL REFERENCES audits(id) ON DELETE CASCADE,
+        slug              TEXT NOT NULL,
+        service_name      TEXT NOT NULL,
+        sub_service_name  TEXT NOT NULL,
+        page_title        TEXT,
+        meta_description  TEXT,
+        status            TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+        content_json      JSONB,
+        rendered_html     TEXT,
+        created_at        TIMESTAMPTZ DEFAULT NOW(),
+        updated_at        TIMESTAMPTZ DEFAULT NOW(),
+        PRIMARY KEY (audit_id, slug)
+      );
     `);
 
     console.log('[PostgreSQL] Database tables initialized successfully.');

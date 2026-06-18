@@ -598,7 +598,7 @@ export async function getImplementationChanges(auditId, pluginId) {
   return records || [];
 }
 
-export async function updateImplementationChange(auditId, pluginId, changeId, { status, userEdit }) {
+export async function updateImplementationChange(auditId, pluginId, changeId, { status, userEdit, currentState }) {
   const key = `impl_changes:${auditId}:${pluginId}`;
   
   const updates = [];
@@ -612,6 +612,11 @@ export async function updateImplementationChange(auditId, pluginId, changeId, { 
   if (userEdit !== undefined) {
     updates.push(`user_edit = $${paramCount}`);
     params.push(userEdit);
+    paramCount++;
+  }
+  if (currentState !== undefined) {
+    updates.push(`current_state = $${paramCount}`);
+    params.push(currentState);
     paramCount++;
   }
   updates.push(`updated_at = NOW()`);
@@ -630,6 +635,7 @@ export async function updateImplementationChange(auditId, pluginId, changeId, { 
   if (idx !== -1) {
     if (status   !== undefined) records[idx].status   = status;
     if (userEdit !== undefined) records[idx].userEdit = userEdit;
+    if (currentState !== undefined) records[idx].currentState = currentState;
     records[idx].updatedAt = new Date().toISOString();
     await redisSet(key, records, IMPL_TTL);
   }
@@ -1050,4 +1056,152 @@ export async function getAuditTrail(businessId) {
     return [];
   }
 }
+
+/* Sub-service Pages CRUD helpers */
+export async function saveSubServicePage(auditId, slug, { serviceName, subServiceName, pageTitle, metaDescription, status, contentJson, renderedHtml }) {
+  const query = `
+    INSERT INTO sub_service_pages (audit_id, slug, service_name, sub_service_name, page_title, meta_description, status, content_json, rendered_html, updated_at)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+    ON CONFLICT (audit_id, slug) DO UPDATE
+    SET service_name = EXCLUDED.service_name,
+        sub_service_name = EXCLUDED.sub_service_name,
+        page_title = EXCLUDED.page_title,
+        meta_description = EXCLUDED.meta_description,
+        status = EXCLUDED.status,
+        content_json = EXCLUDED.content_json,
+        rendered_html = EXCLUDED.rendered_html,
+        updated_at = NOW()
+    RETURNING *;
+  `;
+  try {
+    const { rows } = await pool.query(query, [
+      auditId,
+      slug,
+      serviceName,
+      subServiceName,
+      pageTitle,
+      metaDescription,
+      status || 'pending',
+      contentJson ? JSON.stringify(contentJson) : null,
+      renderedHtml
+    ]);
+    
+    // Sync to Redis
+    const stateKey = `sub_service_page:${auditId}:${slug}`;
+    const redisPayload = {
+      auditId,
+      slug,
+      serviceName,
+      subServiceName,
+      pageTitle,
+      metaDescription,
+      status: status || 'pending',
+      generatedHtml: renderedHtml,
+      contentJson,
+      updatedAt: new Date().toISOString()
+    };
+    await redisClient.setEx(stateKey, IMPL_TTL, JSON.stringify(redisPayload));
+    return rows[0];
+  } catch (err) {
+    console.error('[PostgreSQL] saveSubServicePage error:', err);
+    throw err;
+  }
+}
+
+export async function getSubServicePage(auditId, slug) {
+  const query = `SELECT * FROM sub_service_pages WHERE audit_id = $1 AND slug = $2 LIMIT 1;`;
+  try {
+    const { rows } = await pool.query(query, [auditId, slug]);
+    const row = rows[0];
+    if (row) {
+      return {
+        auditId: row.audit_id,
+        slug: row.slug,
+        serviceName: row.service_name,
+        subServiceName: row.sub_service_name,
+        pageTitle: row.page_title,
+        metaDescription: row.meta_description,
+        status: row.status,
+        contentJson: typeof row.content_json === 'string' ? JSON.parse(row.content_json) : row.content_json,
+        renderedHtml: row.rendered_html,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      };
+    }
+    
+    // Fallback to Redis
+    const stateKey = `sub_service_page:${auditId}:${slug}`;
+    const cached = await redisClient.get(stateKey).then(v => v ? JSON.parse(v) : null).catch(() => null);
+    if (cached) {
+      return {
+        auditId,
+        slug,
+        serviceName: cached.serviceName,
+        subServiceName: cached.subServiceName,
+        pageTitle: cached.pageTitle,
+        metaDescription: cached.metaDescription,
+        status: cached.status || 'pending',
+        contentJson: cached.contentJson,
+        renderedHtml: cached.generatedHtml || cached.html,
+        updatedAt: cached.updatedAt
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('[PostgreSQL] getSubServicePage error:', err);
+    return null;
+  }
+}
+
+export async function approveSubServicePage(auditId, slug, status, { pageTitle, metaDescription, renderedHtml }) {
+  const updates = ['status = $3', 'updated_at = NOW()'];
+  const params = [auditId, slug, status];
+  let paramCount = 4;
+  
+  if (pageTitle !== undefined) {
+    updates.push(`page_title = $${paramCount}`);
+    params.push(pageTitle);
+    paramCount++;
+  }
+  if (metaDescription !== undefined) {
+    updates.push(`meta_description = $${paramCount}`);
+    params.push(metaDescription);
+    paramCount++;
+  }
+  if (renderedHtml !== undefined) {
+    updates.push(`rendered_html = $${paramCount}`);
+    params.push(renderedHtml);
+    paramCount++;
+  }
+  
+  const query = `
+    UPDATE sub_service_pages
+    SET ${updates.join(', ')}
+    WHERE audit_id = $1 AND slug = $2
+    RETURNING *;
+  `;
+  try {
+    const { rows } = await pool.query(query, params);
+    
+    // Sync to Redis
+    const stateKey = `sub_service_page:${auditId}:${slug}`;
+    const existing = await redisClient.get(stateKey).then(v => v ? JSON.parse(v) : {}).catch(() => ({}));
+    const updatedState = {
+      ...existing,
+      status,
+      pageTitle: pageTitle || existing.pageTitle || null,
+      metaDescription: metaDescription || existing.metaDescription || null,
+      generatedHtml: renderedHtml || existing.generatedHtml || existing.html || null,
+      slug,
+      updatedAt: new Date().toISOString()
+    };
+    await redisClient.setEx(stateKey, IMPL_TTL, JSON.stringify(updatedState));
+    
+    return rows[0] || updatedState;
+  } catch (err) {
+    console.error('[PostgreSQL] approveSubServicePage error:', err);
+    throw err;
+  }
+}
+
 

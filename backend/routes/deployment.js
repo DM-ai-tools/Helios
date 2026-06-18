@@ -78,8 +78,8 @@ router.post('/queue', requireAdmin, async (req, res) => {
       });
     }
 
-    // 3. Fetch change details (resolve from Redis or use customPayload)
-    let payload = customPayload;
+    // 3. Fetch change details (resolve from Redis or use customPayload / payload)
+    let payload = customPayload || req.body.payload;
     if (!payload && auditId !== 'demo') {
       const changes = await getImplementationChanges(auditId, pluginId);
       const matched = changes.find(c => c.id === changeId);

@@ -27,6 +27,8 @@ router.get('/:id([^/]+)/status', async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('X-Accel-Buffering', 'no');
+  req.socket.setTimeout(0);
+  req.socket.setKeepAlive(true);
   res.flushHeaders();
 
   const sendSSE = (obj) => {

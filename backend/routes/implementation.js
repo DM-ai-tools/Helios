@@ -1,6 +1,6 @@
 // ============================================================
 // backend/routes/implementation.js
-// Implementation Approval Workflow API with Demo Mock Support
+// Implementation Approval Workflow API with Demo Mock Support - triggered reload
 // ============================================================
 
 import { Router } from 'express';
@@ -17,12 +17,123 @@ import {
   createDeployment,
   createAuditTrailEntry,
   getIntegrationByPlatform,
-  upsertIntegration
+  upsertIntegration,
+  saveSubServicePage,
+  getSubServicePage,
+  approveSubServicePage
 } from '../db/queries.js';
 import { requireAdmin } from './integrations.js';
 import redisClient from '../services/redisClient.js';
+import * as cheerio from 'cheerio';
 
 const IMPL_TTL = 60 * 60 * 24 * 7; // 7 days
+
+// Helper to extract branding information from a website URL
+async function extractBrandingInfo(siteUrl) {
+  const brandData = {
+    colors: {},
+    logoUrl: null,
+    navLinks: [],
+    footerLinks: [],
+    fonts: []
+  };
+
+  if (!siteUrl || siteUrl.includes('yourbusiness.com') || siteUrl.includes('localhost') || siteUrl.includes('example.com')) {
+    return brandData;
+  }
+
+  try {
+    let url = siteUrl;
+    if (!url.startsWith('http')) {
+      url = 'https://' + url;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      },
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) return brandData;
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    // 1. Extract CSS variables/colors from style tags or :root
+    const rootMatches = html.match(/:root\s*\{[^}]+\}/g) || [];
+    for (const match of rootMatches) {
+      const vars = match.match(/--[a-zA-Z0-9_-]+:\s*[^;\}]+/g) || [];
+      for (const v of vars) {
+        const parts = v.split(':');
+        if (parts.length === 2) {
+          const key = parts[0].trim();
+          const val = parts[1].trim();
+          if (val.startsWith('#') || val.includes('rgb') || key.includes('color') || key.includes('bg') || key.includes('theme') || key.includes('accent')) {
+            brandData.colors[key] = val;
+          }
+        }
+      }
+    }
+
+    // 2. Extract Logo URL
+    // Prioritize logo indicators in filename or attributes
+    let imgLogo = $('img[src*="logo" i], img[class*="logo" i], img[id*="logo" i]').first().attr('src');
+    
+    if (!imgLogo) {
+      // Check inside elements with logo classes/ids
+      imgLogo = $('[class*="logo" i] img, [id*="logo" i] img').first().attr('src');
+    }
+    
+    if (!imgLogo) {
+      // Fallback to first image in header
+      imgLogo = $('header img, #logo img, .logo img').first().attr('src');
+    }
+
+    if (imgLogo) {
+      brandData.logoUrl = imgLogo.startsWith('http') ? imgLogo : new URL(imgLogo, url).toString();
+    } else {
+      // Fallback to favicon icon links
+      const iconLink = $('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]').first().attr('href');
+      if (iconLink) {
+        brandData.logoUrl = iconLink.startsWith('http') ? iconLink : new URL(iconLink, url).toString();
+      }
+    }
+
+    // 3. Extract Navigation Links
+    $('header a, nav a, .nav-menu a, [class*="menu"] a').slice(0, 8).each((_, el) => {
+      const text = $(el).text().trim().replace(/\s+/g, ' ');
+      const href = $(el).attr('href');
+      if (text && href && href !== '#' && !href.startsWith('javascript') && !brandData.navLinks.some(l => l.text === text)) {
+        const absoluteUrl = href.startsWith('http') ? href : new URL(href, url).toString();
+        brandData.navLinks.push({ text, url: absoluteUrl });
+      }
+    });
+
+    // 4. Extract Footer Links
+    $('footer a, .footer a, [class*="footer"] a').slice(0, 10).each((_, el) => {
+      const text = $(el).text().trim().replace(/\s+/g, ' ');
+      const href = $(el).attr('href');
+      if (text && href && href !== '#' && !href.startsWith('javascript') && !brandData.footerLinks.some(l => l.text === text)) {
+        const absoluteUrl = href.startsWith('http') ? href : new URL(href, url).toString();
+        brandData.footerLinks.push({ text, url: absoluteUrl });
+      }
+    });
+
+    // 5. Extract Google Fonts
+    $('link[href*="fonts.googleapis.com"], link[href*="fonts.gstatic.com"]').each((_, el) => {
+      const href = $(el).attr('href');
+      if (href) brandData.fonts.push(href);
+    });
+
+  } catch (e) {
+    console.error('[BrandExtraction] failed to parse homepage:', siteUrl, e.message);
+  }
+
+  return brandData;
+}
 
 const router = Router();
 
@@ -255,7 +366,7 @@ router.get('/:auditId([^/]+)/:pluginId', async (req, res) => {
 // Update status (approved/rejected) or save user edit
 router.patch('/:auditId([^/]+)/:pluginId/:changeId', async (req, res) => {
   const { auditId, pluginId, changeId } = req.params;
-  const { status, userEdit } = req.body;
+  const { status, userEdit, currentState } = req.body;
 
   const allowed = ['pending', 'approved', 'rejected'];
   if (status && !allowed.includes(status)) {
@@ -274,7 +385,7 @@ router.patch('/:auditId([^/]+)/:pluginId/:changeId', async (req, res) => {
         priority: 'Medium',
         impactScore: 70,
         description: 'Simulated demo change',
-        currentState: 'Demo Current State',
+        currentState: currentState !== undefined ? currentState : 'Demo Current State',
         proposedChange: 'Demo Proposed Change',
         changeType: 'general',
         status: status || 'pending',
@@ -285,7 +396,7 @@ router.patch('/:auditId([^/]+)/:pluginId/:changeId', async (req, res) => {
   }
 
   try {
-    const updated = await updateImplementationChange(auditId, pluginId, changeId, { status, userEdit });
+    const updated = await updateImplementationChange(auditId, pluginId, changeId, { status, userEdit, currentState });
     if (!updated) return res.status(404).json({ error: 'Change not found' });
     res.json({ success: true, change: updated });
   } catch (err) {
@@ -653,9 +764,8 @@ router.get('/:auditId([^/]+)/seo-audit/sub-services', async (req, res) => {
     for (const service of servicesAnalysis) {
       for (const sub of (service.subServices || [])) {
         const slug = sub.pageSlug || sub.subServiceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-        // Load per-slug status from Redis
-        const stateKey = `sub_service_page:${auditId}:${slug}`;
-        const savedState = await redisClient.get(stateKey).then(v => v ? JSON.parse(v) : null).catch(() => null);
+        // Load per-slug status from PostgreSQL database
+        const savedState = isDemo ? null : await getSubServicePage(auditId, slug);
         flatSubServices.push({
           serviceName: service.serviceName,
           subServiceName: sub.subServiceName,
@@ -663,7 +773,7 @@ router.get('/:auditId([^/]+)/seo-audit/sub-services', async (req, res) => {
           briefDescription: sub.briefDescription || '',
           keywords: sub.keywords || [],
           status: savedState?.status || 'pending',
-          generatedHtml: savedState?.generatedHtml || null,
+          generatedHtml: savedState?.renderedHtml || null,
           pageTitle: savedState?.pageTitle || null,
           metaDescription: savedState?.metaDescription || null,
         });
@@ -692,9 +802,10 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/generate-page', async
     let subServiceData = null;
     let siteUrl = 'yourbusiness.com.au';
     let industry = 'Digital Marketing';
+    let audit = null;
 
     if (!isDemo) {
-      const audit = await getAuditById(auditId);
+      audit = await getAuditById(auditId);
       if (!audit) return res.status(404).json({ error: 'Audit not found' });
       siteUrl = audit.url;
       industry = audit.industry || 'General';
@@ -730,79 +841,233 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/generate-page', async
     const { subServiceName, serviceName, briefDescription, keywords } = subServiceData;
     const keywordList = (keywords || []).join(', ');
 
-    const prompt = `You are an expert web developer and SEO copywriter. Generate a complete, self-contained HTML page for the sub-service described below.
+    const normalizedSiteUrl = siteUrl.replace(/\/+$/, '');
+    let canonicalUrl = `${normalizedSiteUrl}/${slug}`;
+    if (!canonicalUrl.startsWith('http')) canonicalUrl = 'https://' + canonicalUrl;
+    
+    // Attempt to access audit object if it exists in scope, else default to generic
+    let brandName = 'Brand';
+    let phoneNumber = 'Not available';
+    let locations = 'Australia';
+    let crawled = {};
 
-BUSINESS CONTEXT:
-- Website URL: ${siteUrl}
-- Industry: ${industry}
-- Parent Service: ${serviceName}
-- Sub-Service Name: ${subServiceName}
-- Brief Description: ${briefDescription}
-- Target Keywords: ${keywordList}
-${userContext ? `\nUSER'S ADDITIONAL CONTEXT / REQUESTS:\n${userContext}` : ''}
-${existingHtml ? `\nEXISTING PAGE TO REFINE:\nHere is the current HTML. Keep the same structure but apply the user context above:\n${existingHtml.slice(0, 3000)}` : ''}
+    try {
+      if (audit && audit.crawled_data) {
+        crawled = typeof audit.crawled_data === 'string' ? JSON.parse(audit.crawled_data) : audit.crawled_data;
+      }
+    } catch (e) {}
 
-DESIGN REQUIREMENTS:
-- Use Inter font from Google Fonts
-- Colour scheme: --orange: #f97316, --navy: #1a1a2e, --bg: #faf9f6, --white: #ffffff
-- Modern, premium design with hero section, features/benefits grid, CTA section
-- Embed all CSS inline in a <style> tag — no external CSS files except Google Fonts
-- Include meta title and meta description in <head> that are keyword-optimised
-- Include a nav bar with the business name and a "Get in Touch" button
-- Hero section: bold H1 with the sub-service name + main keyword, subtitle, CTA button
-- Features section: 3-4 benefit cards with icons (use SVG inline icons)
-- Why Choose Us section: 2-3 differentiators
-- CTA section at the bottom: "Ready to get started?" with a button
-- Footer with copyright
-- All content must be realistic, professional, commercially focused — no placeholder text
-- The page must ONLY use the sub-service name and keywords in content (no generic lorem ipsum)
-- Write in Australian English
+    // Extract dynamic details from crawled data
+    let titleBrandName = '';
+    let homePage = null;
+    try {
+      if (crawled.pages && crawled.pages.length > 0) {
+        homePage = crawled.pages.find(p => p.url === normalizedSiteUrl || p.url === normalizedSiteUrl + '/' || p.url === '/' || p.url === '') || crawled.pages[0];
+        if (homePage && homePage.title) {
+          const titleParts = homePage.title.split(/\s*[|–-]\s*/);
+          if (titleParts.length > 1) {
+            const nonGenericParts = titleParts.map(p => p.trim()).filter(p => p.length > 0 && !/home|homepage|index|welcome/i.test(p));
+            if (nonGenericParts.length > 0) {
+              nonGenericParts.sort((a, b) => a.length - b.length);
+              titleBrandName = nonGenericParts[0];
+            }
+          } else {
+            titleBrandName = homePage.title.trim();
+          }
+        }
+      }
+    } catch (e) {}
 
-CRITICAL: Return ONLY the raw HTML. Do NOT wrap in markdown code fences. Start with <!DOCTYPE html> and end with </html>.`;
+    try {
+      brandName = crawled.perplexityBusiness?.businessName || crawled.businessSummary?.name || (audit && audit.company_name);
+      if (!brandName && normalizedSiteUrl) {
+        brandName = normalizedSiteUrl.replace(/^https?:\/\/(www\.)?/, '').split('.')[0];
+        brandName = brandName.charAt(0).toUpperCase() + brandName.slice(1);
+      }
+      if (!brandName) brandName = 'Brand';
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-5',
-        max_tokens: 8000,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+      const isGenericBrand = brandName.toLowerCase() === 'brand' || 
+                             brandName.toLowerCase() === 'ai' ||
+                             brandName.toLowerCase().includes('trdemo') || 
+                             brandName.toLowerCase().includes('localhost') || 
+                             brandName.toLowerCase().includes('example.com') ||
+                             brandName.toLowerCase().includes('yourbusiness');
+      if (isGenericBrand && titleBrandName) {
+        brandName = titleBrandName;
+      }
 
-    if (!response.ok) {
-      const errText = await response.text().catch(() => '');
-      return res.status(500).json({ error: `Claude API error: ${response.status} — ${errText.slice(0, 200)}` });
+      phoneNumber = crawled.contactInfo?.phone || (audit && audit.phone);
+      if ((phoneNumber === 'Not available' || !phoneNumber) && homePage && homePage.bodyText) {
+        const phoneRegex = /(?:\+?61\s*(?:\(0\))?\s*|[0-9]{2,4}\s*)[0-9]{3,4}\s*[0-9]{3,4}/g;
+        const matches = homePage.bodyText.match(phoneRegex);
+        if (matches && matches.length > 0) {
+          const cleanPhone = matches[0].trim();
+          if (cleanPhone.length >= 8 && cleanPhone.length <= 15) {
+            phoneNumber = cleanPhone;
+          }
+        }
+      }
+
+      locations = crawled.contactInfo?.addressLocality || (audit && audit.location) || 'Australia';
+      if ((locations === 'Australia' || !locations) && homePage && homePage.bodyText) {
+        const cityMatches = homePage.bodyText.match(/Melbourne|Sydney|Brisbane|Perth|Adelaide/i);
+        if (cityMatches) {
+          locations = cityMatches[0] + ', Australia';
+        }
+      }
+    } catch (e) {}
+
+    if (normalizedSiteUrl.includes('clicktrends')) {
+      if (phoneNumber === 'Not available' || !phoneNumber) phoneNumber = '03 7020 9120';
+      if (locations === 'Australia' || !locations) locations = 'Melbourne, VIC';
     }
 
-    const claudeData = await response.json();
-    let html = claudeData?.content?.[0]?.text || '';
-    // Strip any accidental markdown fences
-    html = html.replace(/^```(?:html)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    let bookingUrl = '/contact';
+    let logoUrl = 'Not available';
+    let navigationLinks = 'Not available';
+    let footerLinks = 'Not available';
+    let extractedBrandColors = 'Not available';
+    let extractedFonts = 'Poppins (Headings), Inter (Body)';
 
-    // Extract page title and meta description from generated HTML
-    const titleMatch = html.match(/<title>(.*?)<\/title>/i);
-    const metaMatch = html.match(/<meta\s+name="description"\s+content="([^"]+)"/i);
-    const pageTitle = titleMatch ? titleMatch[1] : `${subServiceName} | ${siteUrl}`;
-    const metaDescription = metaMatch ? metaMatch[1] : briefDescription;
+    const brandBranding = await extractBrandingInfo(normalizedSiteUrl).catch(() => null);
+    const isClickTrends = brandName.toLowerCase().includes('click trends') || 
+                          brandName.toLowerCase().includes('clicktrends') || 
+                          normalizedSiteUrl.includes('clicktrends');
 
-    // Cache generated HTML in Redis
-    const stateKey = `sub_service_page:${auditId}:${slug}`;
-    const existing = await redisClient.get(stateKey).then(v => v ? JSON.parse(v) : {}).catch(() => ({}));
-    await redisClient.setEx(stateKey, IMPL_TTL, JSON.stringify({
-      ...existing,
-      generatedHtml: html,
-      pageTitle,
-      metaDescription,
+    if (isClickTrends) {
+      extractedBrandColors = `--primary-color: #f97316\n--secondary-color: #ea6c0a\n--gradient-first-color: #fb923c\n--heading-color: #111827\n--link-color: #f97316\n--gradient-color-from: #f97316\n--gradient-color-to: #ea6c0a\n--body-bg-color: #ffffff`;
+      logoUrl = 'https://trdemo.com.au/testdomain1/wp-content/uploads/2026/06/Click_trends_logo.png';
+    } else {
+      if (brandBranding && brandBranding.colors && Object.keys(brandBranding.colors).length > 0) {
+        extractedBrandColors = Object.entries(brandBranding.colors)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join('\n');
+      } else {
+        extractedBrandColors = '--primary-color: #2563eb\n--secondary-color: #1d4ed8\n--gradient-first-color: #3b82f6\n--heading-color: #1f2937\n--link-color: #2563eb\n--gradient-color-from: #2563eb\n--gradient-color-to: #1d4ed8\n--body-bg-color: #ffffff';
+      }
+
+      if (brandBranding && brandBranding.logoUrl && !brandBranding.logoUrl.includes('/themes/aimo/')) {
+        logoUrl = brandBranding.logoUrl;
+      } else {
+        logoUrl = 'text-logo';
+      }
+    }
+
+    if (brandBranding) {
+
+      if (brandBranding.navLinks && brandBranding.navLinks.length > 0) {
+        navigationLinks = brandBranding.navLinks.map(l => {
+          let url = l.url;
+          if (url.startsWith(normalizedSiteUrl) || url.startsWith('http://' + normalizedSiteUrl) || url.startsWith('https://' + normalizedSiteUrl)) {
+            url = url.replace(/^https?:\/\/[^\/]+/, '') || '/';
+          }
+          return `* [${l.text}](${url})`;
+        }).join('\n');
+      } else {
+        navigationLinks = `* [Home](/)` + '\n' + `* [Services](/services)` + '\n' + `* [About](/about)` + '\n' + `* [Contact](/contact)`;
+      }
+
+      if (brandBranding.footerLinks && brandBranding.footerLinks.length > 0) {
+        footerLinks = brandBranding.footerLinks.map(l => {
+          let url = l.url;
+          if (url.startsWith(normalizedSiteUrl) || url.startsWith('http://' + normalizedSiteUrl) || url.startsWith('https://' + normalizedSiteUrl)) {
+            url = url.replace(/^https?:\/\/[^\/]+/, '') || '/';
+          }
+          return `* [${l.text}](${url})`;
+        }).join('\n');
+      } else {
+        footerLinks = `* [Services](/services)` + '\n' + `* [Privacy Policy](/privacy-policy)` + '\n' + `* [Terms of Service](/terms)`;
+      }
+    }
+
+    let existingContent = userContext || existingHtml || '';
+    if (!existingContent || existingContent === 'Not available') {
+      const contextParts = [];
+      if (crawled.perplexityBusiness?.description || crawled.businessSummary?.description) {
+        contextParts.push(`Business Description: ${crawled.perplexityBusiness?.description || crawled.businessSummary?.description}`);
+      }
+      if (crawled.perplexityBusiness?.offerings && crawled.perplexityBusiness.offerings.length > 0) {
+        contextParts.push(`Business Offerings:\n${crawled.perplexityBusiness.offerings.map(o => `- ${o}`).join('\n')}`);
+      }
+      if (homePage) {
+        if (homePage.title) contextParts.push(`Homepage Title: ${homePage.title}`);
+        if (homePage.metaDescription) contextParts.push(`Homepage Meta Description: ${homePage.metaDescription}`);
+        if (homePage.headings && homePage.headings.length > 0) {
+          const headingsList = homePage.headings.map(h => `${h.level ? 'H' + h.level : '-'}: ${h.text}`).join('\n');
+          contextParts.push(`Homepage Headings:\n${headingsList}`);
+        }
+        if (homePage.bodyText) {
+          contextParts.push(`Homepage Content Snippet:\n${homePage.bodyText.slice(0, 3000)}`);
+        }
+      } else if (crawled.allCopy) {
+        const firstUrl = Object.keys(crawled.allCopy)[0];
+        if (firstUrl && crawled.allCopy[firstUrl]) {
+          const pageData = crawled.allCopy[firstUrl];
+          if (pageData.title) contextParts.push(`Homepage Title: ${pageData.title}`);
+          if (pageData.bodySnippet) contextParts.push(`Homepage Content Snippet:\n${pageData.bodySnippet.slice(0, 3000)}`);
+        }
+      }
+      existingContent = contextParts.join('\n\n') || 'Not available';
+    }
+
+    // ==========================================
+    // ENQUEUE JOB TO BullMQ AND AWAIT COMPLETION
+    // ==========================================
+    const statusKey = `sub_service_page_job:${auditId}:${slug}`;
+    // Clear any previous job status
+    await redisClient.del(statusKey);
+
+    const { addPageGenerationJob } = await import('../services/pageQueue.js');
+    await addPageGenerationJob({
+      auditId,
+      slug,
+      userContext: existingContent,
+      existingHtml,
       subServiceName,
       serviceName,
-    }));
+      briefDescription,
+      keywords,
+      siteUrl,
+      industry,
+      brandName,
+      phoneNumber,
+      locations,
+      logoUrl,
+      navigationLinks,
+      footerLinks,
+      extractedBrandColors,
+      extractedFonts
+    });
 
-    res.json({ success: true, html, pageTitle, metaDescription });
+    console.log(`[GeneratePage] Enqueued page generation job. Polling for results...`);
+    const start = Date.now();
+    let finalResult = null;
+
+    while (Date.now() - start < 180000) { // 3 minutes timeout
+      await new Promise(r => setTimeout(r, 1000));
+      const jobStatusStr = await redisClient.get(statusKey).catch(() => null);
+      if (jobStatusStr) {
+        const jobStatus = JSON.parse(jobStatusStr);
+        if (jobStatus.status === 'completed') {
+          finalResult = jobStatus;
+          break;
+        }
+        if (jobStatus.status === 'failed') {
+          throw new Error(jobStatus.error || 'Worker page generation failed');
+        }
+      }
+    }
+
+    if (!finalResult) {
+      throw new Error('Page generation timed out after 3 minutes');
+    }
+
+    res.json({
+      success: true,
+      html: finalResult.html,
+      pageTitle: finalResult.pageTitle,
+      metaDescription: finalResult.metaDescription
+    });
   } catch (err) {
     console.error('[SubServices] generate-page error:', err);
     res.status(500).json({ error: err.message });
@@ -837,7 +1102,11 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/approve', async (req,
     };
 
     if (!isDemo) {
-      await redisClient.setEx(stateKey, IMPL_TTL, JSON.stringify(updatedState));
+      await approveSubServicePage(auditId, slug, status, {
+        pageTitle: pageTitle || existing.pageTitle || undefined,
+        metaDescription: metaDescription || existing.metaDescription || undefined,
+        renderedHtml: html || existing.html || undefined
+      });
     }
 
     res.json({ success: true, slug, status, state: updatedState });
