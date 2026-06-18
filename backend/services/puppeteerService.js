@@ -101,7 +101,7 @@ export async function generateReportPDF(auditId) {
     page.setDefaultTimeout(90_000);
 
     const port = process.env.PORT || 3000;
-    const reportUrl = `http://localhost:${port}/report.html?auditId=${auditId}&pdf=true`;
+    const reportUrl = `http://127.0.0.1:${port}/report.html?auditId=${auditId}&pdf=true`;
     console.log(`[Puppeteer] Navigating to ${reportUrl}`);
 
     await page.goto(reportUrl, { waitUntil: 'networkidle0', timeout: 90_000 });

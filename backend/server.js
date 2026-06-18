@@ -184,7 +184,7 @@ app.get('*', (req, res) => {
 // ─── Initialize DB and Start Server ───────────────────────────
 (async () => {
   await initDatabase();
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`
 ╔═══════════════════════════════════════════╗
 ║   ClickTrends AI Audit Server             ║
