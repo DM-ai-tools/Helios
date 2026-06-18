@@ -13,43 +13,12 @@ export class ElementorAdapter {
     });
   }
 
-  recursiveReplace(element, search, replaceStr, actionType) {
-    let replaced = false;
-    if (!element) return replaced;
-
-    if (element.settings) {
-      for (const [key, value] of Object.entries(element.settings)) {
-        if (typeof value === 'string' && value.includes(search)) {
-          // Replace it
-          if (actionType === 'replace') {
-            element.settings[key] = value.replace(search, replaceStr);
-          } else if (actionType === 'insert_after') {
-            element.settings[key] = value.replace(search, search + ' ' + replaceStr);
-          } else if (actionType === 'insert_before') {
-            element.settings[key] = value.replace(search, replaceStr + ' ' + search);
-          }
-          replaced = true;
-        }
-      }
-    }
-
-    if (element.elements && Array.isArray(element.elements)) {
-      for (let i = 0; i < element.elements.length; i++) {
-        if (this.recursiveReplace(element.elements[i], search, replaceStr, actionType)) {
-          replaced = true;
-        }
-      }
-    }
-
-    return replaced;
-  }
-
   async deploy(params) {
     const {
       payload,
       targetObj,
       actionType,
-      endpoint,
+      endpoint, // The standard WP endpoint, not the elementor one
       method
     } = params;
 
@@ -57,7 +26,7 @@ export class ElementorAdapter {
     proposedText = this.encode4ByteCharsToEntities(proposedText);
 
     const isMetadata = payload.changeType === 'metadata';
-    const requestData = { meta: {} };
+    const requestData = { status: 'publish' };
 
     let elementorUpdated = false;
 
@@ -72,46 +41,67 @@ export class ElementorAdapter {
       } else {
         requestData.excerpt = proposedText;
       }
+
+      // Metadata changes are pushed directly via native WordPress API
+      const deployRes = await this.axios({
+        method,
+        url: endpoint,
+        data: requestData
+      });
+      return {
+        updatedObject: deployRes.data,
+        method: 'native_wordpress' // Metadata is always native
+      };
     } else {
-      let elementorDataStr = targetObj.meta?._elementor_data;
-      if (elementorDataStr) {
-        try {
-          let elementorData = JSON.parse(elementorDataStr);
-          const search = payload.currentState || '';
-          if (search) {
-            let replaced = false;
-            for (let i = 0; i < elementorData.length; i++) {
-              if (this.recursiveReplace(elementorData[i], search, proposedText, actionType)) {
-                replaced = true;
-              }
-            }
-            if (replaced) {
-              requestData.meta._elementor_data = JSON.stringify(elementorData);
-              elementorUpdated = true;
-            } else {
-              throw new Error("Search text not found in Elementor widget settings.");
-            }
-          } else {
-            throw new Error("No search text provided for Elementor update.");
-          }
-        } catch (err) {
-          console.warn(`[ElementorAdapter] JSON manipulation failed: ${err.message}. Falling back to native WordPress content append.`);
-          requestData.content = (targetObj.content?.raw || '') + `\n<!-- wp:html -->\n${proposedText}\n<!-- /wp:html -->`;
-        }
-      } else {
+      // Standard Content Change using the custom Elementor plugin endpoint
+      const search = payload.currentState || '';
+      if (!search) {
+        console.warn(`[ElementorAdapter] No search text provided for Elementor update. Falling back to native WordPress content append.`);
         requestData.content = (targetObj.content?.raw || '') + `\n<!-- wp:html -->\n${proposedText}\n<!-- /wp:html -->`;
+        const deployRes = await this.axios({ method, url: endpoint, data: requestData });
+        return { updatedObject: deployRes.data, method: 'native_wordpress_fallback' };
       }
+
+      let finalReplaceText = proposedText;
+      if (actionType === 'insert_after') {
+        finalReplaceText = search + "\n" + proposedText;
+      } else if (actionType === 'insert_before') {
+        finalReplaceText = proposedText + "\n" + search;
+      }
+
+      try {
+        // Build the URL to the custom elementor plugin
+        const baseUrl = endpoint.split('/wp-json/wp/v2/')[0] || endpoint.split('/?rest_route=/wp/v2/')[0];
+        const restPrefix = endpoint.includes('/wp-json') ? '/wp-json' : '/?rest_route=';
+        const elementorEndpoint = baseUrl + (restPrefix === '/wp-json' ? `/wp-json/clicktrends/v1/update-elementor/${targetObj.id}` : `/?rest_route=/clicktrends/v1/update-elementor/${targetObj.id}`);
+
+        console.log(`[ElementorAdapter] Sending to Elementor Plugin -> Search: "${search}", Replace: "${finalReplaceText}"`);
+        const elemRes = await this.axios.post(elementorEndpoint, {
+          search_text: search,
+          replace_text: finalReplaceText
+        });
+        
+        if (elemRes.data && elemRes.data.success) {
+          elementorUpdated = true;
+          console.log(`[ElementorAdapter] Elementor updated successfully: ${elemRes.data.message}`);
+        } else {
+          throw new Error("Plugin responded with success: false");
+        }
+      } catch (elemErr) {
+        console.warn(`[ElementorAdapter] Elementor plugin update failed: ${elemErr.response?.data?.message || elemErr.message}. Falling back to native WP.`);
+        requestData.content = (targetObj.content?.raw || '') + `\n<!-- wp:html -->\n${proposedText}\n<!-- /wp:html -->`;
+        const deployRes = await this.axios({ method, url: endpoint, data: requestData });
+        return { updatedObject: deployRes.data, method: 'native_wordpress_fallback' };
+      }
+
+      // If the elementor plugin succeeded, we still need to return the updated object metadata.
+      // So we fetch it via a GET to the standard endpoint
+      const updatedObjRes = await this.axios.get(endpoint);
+
+      return {
+        updatedObject: updatedObjRes.data,
+        method: elementorUpdated ? 'elementor_plugin' : 'native_wordpress_fallback'
+      };
     }
-
-    const deployRes = await this.axios({
-      method,
-      url: endpoint,
-      data: requestData
-    });
-
-    return {
-      updatedObject: deployRes.data,
-      method: elementorUpdated ? 'elementor_native_json' : 'native_wordpress_fallback'
-    };
   }
 }

@@ -97,7 +97,7 @@ export class DeploymentManager {
           if (targetSlug) {
             console.log(`[DeploymentManager] Strategy A: slug lookup for "${targetSlug}"`);
             const pagesBySlug = await axiosInstance.get(
-              this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}?slug=${encodeURIComponent(targetSlug)}&_fields=id,slug,link,title,parent,content,meta`)
+              this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}?slug=${encodeURIComponent(targetSlug)}&context=edit&_fields=id,slug,link,title,parent,content,meta`)
             ).catch(() => ({ data: [] }));
 
             if (pagesBySlug.data && pagesBySlug.data.length > 0) {
@@ -120,7 +120,7 @@ export class DeploymentManager {
               if (exactMatch) {
                 // Now fetch the full object including content and meta
                 const fullPage = await axiosInstance.get(
-                  this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}/${exactMatch.id}?_fields=id,slug,link,title,parent,content,meta`)
+                  this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}/${exactMatch.id}?context=edit&_fields=id,slug,link,title,parent,content,meta`)
                 );
                 targetObj = fullPage.data;
                 endpoint = this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}/${targetObj.id}`);
