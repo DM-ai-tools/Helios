@@ -47,6 +47,8 @@ You MUST include an "implementationChanges" array with 3-5 deployment-ready camp
 - "title" must describe the asset (e.g., "Facebook Launch Post", "LinkedIn Announcement").
 - "location": proper location name (e.g., "Facebook Page", "LinkedIn Profile", "Instagram account").
 - "sourceUrl": the platform URL if available, otherwise just the platform name.
+- "actionType" must be one of: replace, insert_after, insert_before, create_page. Use create_page for entirely new sub-services or pages.
+- "targetSelector" is an optional CSS selector or logical name of the section where the change applies.
 - "currentState": what the business currently does or does not do in this area. If you are adding entirely new content, set this to the nearest existing text to act as an anchor point.
 - "proposedChange": must be COMPLETE, ready-to-publish content — actual LinkedIn post copy, actual email subject line + body, actual ad headline + description. If you used an anchor in currentState to add new content, you MUST include the anchor text in proposedChange alongside the new content.
 - No placeholders. No [INSERT NAME]. No lorem ipsum. Write the actual copy.`,
@@ -159,6 +161,8 @@ Categories (each 0-100):
         description: 'string -- what this achieves and why now',
         currentState: 'string -- what the business currently does or does not do in this area',
         proposedChange: 'string -- EXACT campaign brief, post copy, email draft, or ad copy ready to use',
+        actionType: 'string -- one of: replace, insert_after, insert_before, create_page',
+        targetSelector: 'string -- optional CSS selector or widget name to target',
         changeType: 'string -- one of: social / email / paid / content / seo / event',
         location: 'string -- name of the page in the URL, e.g. "home page" or "contact page"',
         sourceUrl: 'string -- the exact URL of the page where the change is located (from the crawl data)'

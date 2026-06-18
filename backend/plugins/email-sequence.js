@@ -128,6 +128,8 @@ You MUST include "implementationChanges" with 3-5 complete email drafts.
 - "title" must be the name of the email (e.g., "Welcome Email 1", "Win-back Email").
 - "location" must be the sequence or form where the change belongs (e.g., "Onboarding Sequence", "Exit Popup").
 - "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data) if applicable, or "Email Automation Platform".
+- "actionType" must be one of: replace, insert_after, insert_before, create_page. Use create_page for entirely new sub-services or pages.
+- "targetSelector" is an optional CSS selector or logical name of the section where the change applies.
 - "proposedChange": COMPLETE email: subject line + preview text + full body copy + CTA text, ready to send. If you used an anchor in currentState to add new content, you MUST include the anchor text in proposedChange alongside the new content.
 - "currentState": what currently exists or does not exist on the website (e.g. "No welcome email currently sent"). If you are adding entirely new content on the website, set this to the nearest existing text to act as an anchor point.`,
 
@@ -229,6 +231,8 @@ Score = (emailCapture × 0.30) + (leadMagnet × 0.25) + (contentForNurture × 0.
         description: 'string — what this email achieves in the sequence',
         currentState: 'string — what currently exists or does not exist on the website (e.g. "No welcome email currently sent")',
         proposedChange: 'string — COMPLETE email: subject line + preview text + full body copy + CTA text, ready to send',
+        actionType: 'string -- one of: replace, insert_after, insert_before, create_page',
+        targetSelector: 'string -- optional CSS selector or widget name to target',
         changeType: 'string — one of: email / automation / subject-line / capture-form',
         location: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
         sourceUrl: 'string — the exact URL of the page where the change is located (from the crawl data)'

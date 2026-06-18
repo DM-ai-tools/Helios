@@ -337,7 +337,9 @@ export async function deployToWordPress(payload, integration) {
       }
     } else {
       // Standard content change - try Elementor update first
-      if (targetObj) {
+      const actionType = payload.actionType || 'replace';
+
+      if (targetObj && actionType !== 'create_page') {
         let alignedSearchText = payload.currentState || '';
         const liveUrl = targetObj.link;
         if (liveUrl && alignedSearchText) {
@@ -356,9 +358,16 @@ export async function deployToWordPress(payload, integration) {
         }
 
         try {
+          let finalReplaceText = proposedText;
+          if (actionType === 'insert_after') {
+            finalReplaceText = alignedSearchText + "\n" + proposedText;
+          } else if (actionType === 'insert_before') {
+            finalReplaceText = proposedText + "\n" + alignedSearchText;
+          }
+
           const elementorPayload = {
             search_text: alignedSearchText,
-            replace_text: proposedText
+            replace_text: finalReplaceText
           };
           console.log(`[WordPress] Sending to Elementor Plugin -> Search: "${elementorPayload.search_text}", Replace: "${elementorPayload.replace_text}"`);
           const elemRes = await axios.post(
@@ -380,13 +389,35 @@ export async function deployToWordPress(payload, integration) {
       // Wrap HTML in Gutenberg block to prevent wpautop corruption and styling conflicts
       const gutenbergWrappedContent = `<!-- wp:html -->\n${proposedText}\n<!-- /wp:html -->`;
 
+      let finalContent = gutenbergWrappedContent;
+      if (targetObj && actionType !== 'create_page') {
+        const origContent = targetObj.content?.raw || targetObj.content?.rendered || '';
+        const search = payload.currentState || '';
+        if (origContent && search) {
+          if (actionType === 'replace') {
+            finalContent = origContent.replace(search, gutenbergWrappedContent);
+          } else if (actionType === 'insert_after') {
+            finalContent = origContent.replace(search, search + '\n' + gutenbergWrappedContent);
+          } else if (actionType === 'insert_before') {
+            finalContent = origContent.replace(search, gutenbergWrappedContent + '\n' + search);
+          }
+          // If search text wasn't found in native content, just append it safely instead of replacing the whole page
+          if (!origContent.includes(search)) {
+            finalContent = origContent + '\n' + gutenbergWrappedContent;
+          }
+        } else if (origContent && !search) {
+          // No search text provided, default to appending
+          finalContent = origContent + '\n' + gutenbergWrappedContent;
+        }
+      }
+
       // Always push to the native WP content field as well
       const requestData = {
-        content: gutenbergWrappedContent,
+        content: finalContent,
         status:  'publish'
       };
 
-      if (!targetObj) {
+      if (!targetObj || actionType === 'create_page') {
         requestData.title = finalTitle;
         requestData.slug = targetSlug || undefined;
       }
@@ -679,9 +710,8 @@ async function autoInterlinkParentPage(subServiceName, subServiceSlug, newLiveUr
             const href = $live(el).attr('href') || '';
             const text = $live(el).text() || '';
             
-            const slugMatch = href.toLowerCase().includes(subServiceSlug.toLowerCase()) || 
-                              (subServiceSlug === 'ai-powered-seo' && href.toLowerCase().includes('ai-search-optimisation')) ||
-                              href.toLowerCase().includes('local-seo-services');
+            const slugMatch = (subServiceSlug && href.toLowerCase().includes(subServiceSlug.toLowerCase())) || 
+                              (subServiceSlug === 'ai-powered-seo' && href.toLowerCase().includes('ai-search-optimisation'));
             const textOverlap = getOverlapScore(text, subServiceName);
 
             const normHref = href.toLowerCase().replace(/\/$/, '');
@@ -712,9 +742,8 @@ async function autoInterlinkParentPage(subServiceName, subServiceSlug, newLiveUr
         const href = $(el).attr('href') || '';
         const text = $(el).text() || '';
         
-        const slugMatch = href.toLowerCase().includes(subServiceSlug.toLowerCase()) || 
-                          (subServiceSlug === 'ai-powered-seo' && href.toLowerCase().includes('ai-search-optimisation')) ||
-                          href.toLowerCase().includes('local-seo-services');
+        const slugMatch = (subServiceSlug && href.toLowerCase().includes(subServiceSlug.toLowerCase())) || 
+                          (subServiceSlug === 'ai-powered-seo' && href.toLowerCase().includes('ai-search-optimisation'));
         const textOverlap = getOverlapScore(text, subServiceName);
 
         const normHref = href.toLowerCase().replace(/\/$/, '');

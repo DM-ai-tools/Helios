@@ -90,6 +90,8 @@ router.post('/queue', requireAdmin, async (req, res) => {
           proposedChange: matched.userEdit || matched.proposedChange,
           description:   matched.description,
           changeType:    matched.changeType,
+          actionType:    matched.actionType  || 'replace',
+          targetSelector:matched.targetSelector || null,
           sourceUrl:     matched.sourceUrl   || null,
           location:      matched.location    || null,
         };

@@ -60,6 +60,8 @@ You MUST include "implementationChanges" with 8–15 copy-and-paste-ready conten
 - "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
 - "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
 - "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
+- "actionType" must be one of: replace, insert_after, insert_before, create_page. Use create_page for entirely new sub-services or pages.
+- "targetSelector" is an optional CSS selector or logical name of the section where the change applies.
 - "currentState" must quote the EXACT existing copy from the website. If you are adding entirely new content, set this to the nearest existing text to act as an anchor point.
 - "proposedChange" must be the COMPLETE finished piece of content. If you used an anchor in currentState to add new content, you MUST include the anchor text in proposedChange alongside the new content.
 - No ellipsis, no [brackets], no "to be written later" — write the entire content piece.`,
@@ -154,6 +156,8 @@ Categories (each 0–100):
         description: 'string — why this copy change is needed',
         currentState: 'string — EXACT current copy from the website',
         proposedChange: 'string — COMPLETE replacement copy, ready to publish as-is',
+        actionType: 'string -- one of: replace, insert_after, insert_before, create_page',
+        targetSelector: 'string -- optional CSS selector or widget name to target',
         changeType: 'string — one of: headline / cta / body / social / email / meta',
         location: 'string — name of the page in the URL, e.g. "home page" or "contact page"',
         sourceUrl: 'string — the exact URL of the page where the change is located (from the crawl data)'
