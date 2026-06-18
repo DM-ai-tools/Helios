@@ -13,7 +13,18 @@ export class DeploymentManager {
   }
 
   async deploy(payload, integration) {
-    const { site_url: siteUrl, username, application_password: password } = integration.metadata;
+    let siteUrl = process.env.WORDPRESS_SITE_URL || integration.account_name;
+    siteUrl = siteUrl.replace(/\/$/, '').replace(/\/wp-admin$/, '');
+    const username = process.env.WORDPRESS_USERNAME || integration.account_id;
+    const password = process.env.WORDPRESS_PASSWORD || integration.access_token;
+
+    if (!siteUrl || !username || !password) {
+      throw new Error('Incomplete WordPress credentials. Ensure URL, Username, and Application Password are provided.');
+    }
+    if (!siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
+      siteUrl = `https://${siteUrl}`;
+    }
+
     const authHeader = 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
     const axiosConfig = {
       headers: {
