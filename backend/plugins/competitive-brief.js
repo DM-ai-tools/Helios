@@ -46,8 +46,8 @@ You MUST include an "implementationChanges" array with 6–12 ready-to-execute c
 - "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
 - "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
 - "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
-- "currentState" must reference actual language found on the website (exact quotes).
-- "proposedChange" must be EXACT rewritten copy or positioning statement, ready to publish with no edits required.
+- "currentState" must reference actual language found on the website (exact quotes). If you are adding entirely new content, set this to the nearest existing text to act as an anchor point.
+- "proposedChange" must be EXACT rewritten copy or positioning statement, ready to publish with no edits required. If you used an anchor in currentState to add new content, you MUST include the anchor text in proposedChange alongside the new content.
 - No vague suggestions — write the finished deliverable.`,
 
   scoringPrompt: `Score this brand's competitive positioning from 0–100:

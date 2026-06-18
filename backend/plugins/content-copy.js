@@ -60,8 +60,8 @@ You MUST include "implementationChanges" with 8–15 copy-and-paste-ready conten
 - "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
 - "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
 - "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
-- "currentState" must quote the EXACT existing copy from the website (not a description of it).
-- "proposedChange" must be the COMPLETE finished piece of content — full headline+subheadline+CTA, full body section, etc.
+- "currentState" must quote the EXACT existing copy from the website. If you are adding entirely new content, set this to the nearest existing text to act as an anchor point.
+- "proposedChange" must be the COMPLETE finished piece of content. If you used an anchor in currentState to add new content, you MUST include the anchor text in proposedChange alongside the new content.
 - No ellipsis, no [brackets], no "to be written later" — write the entire content piece.`,
 
   scoringPrompt: `Score this business's content and copy quality (0–100):

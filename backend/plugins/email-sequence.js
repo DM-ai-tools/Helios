@@ -128,8 +128,8 @@ You MUST include "implementationChanges" with 3-5 complete email drafts.
 - "title" must be the name of the email (e.g., "Welcome Email 1", "Win-back Email").
 - "location" must be the sequence or form where the change belongs (e.g., "Onboarding Sequence", "Exit Popup").
 - "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data) if applicable, or "Email Automation Platform".
-- "proposedChange": COMPLETE email: subject line + preview text + full body copy + CTA text, ready to send.
-- "currentState": what currently exists or does not exist on the website.`,
+- "proposedChange": COMPLETE email: subject line + preview text + full body copy + CTA text, ready to send. If you used an anchor in currentState to add new content, you MUST include the anchor text in proposedChange alongside the new content.
+- "currentState": what currently exists or does not exist on the website (e.g. "No welcome email currently sent"). If you are adding entirely new content on the website, set this to the nearest existing text to act as an anchor point.`,
 
   scoringPrompt: `Score this business's email marketing readiness (0–100):
 

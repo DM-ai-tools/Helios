@@ -104,8 +104,8 @@ You MUST include an "implementationChanges" array with 6–12 copy-paste-ready f
 - "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
 - "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
 - "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
-- "currentState": EXACT quote of the problematic text as it appears on the site.
-- "proposedChange": COMPLETE rewritten version — no placeholders, no "...", fully finished.
+- "currentState": EXACT quote of the problematic text as it appears on the site. If you are adding entirely new content, set this to the nearest existing text to act as an anchor point.
+- "proposedChange": COMPLETE rewritten version — no placeholders, no "...", fully finished. If you used an anchor in currentState to add new content, you MUST include the anchor text in proposedChange alongside the new content.
 - Bad: "Rewrite the hero headline to be clearer"
 - Good: currentState="We help businesses grow" proposedChange="Data-driven digital marketing that generates measurable ROI — for Australian businesses ready to scale"`,
 
