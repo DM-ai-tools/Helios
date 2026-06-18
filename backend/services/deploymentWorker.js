@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq';
 import { connection } from './deploymentQueue.js';
-import { deployToWordPress } from './platforms/wordpress.js';
+import { deployToWordPress } from './platforms/wordpress/index.js';
 import { 
   updateDbDeploymentJob,
   getIntegrationByPlatform,
@@ -66,10 +66,12 @@ export const deploymentWorker = new Worker('deployments', async (job) => {
       platform,
       assetType,
       contentPayload: payload,
-      previousContent,
+      previousContent: result.previousContent || previousContent,
+      builderType: result.builderType || 'wordpress',
+      deploymentMethod: result.deploymentMethod || 'native_wordpress',
       status: 'completed',
       deployedBy,
-      response: result
+      response: result.updatedObject || result
     });
 
     const actionDetails = isRollback

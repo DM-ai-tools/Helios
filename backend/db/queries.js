@@ -948,22 +948,24 @@ export async function updateDbDeploymentJob(jobId, status) {
   }
 }
 
-export async function createDeployment({ businessId, auditId, changeId, platform, assetType, contentPayload, previousContent, status, deployedBy, response }) {
-  const query = `
-    INSERT INTO deployments (business_id, audit_id, change_id, platform, asset_type, content_payload, previous_content, status, deployed_by, response)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-    RETURNING *;
-  `;
+export async function createDeployment({ businessId, auditId, changeId, platform, assetType, contentPayload, previousContent, builderType, deploymentMethod, status, deployedBy, response }) {
   try {
-    const { rows } = await pool.query(query, [
-      businessId,
-      auditId,
-      changeId,
-      platform,
+    const insertQuery = `
+      INSERT INTO deployments (business_id, audit_id, change_id, platform, asset_type, content_payload, previous_content, builder_type, deployment_method, status, deployed_by, response)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING *;
+    `;
+    const { rows } = await pool.query(insertQuery, [
+      businessId, 
+      auditId, 
+      changeId, 
+      platform, 
       assetType,
       JSON.stringify(contentPayload),
       previousContent ? JSON.stringify(previousContent) : null,
-      status,
+      builderType || null,
+      deploymentMethod || null,
+      status, 
       deployedBy,
       response ? JSON.stringify(response) : null
     ]);

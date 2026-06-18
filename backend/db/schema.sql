@@ -157,6 +157,8 @@ CREATE TABLE IF NOT EXISTS deployments (
   status           TEXT NOT NULL CHECK (status IN ('queued', 'deploying', 'completed', 'failed')),
   deployed_by      TEXT NOT NULL,
   response         JSONB,
+  builder_type     TEXT,
+  deployment_method TEXT,
   created_at       TIMESTAMPTZ DEFAULT NOW(),
   updated_at       TIMESTAMPTZ DEFAULT NOW()
 );
