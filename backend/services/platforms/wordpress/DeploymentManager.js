@@ -94,16 +94,39 @@ export class DeploymentManager {
             subServiceSlug = targetSlug;
           }
 
-          console.log(`[DeploymentManager] Strategy A2: matching exact link for "${liveUrl}"`);
-          const allPages = await axiosInstance.get(this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}?per_page=100&_fields=id,slug,link,title,parent,content,meta`));
-          
-          if (allPages.data && Array.isArray(allPages.data)) {
-            const exactMatch = allPages.data.find(p => p.link && p.link.replace(/\/$/, '') === liveUrl.replace(/\/$/, ''));
-            if (exactMatch) {
-              targetObj = exactMatch;
+          if (targetSlug) {
+            console.log(`[DeploymentManager] Strategy A: slug lookup for "${targetSlug}"`);
+            const pagesBySlug = await axiosInstance.get(
+              this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}?slug=${encodeURIComponent(targetSlug)}&_fields=id,slug,link,title,parent,content,meta`)
+            ).catch(() => ({ data: [] }));
+
+            if (pagesBySlug.data && pagesBySlug.data.length > 0) {
+              targetObj = pagesBySlug.data[0];
               endpoint = this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}/${targetObj.id}`);
               method = 'POST';
-              console.log(`[DeploymentManager] Found page by exact link match: [${targetObj.id}] "${targetObj.title.rendered}" → ${targetObj.link}`);
+              console.log(`[DeploymentManager] Found page by slug: [${targetObj.id}] "${targetObj.title?.rendered}" → ${targetObj.link}`);
+            }
+          }
+
+          if (!targetObj) {
+            console.log(`[DeploymentManager] Strategy A2: matching exact link for "${liveUrl}"`);
+            // Only fetch id, slug, link, title, parent to avoid huge payloads and timeouts
+            const allPages = await axiosInstance.get(
+              this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}?per_page=100&_fields=id,slug,link,title,parent`)
+            );
+            
+            if (allPages.data && Array.isArray(allPages.data)) {
+              const exactMatch = allPages.data.find(p => p.link && p.link.replace(/\/$/, '') === liveUrl.replace(/\/$/, ''));
+              if (exactMatch) {
+                // Now fetch the full object including content and meta
+                const fullPage = await axiosInstance.get(
+                  this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}/${exactMatch.id}?_fields=id,slug,link,title,parent,content,meta`)
+                );
+                targetObj = fullPage.data;
+                endpoint = this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}/${targetObj.id}`);
+                method = 'POST';
+                console.log(`[DeploymentManager] Found page by exact link match: [${targetObj.id}] "${targetObj.title.rendered}" → ${targetObj.link}`);
+              }
             }
           }
         } catch (e) {
