@@ -276,6 +276,7 @@ export async function deployToWordPress(payload, integration) {
     let elementorUpdated = false;
     let elementorMessage = '';
     let updatedObject = targetObj;
+    const actionType = payload.actionType || 'replace';
 
     if (isMetadata) {
       console.log(`[WordPress] Deploying metadata change: "${proposedText}" (isTitle: ${isTitle})`);
@@ -337,8 +338,6 @@ export async function deployToWordPress(payload, integration) {
       }
     } else {
       // Standard content change - try Elementor update first
-      const actionType = payload.actionType || 'replace';
-
       if (targetObj && actionType !== 'create_page') {
         let alignedSearchText = payload.currentState || '';
         const liveUrl = targetObj.link;
@@ -444,7 +443,7 @@ export async function deployToWordPress(payload, integration) {
     console.log(`[WordPress] Deployed successfully → ${liveUrl} (ID: ${updatedObject ? updatedObject.id : 'global-settings'})`);
 
     // Auto-interlink within the parent page if nested
-    if (objType === 'pages' && parentId !== undefined && liveUrl) {
+    if (objType === 'pages' && parentId !== undefined && liveUrl && actionType === 'create_page') {
       await autoInterlinkParentPage(
         payload.title || 'Untitled Page',
         payload.slug || targetSlug || '',
@@ -457,7 +456,7 @@ export async function deployToWordPress(payload, integration) {
     }
 
     // Auto-interlink within the homepage if liveUrl is set
-    if (objType === 'pages' && liveUrl) {
+    if (objType === 'pages' && liveUrl && actionType === 'create_page') {
       try {
         let homepageId = null;
         const settingsRes = await axios.get(buildUrl('/wp/v2/settings'), axiosConfig);

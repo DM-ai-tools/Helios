@@ -49,7 +49,7 @@ You MUST include an "implementationChanges" array with 3-5 deployment-ready camp
 - "sourceUrl": the platform URL if available, otherwise just the platform name.
 - "actionType" must be one of: replace, insert_after, insert_before, create_page. Use create_page for entirely new sub-services or pages.
 - "targetSelector" is an optional CSS selector or logical name of the section where the change applies.
-- "currentState": what the business currently does or does not do in this area. If you are adding entirely new content, set this to the nearest existing text to act as an anchor point.
+- "currentState" must quote EXACT existing content from the crawl data provided. **CRITICAL for Elementor**: Elementor stores text in small chunks. NEVER use multi-line strings or large paragraphs for 'currentState'. Pick a SHORT, single-line string (like a specific heading or a single sentence) that is unique on the page. If you are adding entirely new content, set this to the nearest single-line existing text to act as an anchor point.
 - "proposedChange": must be COMPLETE, ready-to-publish content — actual LinkedIn post copy, actual email subject line + body, actual ad headline + description. If you used an anchor in currentState to add new content, you MUST include the anchor text in proposedChange alongside the new content.
 - No placeholders. No [INSERT NAME]. No lorem ipsum. Write the actual copy.`,
 

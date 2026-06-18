@@ -106,7 +106,7 @@ You MUST include an "implementationChanges" array with 6–12 copy-paste-ready f
 - "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
 - "actionType" must be one of: replace, insert_after, insert_before, create_page. Use create_page for entirely new sub-services or pages.
 - "targetSelector" is an optional CSS selector or logical name of the section where the change applies.
-- "currentState": EXACT quote of the problematic text as it appears on the site. If you are adding entirely new content, set this to the nearest existing text to act as an anchor point.
+- "currentState" must quote EXACT existing content from the crawl data provided. **CRITICAL for Elementor**: Elementor stores text in small chunks. NEVER use multi-line strings or large paragraphs for 'currentState'. Pick a SHORT, single-line string (like a specific heading or a single sentence) that is unique on the page. If you are adding entirely new content, set this to the nearest single-line existing text to act as an anchor point.
 - "proposedChange": COMPLETE rewritten version — no placeholders, no "...", fully finished. If you used an anchor in currentState to add new content, you MUST include the anchor text in proposedChange alongside the new content.
 - Bad: "Rewrite the hero headline to be clearer"
 - Good: currentState="We help businesses grow" proposedChange="Data-driven digital marketing that generates measurable ROI — for Australian businesses ready to scale"`,

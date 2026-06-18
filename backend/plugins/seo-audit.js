@@ -110,7 +110,7 @@ RULES:
 - "sourceUrl" must be copied EXACTLY from the CRAWLED PAGE URL MAP provided in the user prompt -- do not invent or shorten URLs.
 - "actionType" must be one of: replace, insert_after, insert_before, create_page. Use create_page for entirely new sub-services or pages.
 - "targetSelector" is an optional CSS selector or logical name of the section where the change applies.
-- "currentState" must quote EXACT existing content from the crawl data provided. If you are adding entirely new content, set this to the nearest existing text to act as an anchor point.
+- "currentState" must quote EXACT existing content from the crawl data provided. **CRITICAL for Elementor**: Elementor stores text in small chunks. NEVER use multi-line strings or large paragraphs for 'currentState'. Pick a SHORT, single-line string (like a specific heading or a single sentence) that is unique on the page. If you are adding entirely new content, set this to the nearest single-line existing text to act as an anchor point.
 - "proposedChange" must be EXACT replacement text. If you used an anchor in currentState to add new content, you MUST include the anchor text in proposedChange alongside the new content.
 - Generate the COMPLETE new title tag, meta description, H1, schema JSON, or alt text -- not a description of what to write
 - Bad: "Improve the homepage title to include keywords"
