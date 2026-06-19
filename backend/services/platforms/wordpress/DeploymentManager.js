@@ -89,70 +89,96 @@ export class DeploymentManager {
       if (liveUrl && !liveUrl.startsWith('http')) {
         liveUrl = siteUrl.replace(/\/+$/, '') + (liveUrl.startsWith('/') ? '' : '/') + liveUrl;
       }
-      
+
       console.log(`[DeploymentManager] sourceUrl: ${payload.sourceUrl} | location: ${payload.location}`);
 
       if (liveUrl) {
+        // Strategy A0: HTML scrape the live URL to extract the exact WP post ID from <body> class
         try {
-          let urlPath = '';
-          try {
-            const parsed = new URL(liveUrl);
-            urlPath = parsed.pathname;
-          } catch (_) {
-            urlPath = liveUrl;
-          }
+          console.log(`[DeploymentManager] Strategy A0: HTML Scrape for exact post ID at "${liveUrl}"`);
+          const htmlRes = await axiosInstance.get(liveUrl, { headers: { Authorization: undefined }, timeout: 10000 }).catch(() => null);
+          if (htmlRes && htmlRes.data && typeof htmlRes.data === 'string') {
+            const match = htmlRes.data.match(/\bpage-id-(\d+)\b/);
+            if (match && match[1]) {
+              const scrapedId = match[1];
+              console.log(`[DeploymentManager] Scraped WP Post ID: ${scrapedId}. Fetching page via API...`);
+              const fullPage = await axiosInstance.get(
+                this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}/${scrapedId}?context=edit&_fields=id,slug,link,title,parent,content,meta`)
+              ).catch(() => null);
 
-          let possibleSlug = urlPath.replace(/\/$/, '').split('/').pop() || '';
-          const liveUrlNoProto = liveUrl.replace(/\/$/, '').replace(/^https?:\/\//, '');
-          const siteUrlNoProto = siteUrl.replace(/\/$/, '').replace(/^https?:\/\//, '');
-          const isHomePage = liveUrlNoProto === siteUrlNoProto;
-
-          if (!isHomePage && possibleSlug && possibleSlug !== 'home' && !liveUrl.match(/^https?:\/\/[^\/]+\/?$/)) {
-            targetSlug = possibleSlug;
-            subServiceSlug = targetSlug;
-          }
-
-          if (targetSlug) {
-            console.log(`[DeploymentManager] Strategy A: slug lookup for "${targetSlug}"`);
-            const pagesBySlug = await axiosInstance.get(
-              this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}?slug=${encodeURIComponent(targetSlug)}&context=edit&_fields=id,slug,link,title,parent,content,meta`)
-            ).catch(() => ({ data: [] }));
-
-            if (pagesBySlug.data && pagesBySlug.data.length > 0) {
-              targetObj = pagesBySlug.data[0];
-              endpoint = this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}/${targetObj.id}`);
-              method = 'POST';
-              console.log(`[DeploymentManager] Found page by slug: [${targetObj.id}] "${targetObj.title?.rendered}" → ${targetObj.link}`);
-            }
-          }
-
-          if (!targetObj) {
-            console.log(`[DeploymentManager] Strategy A2: matching exact link for "${liveUrl}"`);
-            // Only fetch id, slug, link, title, parent to avoid huge payloads and timeouts
-            const allPages = await axiosInstance.get(
-              this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}?per_page=100&_fields=id,slug,link,title,parent`)
-            );
-            
-            if (allPages.data && Array.isArray(allPages.data)) {
-              const liveUrlNormalized = liveUrl.replace(/\/$/, '').replace(/^https?:\/\//, '');
-              const exactMatch = allPages.data.find(p => {
-                if (!p.link) return false;
-                return p.link.replace(/\/$/, '').replace(/^https?:\/\//, '') === liveUrlNormalized;
-              });
-              if (exactMatch) {
-                // Now fetch the full object including content and meta
-                const fullPage = await axiosInstance.get(
-                  this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}/${exactMatch.id}?context=edit&_fields=id,slug,link,title,parent,content,meta`)
-                );
+              if (fullPage && fullPage.data) {
                 targetObj = fullPage.data;
                 endpoint = this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}/${targetObj.id}`);
                 method = 'POST';
-                console.log(`[DeploymentManager] Found page by exact link match: [${targetObj.id}] "${targetObj.title.rendered}" → ${targetObj.link}`);
+                console.log(`[DeploymentManager] Found page by scraped ID: [${targetObj.id}] "${targetObj.title?.rendered}" → ${targetObj.link}`);
               }
             }
           }
         } catch (e) {
-          console.warn(`[DeploymentManager] Error during target discovery: ${e.message}`);
+          console.warn(`[DeploymentManager] HTML Scrape failed: ${e.message}`);
+        }
+
+        // Strategy A/A2: Fallback to slug lookup or exact URL match
+        if (!targetObj) {
+          try {
+            let urlPath = '';
+            try {
+              const parsed = new URL(liveUrl);
+              urlPath = parsed.pathname;
+            } catch (_) {
+              urlPath = liveUrl;
+            }
+
+            const liveUrlNoProto = liveUrl.replace(/\/$/, '').replace(/^https?:\/\//, '');
+            const siteUrlNoProto = siteUrl.replace(/\/$/, '').replace(/^https?:\/\//, '');
+            const isHomePage = liveUrlNoProto === siteUrlNoProto;
+            const possibleSlug = urlPath.replace(/\/$/, '').split('/').pop() || '';
+
+            if (!isHomePage && possibleSlug && possibleSlug !== 'home' && !liveUrl.match(/^https?:\/\/[^\/]+\/?$/)) {
+              targetSlug = possibleSlug;
+              subServiceSlug = targetSlug;
+            }
+
+            if (targetSlug) {
+              console.log(`[DeploymentManager] Strategy A: slug lookup for "${targetSlug}"`);
+              const pagesBySlug = await axiosInstance.get(
+                this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}?slug=${encodeURIComponent(targetSlug)}&context=edit&_fields=id,slug,link,title,parent,content,meta`)
+              ).catch(() => ({ data: [] }));
+
+              if (pagesBySlug.data && pagesBySlug.data.length > 0) {
+                targetObj = pagesBySlug.data[0];
+                endpoint = this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}/${targetObj.id}`);
+                method = 'POST';
+                console.log(`[DeploymentManager] Found page by slug: [${targetObj.id}] "${targetObj.title?.rendered}" → ${targetObj.link}`);
+              }
+            }
+
+            if (!targetObj) {
+              console.log(`[DeploymentManager] Strategy A2: matching exact link for "${liveUrl}"`);
+              const allPages = await axiosInstance.get(
+                this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}?per_page=100&_fields=id,slug,link,title,parent`)
+              );
+
+              if (allPages.data && Array.isArray(allPages.data)) {
+                const liveUrlNormalized = liveUrl.replace(/\/$/, '').replace(/^https?:\/\//, '');
+                const exactMatch = allPages.data.find(p => {
+                  if (!p.link) return false;
+                  return p.link.replace(/\/$/, '').replace(/^https?:\/\//, '') === liveUrlNormalized;
+                });
+                if (exactMatch) {
+                  const fullPage = await axiosInstance.get(
+                    this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}/${exactMatch.id}?context=edit&_fields=id,slug,link,title,parent,content,meta`)
+                  );
+                  targetObj = fullPage.data;
+                  endpoint = this.buildUrl(siteUrl, restPrefix, `/wp/v2/${objType}/${targetObj.id}`);
+                  method = 'POST';
+                  console.log(`[DeploymentManager] Found page by exact link match: [${targetObj.id}] "${targetObj.title.rendered}" → ${targetObj.link}`);
+                }
+              }
+            }
+          } catch (e) {
+            console.warn(`[DeploymentManager] Error during target discovery: ${e.message}`);
+          }
         }
       }
     }
@@ -200,15 +226,15 @@ export class DeploymentManager {
     }
 
     const updatedObject = deployResult.updatedObject;
-    const liveUrl = updatedObject ? updatedObject.link : siteUrl;
-    console.log(`[DeploymentManager] Deployed successfully → ${liveUrl} (ID: ${updatedObject ? updatedObject.id : 'global-settings'})`);
+    const deployedUrl = updatedObject ? updatedObject.link : siteUrl;
+    console.log(`[DeploymentManager] Deployed successfully → ${deployedUrl} (ID: ${updatedObject ? updatedObject.id : 'global-settings'})`);
 
     // ── 4. Interlinking / Post-Deployment ──
-    if (objType === 'pages' && parentId !== undefined && liveUrl && adapterParams.actionType === 'create_page') {
+    if (objType === 'pages' && parentId !== undefined && deployedUrl && adapterParams.actionType === 'create_page') {
       await autoInterlinkParentPage(
         payload.title || 'Untitled Page',
         subServiceSlug || targetSlug || '',
-        liveUrl,
+        deployedUrl,
         parentId,
         axiosConfig,
         siteUrl,
@@ -216,7 +242,7 @@ export class DeploymentManager {
       );
     }
 
-    if (objType === 'pages' && liveUrl && adapterParams.actionType === 'create_page') {
+    if (objType === 'pages' && deployedUrl && adapterParams.actionType === 'create_page') {
       try {
         let homepageId = null;
         const settingsRes = await axiosInstance.get(this.buildUrl(siteUrl, restPrefix, '/wp/v2/settings'));
@@ -234,7 +260,7 @@ export class DeploymentManager {
           await autoInterlinkParentPage(
             payload.title || 'Untitled Page',
             subServiceSlug || targetSlug || '',
-            liveUrl,
+            deployedUrl,
             homepageId,
             axiosConfig,
             siteUrl,
