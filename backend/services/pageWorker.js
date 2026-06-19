@@ -240,7 +240,7 @@ Generate a single copywriting JSON object for ${subServiceName} landing page now
             'anthropic-beta': 'prompt-caching-2024-07-31,max-tokens-3-5-sonnet-2024-07-15'
           },
           body: JSON.stringify({
-            model: 'claude-3-5-sonnet-20241022',
+            model: 'claude-3-5-sonnet-20240620',
             max_tokens: 8192,
             system: [
               {
