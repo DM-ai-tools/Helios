@@ -103,7 +103,9 @@ export class DeploymentManager {
           }
 
           let possibleSlug = urlPath.replace(/\/$/, '').split('/').pop() || '';
-          const isHomePage = liveUrl.replace(/\/$/, '') === siteUrl.replace(/\/$/, '');
+          const liveUrlNoProto = liveUrl.replace(/\/$/, '').replace(/^https?:\/\//, '');
+          const siteUrlNoProto = siteUrl.replace(/\/$/, '').replace(/^https?:\/\//, '');
+          const isHomePage = liveUrlNoProto === siteUrlNoProto;
 
           if (!isHomePage && possibleSlug && possibleSlug !== 'home' && !liveUrl.match(/^https?:\/\/[^\/]+\/?$/)) {
             targetSlug = possibleSlug;
@@ -132,7 +134,11 @@ export class DeploymentManager {
             );
             
             if (allPages.data && Array.isArray(allPages.data)) {
-              const exactMatch = allPages.data.find(p => p.link && p.link.replace(/\/$/, '') === liveUrl.replace(/\/$/, ''));
+              const liveUrlNormalized = liveUrl.replace(/\/$/, '').replace(/^https?:\/\//, '');
+              const exactMatch = allPages.data.find(p => {
+                if (!p.link) return false;
+                return p.link.replace(/\/$/, '').replace(/^https?:\/\//, '') === liveUrlNormalized;
+              });
               if (exactMatch) {
                 // Now fetch the full object including content and meta
                 const fullPage = await axiosInstance.get(
