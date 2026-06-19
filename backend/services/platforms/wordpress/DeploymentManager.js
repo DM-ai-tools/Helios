@@ -103,7 +103,9 @@ export class DeploymentManager {
           }
 
           let possibleSlug = urlPath.replace(/\/$/, '').split('/').pop() || '';
-          if (possibleSlug && possibleSlug !== 'home' && !liveUrl.match(/^https?:\/\/[^\/]+\/?$/)) {
+          const isHomePage = liveUrl.replace(/\/$/, '') === siteUrl.replace(/\/$/, '');
+
+          if (!isHomePage && possibleSlug && possibleSlug !== 'home' && !liveUrl.match(/^https?:\/\/[^\/]+\/?$/)) {
             targetSlug = possibleSlug;
             subServiceSlug = targetSlug;
           }
