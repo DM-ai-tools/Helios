@@ -5,6 +5,7 @@ const url = new URL(redisUrlStr);
 export const connection = {
   host: url.hostname,
   port: parseInt(url.port, 10) || 6379,
+  username: url.username || undefined,
   password: url.password || undefined,
   tls: url.protocol === 'rediss:' ? {} : undefined
 };
