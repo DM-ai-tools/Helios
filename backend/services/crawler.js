@@ -196,6 +196,9 @@ export async function crawlWebsite(url, onProgress = () => { }) {
     // Remove homepage from pool to avoid re-crawling
     allInternalLinks.delete(homepageNormalized);
 
+    // Filter sitemap links to ensure they belong to the current domain
+    const validSitemapLinks = discoveredFromSitemap.filter(link => isInternalLink(link, normalised));
+
     // Phase 3 & 4: Classification & Prioritization
     let urlPool = Array.from(allInternalLinks)
       .filter(link => isInternalLink(link, normalised))
@@ -207,7 +210,7 @@ export async function crawlWebsite(url, onProgress = () => { }) {
       .sort((a, b) => b.category.score - a.category.score); // Highest priority first
 
     onProgress(`Discovered ${urlPool.length} internal pages. Prioritising…`);
-    crawledData.totalPages = discoveredFromSitemap.length > 0 ? discoveredFromSitemap.length : (urlPool.length + 1);
+    crawledData.totalPages = validSitemapLinks.length > 0 ? validSitemapLinks.length : (urlPool.length + 1);
 
     // Phase 5: Adaptive Crawl Limits
     let crawlBudget = 200; // Small site

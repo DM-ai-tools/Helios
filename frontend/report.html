@@ -1913,8 +1913,7 @@ function renderCompetitiveBrief(bp) {
     var rList = document.getElementById('comp-recs-list');
     if (rWrap) rWrap.classList.remove('hidden');
     if (rList) rList.innerHTML = recs.slice(0,6).map(buildRecCard).join('');
-  }
-  addImplButton(section, 'competitive-brief');
+  // addImplButton(section, 'competitive-brief');
 }
 
 function renderCampaignPlan(cp) {

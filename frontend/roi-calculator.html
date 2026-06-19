@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROI Calculator · ClickTrends AI Audit</title>
+<meta name="description" content="Calculate your Google Ads ROI while your AI audit is running.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --orange: #f97316;
+  --orange-hover: #fb923c;
+  --orange-dark: #ea6c0a;
+  --navy: #1a1a2e;
+  --navy-light: #16213e;
+  --white: #ffffff;
+  --bg: #faf9f6;
+  --border: #e5e7eb;
+  --text-dark: #1f2937;
+  --text-gray: #4b5563;
+  --text-light: #9ca3af;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --shadow: 0 4px 24px rgba(0,0,0,0.06);
+  --shadow-hover: 0 12px 32px rgba(0,0,0,0.08);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  color: var(--text-dark);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================
+   HEADER & PROGRESS
+   ============================================ */
+header {
+  position: sticky; top: 0; z-index: 50; height: 68px;
+  display: flex; align-items: center;
+  background: rgba(250,249,246,0.85); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+.header-inner {
+  max-width: 1100px; width: 100%; margin: 0 auto; padding: 0 28px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo { font-weight: 800; font-size: 1.1rem; letter-spacing: -0.02em; color: var(--navy); text-decoration: none; }
+.logo span { color: var(--orange); }
+
+.live-badge {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(249,115,22,0.08); border: 1px solid rgba(249,115,22,0.22);
+  color: var(--orange); padding: 5px 14px; border-radius: 99px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+}
+.live-badge.done { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.3); color: #16a34a; }
+.live-dot { width: 7px; height: 7px; background: var(--orange); border-radius: 50%; animation: blink 1.2s infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+.prog-track { height: 3px; background: rgba(0,0,0,0.05); position: sticky; top: 68px; z-index: 40; }
+.prog-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--orange) 0%, #fb923c 60%, #fde68a 100%);
+  box-shadow: 0 0 10px rgba(249,115,22,0.5); transition: width 1s cubic-bezier(.4,0,.2,1);
+}
+.prog-fill.done { background: linear-gradient(90deg, var(--success), #4ade80); box-shadow: 0 0 10px rgba(34,197,94,0.5); }
+
+/* ============================================
+   HERO SECTION
+   ============================================ */
+.hero {
+  background: linear-gradient(135deg, var(--navy) 0%, #0d1628 60%, #152238 100%);
+  padding: 40px 40px 60px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; top: -60px; right: -60px;
+  width: 300px; height: 300px; background: var(--orange);
+  opacity: 0.08; border-radius: 50%; filter: blur(40px);
+}
+.hero h1 {
+  font-size: 32px; font-weight: 800; color: var(--white);
+  line-height: 1.2; margin-bottom: 12px; position: relative; z-index: 2;
+}
+.hero h1 span { color: var(--orange); }
+.hero p {
+  font-size: 15px; color: rgba(255,255,255,0.7); max-width: 560px;
+  margin: 0 auto; line-height: 1.6; position: relative; z-index: 2;
+}
+
+/* ============================================
+   CALCULATOR CONTAINER
+   ============================================ */
+.calc-container { max-width: 780px; margin: -30px auto 60px; position: relative; z-index: 10; width: 100%; padding: 0 16px; }
+
+.calc-card {
+  background: var(--white); border-radius: 16px; padding: 40px;
+  box-shadow: var(--shadow); border: 1.5px solid var(--border);
+}
+
+/* Step Screens */
+.step-screen { display: none; animation: fadeIn 0.4s ease; }
+.step-screen.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Step Header */
+.step-header { margin-bottom: 28px; }
+.step-header .step-tag { display: inline-block; font-size: 11px; font-weight: 800; color: var(--orange); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.step-header h2 { font-size: 24px; font-weight: 800; color: var(--navy); margin-bottom: 8px; letter-spacing: -0.01em; }
+.step-header p { font-size: 14px; color: var(--text-gray); line-height: 1.5; }
+
+/* Form Groups */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 8px; }
+.form-group label .hint { font-weight: 400; color: var(--text-light); font-size: 12px; }
+.form-group input, .form-group select {
+  width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 8px;
+  font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text-dark);
+  background: #f9fafb; transition: all 0.2s; font-weight: 500;
+}
+.form-group input:focus, .form-group select:focus {
+  outline: none; border-color: var(--orange); background: var(--white); box-shadow: 0 0 0 3px rgba(249,115,22,0.1);
+}
+.input-prefix { position: relative; }
+.input-prefix .prefix { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 15px; font-weight: 600; color: var(--text-gray); }
+.input-prefix input { padding-left: 32px; }
+
+/* Radio Cards */
+.radio-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.radio-card { border: 1.5px solid var(--border); border-radius: 10px; padding: 16px; cursor: pointer; transition: all 0.2s; position: relative; }
+.radio-card:hover { border-color: #cbd5e1; }
+.radio-card.selected { border-color: var(--orange); background: rgba(249,115,22,0.03); }
+.radio-card input { display: none; }
+.radio-card .rc-icon { font-size: 24px; margin-bottom: 8px; }
+.radio-card .rc-title { font-weight: 700; font-size: 14px; color: var(--navy); margin-bottom: 4px; }
+.radio-card .rc-desc { font-size: 12px; color: var(--text-gray); line-height: 1.4; }
+.radio-card .rc-check {
+  position: absolute; top: 12px; right: 12px; width: 20px; height: 20px; border-radius: 50%;
+  border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: transparent; transition: all 0.2s;
+}
+.radio-card.selected .rc-check { background: var(--orange); border-color: var(--orange); color: var(--white); }
+
+/* Slider */
+.slider-group { margin-bottom: 24px; }
+.slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.slider-header label { font-size: 13px; font-weight: 600; color: var(--navy); }
+.slider-value { font-size: 20px; font-weight: 800; color: var(--orange); }
+input[type="range"] {
+  -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px;
+  background: linear-gradient(to right, var(--orange) 0%, var(--orange) var(--val, 50%), #e5e7eb var(--val, 50%), #e5e7eb 100%);
+  outline: none; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--white); border: 2.5px solid var(--orange); box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer;
+}
+
+/* Buttons */
+.btn-row { display: flex; justify-content: space-between; align-items: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid #f3f4f6; }
+.btn-back { background: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 12px 24px; font-family: 'Inter'; font-size: 13px; font-weight: 600; color: var(--text-gray); cursor: pointer; transition: all 0.2s; }
+.btn-back:hover { border-color: var(--text-gray); color: var(--text-dark); background: #f9fafb; }
+.btn-next {
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  border: none; border-radius: 8px; padding: 14px 32px; font-family: 'Inter'; font-size: 14px; font-weight: 700;
+  color: var(--white); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(249,115,22,0.3);
+}
+.btn-next:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(249,115,22,0.4); }
+
+/* Model Info */
+.model-info {
+  background: rgba(59,130,246,0.06); border-left: 3px solid #3b82f6; border-radius: 0 8px 8px 0;
+  padding: 14px 18px; margin-bottom: 24px; font-size: 12px; color: var(--text-gray); line-height: 1.5;
+}
+.model-info strong { color: var(--navy); }
+
+/* ============================================
+   LOADING / CALCULATING
+   ============================================ */
+.loading-screen { text-align: center; padding: 40px 20px; }
+.loader-ring {
+  width: 60px; height: 60px; border: 4px solid #f3f4f6; border-top-color: var(--orange);
+  border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 24px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-screen h3 { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
+.loading-steps { list-style: none; max-width: 320px; margin: 0 auto; text-align: left; }
+.loading-steps li { padding: 8px 0; font-size: 13px; color: var(--text-light); display: flex; align-items: center; gap: 10px; transition: all 0.3s; font-weight: 500; }
+.loading-steps li.done { color: var(--success); }
+.loading-steps li .ls-icon { font-size: 16px; width: 20px; text-align: center; }
+
+/* ============================================
+   RESULTS DASHBOARD
+   ============================================ */
+.results-screen { animation: fadeIn 0.6s ease; }
+.results-header { text-align: center; margin-bottom: 32px; }
+.results-header h2 { font-size: 26px; font-weight: 800; color: var(--navy); }
+.results-header p { font-size: 14px; color: var(--text-gray); margin-top: 6px; }
+
+/* KPI Cards */
+.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+.kpi-card { background: var(--bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; }
+.kpi-card.highlight { border-color: rgba(249,115,22,0.4); background: rgba(249,115,22,0.03); }
+.kpi-card .kpi-icon { font-size: 20px; margin-bottom: 8px; }
+.kpi-card .kpi-value { font-size: 28px; font-weight: 800; color: var(--navy); line-height: 1; }
+.kpi-card.highlight .kpi-value { color: var(--orange); }
+.kpi-card .kpi-label { font-size: 11px; color: var(--text-gray); margin-top: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Projection Flow */
+.projection-box { background: linear-gradient(135deg, var(--navy) 0%, #0d1628 100%); border-radius: 16px; padding: 28px; margin-bottom: 24px; color: var(--white); }
+.projection-box h3 { font-size: 15px; font-weight: 700; color: var(--orange); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+.projection-flow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pf-step { flex: 1; text-align: center; }
+.pf-step .pf-value { font-size: 22px; font-weight: 800; color: var(--white); }
+.pf-step .pf-label { font-size: 10px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px; font-weight: 600; }
+.pf-arrow { color: var(--orange); font-size: 18px; opacity: 0.8; }
+
+/* Bar Chart */
+.chart-box { background: var(--white); border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+.chart-box h3 { font-size: 15px; font-weight: 700; margin-bottom: 20px; color: var(--navy); display: flex; align-items: center; gap: 8px; }
+.bar-chart { display: flex; flex-direction: column; gap: 16px; }
+.bar-row { display: grid; grid-template-columns: 120px 1fr 80px; align-items: center; gap: 14px; }
+.bar-row .br-label { font-size: 12px; font-weight: 600; color: var(--text-dark); text-align: right; }
+.bar-track { height: 28px; background: #f3f4f6; border-radius: 6px; overflow: hidden; position: relative; }
+.bar-fill { height: 100%; border-radius: 6px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+.bar-fill.orange { background: linear-gradient(90deg, var(--orange) 0%, #fde68a 100%); }
+.bar-fill.navy { background: linear-gradient(90deg, var(--navy) 0%, #374151 100%); }
+.bar-fill.gray { background: linear-gradient(90deg, #9ca3af 0%, #e5e7eb 100%); }
+.bar-row .br-value { font-size: 14px; font-weight: 700; color: var(--navy); }
+
+/* Metric Cards */
+.metrics-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.metric-card { background: #f9fafb; border: 1px solid var(--border); border-left: 3px solid var(--orange); border-radius: 8px; padding: 16px 20px; }
+.metric-card .mc-label { font-size: 11px; color: var(--text-gray); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.metric-card .mc-value { font-size: 20px; font-weight: 800; color: var(--navy); }
+.metric-card .mc-note { font-size: 11px; color: var(--text-light); margin-top: 6px; font-style: italic; }
+.metric-card.positive .mc-value { color: var(--success); }
+.metric-card.negative .mc-value { color: var(--danger); }
+
+/* Assumptions Box */
+.assumptions-box { background: var(--bg); border: 1.5px dashed var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; }
+.assumptions-box h4 { font-size: 13px; font-weight: 700; color: var(--text-gray); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.assumptions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.assumption-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.04); }
+.assumption-item .ai-label { color: var(--text-gray); font-weight: 500; }
+.assumption-item .ai-value { font-weight: 700; color: var(--navy); }
+
+/* Completion Banner */
+.completion-banner {
+  margin-top: 32px; text-align: center; background: rgba(34,197,94,0.05);
+  border: 1.5px solid rgba(34,197,94,0.2); border-radius: 16px; padding: 32px;
+  display: none; animation: fadeIn 0.4s ease;
+}
+.completion-banner h2 { font-size: 18px; font-weight: 800; color: var(--success); margin-bottom: 16px; }
+
+@media (max-width: 640px) {
+  .hero { padding: 30px 20px 40px; }
+  .calc-card { padding: 24px; }
+  .form-row, .radio-cards, .kpi-grid, .metrics-detail, .assumptions-grid { grid-template-columns: 1fr; }
+  .projection-flow { flex-wrap: wrap; }
+  .pf-arrow { display: none; }
+  .bar-row { grid-template-columns: 70px 1fr 60px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="logo">Click<span>Trends</span></a>
+    <div class="live-badge" id="live-badge">
+      <div class="live-dot" id="live-dot"></div>
+      <span id="header-status">Audit Running…</span>
+    </div>
+  </div>
+</header>
+
+<div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+
+<section class="hero">
+  <h1>Google Ads <span>ROI Calculator</span></h1>
+  <p>Estimate the financial impact of your marketing efforts while your AI audit finishes.</p>
+</section>
+
+<div class="calc-container">
+  <div class="calc-card">
+
+    <!-- ============ STEP 1: INDUSTRY ============ -->
+    <div class="step-screen active" id="step1">
+      <div class="step-header">
+        <div class="step-tag">Step 1 of 3</div>
+        <h2>What industry are you in?</h2>
+        <p>We use industry-specific benchmarks to make your projection accurate.</p>
+      </div>
+
+      <div class="form-group">
+        <label>Your Industry</label>
+        <select id="industry" onchange="handleIndustryChange()">
+          <option value="">Select your industry...</option>
+          <option value="animals_pets">Animals &amp; Pets</option>
+          <option value="apparel">Apparel / Fashion</option>
+          <option value="arts_entertainment">Arts &amp; Entertainment</option>
+          <option value="attorneys_legal">Attorneys &amp; Legal</option>
+          <option value="automotive_sales">Automotive (Sales)</option>
+          <option value="automotive_repair">Automotive (Repair)</option>
+          <option value="beauty">Beauty &amp; Personal Care</option>
+          <option value="business_services">Business Services</option>
+          <option value="career">Career &amp; Employment</option>
+          <option value="dentists">Dentists &amp; Dental</option>
+          <option value="education">Education &amp; Training</option>
+          <option value="finance">Finance &amp; Insurance</option>
+          <option value="furniture">Furniture</option>
+          <option value="health_fitness">Health &amp; Fitness</option>
+          <option value="home_improvement">Home &amp; Improvement</option>
+          <option value="industrial">Industrial &amp; Commercial</option>
+          <option value="personal_services">Personal Services</option>
+          <option value="physicians">Physicians &amp; Surgeons</option>
+          <option value="real_estate">Real Estate</option>
+          <option value="restaurants">Restaurants &amp; Food</option>
+          <option value="shopping_retail">Shopping / Retail</option>
+          <option value="sports_recreation">Sports &amp; Recreation</option>
+          <option value="travel">Travel &amp; Tourism</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div id="customIndustryGroup" style="display:none;">
+        <div class="form-group">
+          <label>Please describe your industry</label>
+          <input type="text" id="customIndustry" placeholder="e.g., Plumbing, Accounting...">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>How competitive is your market? <span class="hint">(online advertisers)</span></label>
+        <div class="radio-cards" id="competitionGroup">
+          <div class="radio-card" onclick="selectCard(this,'competition','low')">
+            <input type="radio" name="competition" value="low">
+            <div class="rc-title">Low</div>
+            <div class="rc-desc">Few competitors advertising online</div>
+            <div class="rc-check">&#10003;</div>
+          </div>
+          <div class="radio-card selected" onclick="selectCard(this,'competition','medium')">
+            <input type="radio" name="competition" value="medium" checked>
+            <div class="rc-title">Medium</div>
+            <div class="rc-desc">Some competitors, typical market</div>
+            <div class="rc-check">&#10003;</div>
+          </div>
+          <div class="radio-card" onclick="selectCard(this,'competition','high')">
+            <input type="radio" name="competition" value="high">
+            <div class="rc-title">High</div>
+            <div class="rc-desc">Many competitors aggressively advertising</div>
+            <div class="rc-check">&#10003;</div>
+          </div>
+          <div class="radio-card" onclick="selectCard(this,'competition','very_high')">
+            <input type="radio" name="competition" value="very_high">
+            <div class="rc-title">Very High</div>
+            <div class="rc-desc">Saturated market with major players</div>
+            <div class="rc-check">&#10003;</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <div></div>
+        <button class="btn-next" onclick="goToStep(2)">Continue <span class="arrow">&rarr;</span></button>
+      </div>
+    </div>
+
+    <!-- ============ STEP 2: BUSINESS MODEL ============ -->
+    <div class="step-screen" id="step2">
+      <div class="step-header">
+        <div class="step-tag">Step 2 of 3</div>
+        <h2>How does your business earn revenue?</h2>
+        <p>This determines which conversion metrics we use.</p>
+      </div>
+
+      <div class="radio-cards" id="modelGroup" style="grid-template-columns: 1fr 1fr; margin-bottom: 12px;">
+        <div class="radio-card" id="cardLeadgen" onclick="selectModel('leadgen')">
+          <input type="radio" name="bizmodel" value="leadgen">
+          <div class="rc-icon">&#128222;</div>
+          <div class="rc-title">Enquiries &amp; Appointments</div>
+          <div class="rc-desc">You generate leads, quotes, bookings, then close offline.</div>
+          <div class="rc-check">&#10003;</div>
+        </div>
+        <div class="radio-card" id="cardEcommerce" onclick="selectModel('ecommerce')">
+          <input type="radio" name="bizmodel" value="ecommerce">
+          <div class="rc-icon">&#128722;</div>
+          <div class="rc-title">Online Sales &amp; Transactions</div>
+          <div class="rc-desc">Customers buy directly on your website.</div>
+          <div class="rc-check">&#10003;</div>
+        </div>
+      </div>
+
+      <div id="modelHintBox" class="model-info" style="display:none;"></div>
+
+      <div class="btn-row">
+        <button class="btn-back" onclick="goToStep(1)">&larr; Back</button>
+        <button class="btn-next" onclick="goToStep(3)">Continue <span class="arrow">&rarr;</span></button>
+      </div>
+    </div>
+
+    <!-- ============ STEP 3: BUDGET & METRICS ============ -->
+    <div class="step-screen" id="step3">
+      <div class="step-header">
+        <div class="step-tag">Step 3 of 3</div>
+        <h2>Your numbers</h2>
+        <p>Tell us your budget and a few key figures.</p>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <label>Monthly Ad Budget</label>
+          <div class="slider-value" id="budgetDisplay">$3,000</div>
+        </div>
+        <input type="range" id="budgetSlider" min="0" max="1000" step="1" value="232" oninput="updateBudgetSlider()">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-light);margin-top:8px;font-weight:600;">
+          <span>$500</span><span>$5K</span><span>$25K</span><span>$100K</span><span>$500K</span><span>$1M</span>
+        </div>
+        <input type="hidden" id="budget" value="3000">
+      </div>
+
+      <div id="leadgenFields">
+        <div class="form-row">
+          <div class="form-group">
+            <label id="labelAvgValue">Average Job Value <span class="hint">(AUD)</span></label>
+            <div class="input-prefix">
+              <span class="prefix">$</span>
+              <input type="number" id="avgSale" placeholder="e.g. 5,000" min="10">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Location</label>
+            <select id="location">
+              <option value="">Select...</option>
+              <option value="melbourne">Melbourne</option>
+              <option value="sydney">Sydney</option>
+              <option value="brisbane">Brisbane</option>
+              <option value="perth">Perth</option>
+              <option value="adelaide">Adelaide</option>
+              <option value="national" selected>National / Multi-city</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="closeRateGroup">
+          <div class="slider-group">
+            <div class="slider-header">
+              <label id="labelCloseRate">Close Rate on Qualified Leads</label>
+              <div class="slider-value" id="closeRateDisplay">25%</div>
+            </div>
+            <input type="range" id="closeRate" min="5" max="80" step="5" value="25" oninput="updateSlider(this, 'closeRateDisplay', '%')">
+          </div>
+        </div>
+      </div>
+
+      <div id="ecommerceFields" style="display:none;">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Average Order Value <span class="hint">(AUD)</span></label>
+            <div class="input-prefix">
+              <span class="prefix">$</span>
+              <input type="number" id="avgOrderValue" placeholder="e.g. 120" min="1">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Location</label>
+            <select id="locationEcom">
+              <option value="">Select...</option>
+              <option value="melbourne">Melbourne</option>
+              <option value="sydney">Sydney</option>
+              <option value="brisbane">Brisbane</option>
+              <option value="perth">Perth</option>
+              <option value="adelaide">Adelaide</option>
+              <option value="national" selected>National / Multi-city</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-back" onclick="goToStep(2)">&larr; Back</button>
+        <button class="btn-next" onclick="calculateROI()">Calculate ROI <span class="arrow">&rarr;</span></button>
+      </div>
+    </div>
+
+    <!-- ============ LOADING SCREEN ============ -->
+    <div class="step-screen" id="stepLoading">
+      <div class="loading-screen">
+        <div class="loader-ring"></div>
+        <h3>Crunching your numbers...</h3>
+        <ul class="loading-steps" id="loadingSteps">
+          <li id="ls1"><span class="ls-icon">&#9711;</span> Analysing industry benchmarks</li>
+          <li id="ls2"><span class="ls-icon">&#9711;</span> Estimating cost per click</li>
+          <li id="ls3"><span class="ls-icon">&#9711;</span> Calculating lead volume</li>
+          <li id="ls4"><span class="ls-icon">&#9711;</span> Projecting revenue and ROAS</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ RESULTS DASHBOARD ============ -->
+    <div class="step-screen" id="step5">
+      <div class="results-screen">
+        <div class="results-header">
+          <h2>Your ROI Projection</h2>
+          <p id="resultsSubtitle">Based on your inputs and industry benchmarks</p>
+        </div>
+
+        <div class="kpi-grid" id="kpiGrid">
+          <div class="kpi-card" id="kpiCard1">
+            <div class="kpi-icon" id="kpiIcon1">&#128200;</div>
+            <div class="kpi-value" id="kpiValue1">--</div>
+            <div class="kpi-label" id="kpiLabel1">Estimated Leads / Month</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">&#128176;</div>
+            <div class="kpi-value" id="kpiRevenue">--</div>
+            <div class="kpi-label">Projected Monthly Revenue</div>
+          </div>
+          <div class="kpi-card highlight">
+            <div class="kpi-icon">&#127919;</div>
+            <div class="kpi-value" id="kpiROAS">--</div>
+            <div class="kpi-label">Return on Ad Spend (ROAS)</div>
+          </div>
+        </div>
+
+        <div class="projection-box">
+          <h3>&#128640; Monthly Projection Funnel</h3>
+          <div class="projection-flow" id="projectionFlow">
+            <div class="pf-step"><div class="pf-value" id="pfBudget">--</div><div class="pf-label">Ad Spend</div></div>
+            <div class="pf-arrow">&rarr;</div>
+            <div class="pf-step"><div class="pf-value" id="pfClicks">--</div><div class="pf-label">Clicks</div></div>
+            <div class="pf-arrow">&rarr;</div>
+            <div class="pf-step"><div class="pf-value" id="pfLeads">--</div><div class="pf-label" id="pfLeadsLabel">Conversions</div></div>
+            <div class="pf-arrow" id="arrowToSales">&rarr;</div>
+            <div class="pf-step" id="pfSalesStep"><div class="pf-value" id="pfSales">--</div><div class="pf-label">Sales Won</div></div>
+            <div class="pf-arrow">&rarr;</div>
+            <div class="pf-step"><div class="pf-value" id="pfRevenue">--</div><div class="pf-label">Revenue</div></div>
+          </div>
+        </div>
+
+        <div class="chart-box">
+          <h3>&#128202; Revenue vs. Investment</h3>
+          <div class="bar-chart">
+            <div class="bar-row">
+              <div class="br-label">Revenue</div>
+              <div class="bar-track"><div class="bar-fill orange" id="barRevenue" style="width: 0%;"></div></div>
+              <div class="br-value" id="barRevenueVal">--</div>
+            </div>
+            <div class="bar-row">
+              <div class="br-label">Ad Spend</div>
+              <div class="bar-track"><div class="bar-fill navy" id="barAdSpend" style="width: 0%;"></div></div>
+              <div class="br-value" id="barAdSpendVal">--</div>
+            </div>
+            <div class="bar-row">
+              <div class="br-label">Mgmt Fee (est.)</div>
+              <div class="bar-track"><div class="bar-fill gray" id="barMgmt" style="width: 0%;"></div></div>
+              <div class="br-value" id="barMgmtVal">--</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="metrics-detail" id="metricsDetail"></div>
+
+        <div class="assumptions-box">
+          <h4>&#9881; Calculation Assumptions</h4>
+          <div class="assumptions-grid" id="assumptionsGrid"></div>
+        </div>
+        
+        <div style="font-size: 11px; color: var(--text-light); text-align: center;">
+          Includes 15% optimisation uplift. Benchmarks sourced from WordStream 2025. All values in AUD.
+        </div>
+
+        <!-- Completion Banner from ClickTrends -->
+        <div class="completion-banner" id="completion-banner">
+          <h2>Your AI Audit is Complete!</h2>
+          <a href="#" id="btn-view-report" class="btn-next" style="display:inline-flex; margin: 0 auto;">
+            View Full Report
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </a>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ============================================
+// CALCULATOR STATE & DATA
+// ============================================
+let currentStep = 1;
+const formData = {};
+
+const industryData = {
+  animals_pets:      { label:'Animals & Pets', defaultModel:'leadgen', ctr:6.58, cpc:6.15, cvr:13.07, cpl:49.32 },
+  apparel:           { label:'Apparel / Fashion', defaultModel:'ecommerce', ctr:6.77, cpc:6.68, cvr:3.99, cpl:157.31 },
+  arts_entertainment:{ label:'Arts & Entertainment', defaultModel:'ecommerce', ctr:13.10, cpc:2.48, cvr:4.84, cpl:46.92 },
+  attorneys_legal:   { label:'Attorneys & Legal', defaultModel:'leadgen', ctr:5.97, cpc:13.30, cvr:5.09, cpl:204.03 },
+  automotive_sales:  { label:'Automotive (Sales)', defaultModel:'leadgen', ctr:8.29, cpc:3.74, cvr:7.76, cpl:60.23 },
+  automotive_repair: { label:'Automotive (Repair)', defaultModel:'leadgen', ctr:5.56, cpc:6.05, cvr:14.67, cpl:44.18 },
+  beauty:            { label:'Beauty & Personal Care', defaultModel:'leadgen', ctr:5.71, cpc:8.84, cvr:7.82, cpl:93.53 },
+  business_services: { label:'Business Services', defaultModel:'leadgen', ctr:5.65, cpc:8.65, cvr:5.14, cpl:160.49 },
+  career:            { label:'Career & Employment', defaultModel:'leadgen', ctr:6.57, cpc:8.00, cvr:4.33, cpl:97.34 },
+  dentists:          { label:'Dentists & Dental', defaultModel:'leadgen', ctr:5.44, cpc:12.17, cvr:9.08, cpl:130.09 },
+  education:         { label:'Education & Training', defaultModel:'leadgen', ctr:5.74, cpc:9.66, cvr:11.38, cpl:139.53 },
+  finance:           { label:'Finance & Insurance', defaultModel:'leadgen', ctr:8.33, cpc:5.36, cvr:2.55, cpl:130.09 },
+  furniture:         { label:'Furniture', defaultModel:'ecommerce', ctr:6.11, cpc:5.98, cvr:2.73, cpl:188.34 },
+  health_fitness:    { label:'Health & Fitness', defaultModel:'leadgen', ctr:7.18, cpc:7.75, cvr:6.80, cpl:97.34 },
+  home_improvement:  { label:'Home & Improvement', defaultModel:'leadgen', ctr:6.37, cpc:12.17, cvr:7.33, cpl:140.93 },
+  industrial:        { label:'Industrial & Commercial', defaultModel:'leadgen', ctr:6.23, cpc:8.84, cvr:7.17, cpl:132.73 },
+  personal_services: { label:'Personal Services', defaultModel:'leadgen', ctr:7.69, cpc:9.01, cvr:9.74, cpl:82.96 },
+  physicians:        { label:'Physicians & Surgeons', defaultModel:'leadgen', ctr:6.73, cpc:7.75, cvr:11.62, cpl:88.09 },
+  real_estate:       { label:'Real Estate', defaultModel:'leadgen', ctr:8.43, cpc:3.92, cvr:3.28, cpl:155.74 },
+  restaurants:       { label:'Restaurants & Food', defaultModel:'leadgen', ctr:7.58, cpc:3.18, cvr:7.09, cpl:46.92 },
+  shopping_retail:   { label:'Shopping / Retail', defaultModel:'ecommerce', ctr:8.92, cpc:5.41, cvr:3.83, cpl:74.31 },
+  sports_recreation: { label:'Sports & Recreation', defaultModel:'leadgen', ctr:9.19, cpc:4.09, cvr:7.62, cpl:73.58 },
+  travel:            { label:'Travel & Tourism', defaultModel:'ecommerce', ctr:8.73, cpc:3.29, cvr:5.75, cpl:114.24 },
+  other:             { label:'Other', defaultModel:'leadgen', ctr:6.66, cpc:8.15, cvr:7.52, cpl:108.67 }
+};
+const competitionMultipliers = { low: 0.75, medium: 1.0, high: 1.25, very_high: 1.50 };
+
+// ClickTrends Session Data pre-fill
+const session = JSON.parse(sessionStorage.getItem('clicktrends_audit') || '{}');
+if (session.campaignInputs && session.campaignInputs.budget) {
+  const b = session.campaignInputs.budget.replace(/[^0-9]/g, '');
+  if (b) document.getElementById('budgetSlider').value = budgetToSlider(parseInt(b));
+}
+
+// ============================================
+// UI LOGIC
+// ============================================
+function selectModel(model) {
+  formData.model = model;
+  document.querySelectorAll('#modelGroup .radio-card').forEach(c => c.classList.remove('selected'));
+  if (model === 'leadgen') {
+    document.getElementById('cardLeadgen').classList.add('selected');
+    document.getElementById('cardLeadgen').querySelector('input').checked = true;
+  } else {
+    document.getElementById('cardEcommerce').classList.add('selected');
+    document.getElementById('cardEcommerce').querySelector('input').checked = true;
+  }
+  const hint = document.getElementById('modelHintBox');
+  hint.style.display = 'block';
+  hint.innerHTML = model === 'leadgen' 
+    ? '<strong>Lead Generation model selected.</strong> We will project enquiries based on your close rate.'
+    : '<strong>Online Sales model selected.</strong> We will project revenue based on average order value.';
+}
+
+function preselectModel() {
+  const ind = industryData[formData.industry];
+  if (ind) selectModel(ind.defaultModel);
+}
+
+function updateStep3Fields() {
+  const isEcom = formData.model === 'ecommerce';
+  document.getElementById('leadgenFields').style.display = isEcom ? 'none' : 'block';
+  document.getElementById('ecommerceFields').style.display = isEcom ? 'block' : 'none';
+  if (!isEcom) {
+    const labels = {
+      'real_estate': 'Avg Commission', 'restaurants': 'Avg Customer Spend',
+      'home_improvement': 'Avg Project Value', 'finance': 'Avg Client LTV'
+    };
+    document.getElementById('labelAvgValue').innerHTML = (labels[formData.industry] || 'Average Sale/Job Value') + ' <span class="hint">(AUD)</span>';
+  }
+}
+
+function goToStep(step) {
+  if (step > currentStep) {
+    if (currentStep === 1 && !validateStep1()) return;
+    if (currentStep === 2 && !validateStep2()) return;
+  }
+  collectData();
+  if (currentStep === 1 && step === 2) preselectModel();
+  if (step === 3) updateStep3Fields();
+  
+  document.querySelectorAll('.step-screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('step' + step).classList.add('active');
+  currentStep = step;
+}
+
+function validateStep1() {
+  const ind = document.getElementById('industry').value;
+  if (!ind) { shake(document.getElementById('industry')); return false; }
+  return true;
+}
+function validateStep2() {
+  if (!formData.model) { shake(document.getElementById('cardLeadgen')); return false; }
+  return true;
+}
+function validateStep3() {
+  const budget = document.getElementById('budget').value;
+  if (!budget) { shake(document.getElementById('budget')); return false; }
+  const isEcom = formData.model === 'ecommerce';
+  const val = isEcom ? document.getElementById('avgOrderValue').value : document.getElementById('avgSale').value;
+  if (!val || val < 1) { shake(document.getElementById(isEcom ? 'avgOrderValue' : 'avgSale')); return false; }
+  return true;
+}
+
+function shake(el) {
+  el.style.borderColor = '#ef4444';
+  setTimeout(() => el.style.borderColor = '', 600);
+}
+
+function collectData() {
+  formData.industry = document.getElementById('industry').value;
+  formData.competition = document.querySelector('input[name="competition"]:checked')?.value || 'medium';
+  formData.budget = parseInt(document.getElementById('budget').value);
+  if (formData.model === 'ecommerce') {
+    formData.avgSale = parseFloat(document.getElementById('avgOrderValue').value) || 0;
+    formData.closeRate = 100;
+  } else {
+    formData.avgSale = parseFloat(document.getElementById('avgSale').value) || 0;
+    formData.closeRate = parseInt(document.getElementById('closeRate').value);
+  }
+}
+
+function selectCard(el, name, value) {
+  const parent = el.closest('.radio-cards');
+  parent.querySelectorAll('.radio-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input').checked = true;
+}
+
+function handleIndustryChange() {
+  document.getElementById('customIndustryGroup').style.display = document.getElementById('industry').value === 'other' ? 'block' : 'none';
+}
+
+function updateSlider(el, displayId, prefix) {
+  const val = parseInt(el.value);
+  document.getElementById(displayId).textContent = (prefix === '$' ? '$' + val.toLocaleString() : val + '%');
+  el.style.setProperty('--val', ((val - el.min) / (el.max - el.min)) * 100 + '%');
+}
+
+// Logarithmic Budget
+const BMIN = 500, BMAX = 1000000;
+const LMIN = Math.log(BMIN), LMAX = Math.log(BMAX);
+function sliderToBudget(val) {
+  const raw = Math.exp(LMIN + (val/1000) * (LMAX - LMIN));
+  if (raw <= 2000) return Math.round(raw / 100) * 100;
+  if (raw <= 10000) return Math.round(raw / 500) * 500;
+  if (raw <= 50000) return Math.round(raw / 1000) * 1000;
+  return Math.round(raw / 10000) * 10000;
+}
+function budgetToSlider(b) {
+  return Math.round(((Math.log(b) - LMIN) / (LMAX - LMIN)) * 1000);
+}
+function updateBudgetSlider() {
+  const slider = document.getElementById('budgetSlider');
+  const val = sliderToBudget(parseInt(slider.value));
+  document.getElementById('budget').value = val;
+  document.getElementById('budgetDisplay').textContent = '$' + val.toLocaleString();
+  slider.style.setProperty('--val', (slider.value / 1000) * 100 + '%');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('input[type="range"]:not(#budgetSlider)').forEach(el => {
+    el.style.setProperty('--val', ((el.value - el.min) / (el.max - el.min)) * 100 + '%');
+  });
+  updateBudgetSlider();
+});
+
+// ============================================
+// CALCULATE & RENDER
+// ============================================
+function calculateROI() {
+  if (!validateStep3()) return;
+  
+  document.querySelectorAll('.step-screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('stepLoading').classList.add('active');
+
+  const loadSteps = ['ls1','ls2','ls3','ls4'];
+  loadSteps.forEach((id, i) => {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      el.classList.add('done');
+      el.querySelector('.ls-icon').textContent = '\u2705';
+    }, 600 * (i + 1));
+  });
+
+  setTimeout(() => {
+    runEngine();
+    document.querySelectorAll('.step-screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('step5').classList.add('active');
+    setTimeout(animateBars, 100);
+  }, 3200);
+}
+
+function runEngine() {
+  collectData();
+  const ind = industryData[formData.industry] || industryData.other;
+  const compMult = competitionMultipliers[formData.competition] || 1;
+  const isEcom = formData.model === 'ecommerce';
+
+  const adjustedCPC = ind.cpc * compMult;
+  const clicks = Math.round(formData.budget / adjustedCPC);
+  
+  const adjustedCVR = ind.cvr * 1.15; // 15% quality uplift
+  const conversions = Math.round(clicks * (adjustedCVR / 100));
+  const cpa = conversions > 0 ? (formData.budget / conversions) : 0;
+
+  let revenue, sales;
+  if (isEcom) {
+    sales = conversions;
+    revenue = sales * formData.avgSale;
+  } else {
+    sales = conversions * (formData.closeRate / 100);
+    revenue = sales * formData.avgSale;
+  }
+
+  const mgmtFee = estimateMgmtFee(formData.budget);
+  const totalInv = formData.budget + mgmtFee;
+  const netROI = revenue - totalInv;
+  const roas = totalInv > 0 ? (revenue / totalInv) : 0;
+
+  window._chartData = { revenue: Math.round(revenue), adSpend: formData.budget, mgmt: mgmtFee };
+
+  // Update UI
+  document.getElementById('kpiValue1').textContent = formatNum(conversions);
+  document.getElementById('kpiLabel1').textContent = isEcom ? 'Estimated Orders / Month' : 'Estimated Enquiries / Month';
+  document.getElementById('kpiIcon1').textContent = isEcom ? '\uD83D\uDED2' : '\uD83D\uDCC8';
+  document.getElementById('kpiRevenue').textContent = '$' + formatNum(Math.round(revenue));
+  document.getElementById('kpiROAS').textContent = roas.toFixed(1) + 'x';
+
+  document.getElementById('pfBudget').textContent = '$' + formatNum(formData.budget);
+  document.getElementById('pfClicks').textContent = formatNum(clicks);
+  document.getElementById('pfLeads').textContent = formatNum(conversions);
+  document.getElementById('pfLeadsLabel').textContent = isEcom ? 'Orders' : 'Enquiries';
+  
+  if (isEcom) {
+    document.getElementById('arrowToSales').style.display = 'none';
+    document.getElementById('pfSalesStep').style.display = 'none';
+  } else {
+    document.getElementById('arrowToSales').style.display = 'block';
+    document.getElementById('pfSalesStep').style.display = 'block';
+    document.getElementById('pfSales').textContent = formatNum(Math.round(sales));
+  }
+  document.getElementById('pfRevenue').textContent = '$' + formatNum(Math.round(revenue));
+
+  document.getElementById('barRevenueVal').textContent = '$' + formatNum(Math.round(revenue));
+  document.getElementById('barAdSpendVal').textContent = '$' + formatNum(formData.budget);
+  document.getElementById('barMgmtVal').textContent = '$' + formatNum(mgmtFee);
+
+  renderMetrics(clicks, conversions, cpa, revenue, mgmtFee, totalInv, netROI, roas, sales, isEcom, ind);
+  renderAssumptions(ind, adjustedCPC);
+}
+
+function estimateMgmtFee(b) {
+  if (b <= 3000) return 1500;
+  if (b <= 8000) return 3000;
+  if (b <= 15000) return 4500;
+  if (b <= 50000) return 8000;
+  return 12000;
+}
+
+function renderMetrics(clicks, conversions, cpa, rev, mgmt, inv, net, roas, sales, isEcom, ind) {
+  const c = document.getElementById('metricsDetail');
+  c.innerHTML = '';
+  const add = (l, v, n='', cls='') => c.innerHTML += `<div class="metric-card ${cls}"><div class="mc-label">${l}</div><div class="mc-value">${v}</div>${n ? `<div class="mc-note">${n}</div>`:''}</div>`;
+  
+  add('Monthly Clicks', formatNum(clicks));
+  add('CTR', ind.ctr.toFixed(2) + '%');
+  add('Revenue', '$' + formatNum(Math.round(rev)));
+  add('Total Investment', '$' + formatNum(inv));
+  add('Net ROI', '$' + formatNum(Math.round(net)), '', net>=0?'positive':'negative');
+  add('Annualised Rev', '$' + formatNum(Math.round(rev*12)));
+
+  if(!isEcom) {
+    add('Est Enquiries', formatNum(conversions));
+    add('Cost Per Enquiry', '$' + Math.round(cpa));
+  } else {
+    add('Est Orders', formatNum(conversions));
+    add('Cost Per Order', '$' + Math.round(cpa));
+  }
+}
+
+function renderAssumptions(ind, cpc) {
+  const g = document.getElementById('assumptionsGrid');
+  g.innerHTML = '';
+  const items = [
+    ['Industry', ind.label],
+    ['Model', formData.model === 'ecommerce' ? 'E-commerce' : 'Lead Gen'],
+    ['Avg CPC', '$'+cpc.toFixed(2)],
+    ['Base CVR', ind.cvr.toFixed(2)+'%']
+  ];
+  items.forEach(([l,v]) => g.innerHTML += `<div class="assumption-item"><span class="ai-label">${l}</span><span class="ai-value">${v}</span></div>`);
+}
+
+function animateBars() {
+  const d = window._chartData;
+  const max = d.revenue;
+  if(max <= 0) return;
+  document.getElementById('barRevenue').style.width = '100%';
+  document.getElementById('barAdSpend').style.width = Math.min(100, (d.adSpend/max)*100) + '%';
+  document.getElementById('barMgmt').style.width = Math.min(100, (d.mgmt/max)*100) + '%';
+}
+function formatNum(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+// ============================================
+// SSE LOGIC (ClickTrends Audit Tracker)
+// ============================================
+const urlParams = new URLSearchParams(window.location.search);
+const auditId = urlParams.get('auditId') || session.auditId;
+
+let displayedPct = 0;
+let tickTimer = null;
+let tickCeiling = 45;
+
+function setProgress(pct, msg) {
+  const next = Math.min(Math.max(Math.round(pct), displayedPct), 99);
+  if (next > displayedPct) {
+    displayedPct = next;
+    document.getElementById('prog-fill').style.width = next + '%';
+  }
+  if (msg) document.getElementById('header-status').textContent = msg;
+}
+
+if (auditId) {
+  const sse = new EventSource('/api/audit/' + auditId + '/status');
+  tickTimer = setInterval(() => { if(displayedPct < tickCeiling) setProgress(displayedPct + 0.4); }, 600);
+
+  sse.onmessage = (e) => {
+    if (!e.data || e.data.trim() === '') return;
+    try {
+      const ev = JSON.parse(e.data);
+      if (typeof ev.progress === 'number') {
+        tickCeiling = Math.max(tickCeiling, Math.min(ev.progress + 8, 97));
+        setProgress(ev.progress, ev.message);
+      }
+      if (ev.type === 'complete') {
+        clearInterval(tickTimer);
+        sse.close();
+        document.getElementById('prog-fill').style.width = '100%';
+        document.getElementById('prog-fill').classList.add('done');
+        document.getElementById('completion-banner').style.display = 'block';
+        document.getElementById('btn-view-report').href = ev.reportUrl || ('report.html?auditId=' + auditId);
+        document.getElementById('live-badge').classList.add('done');
+        document.getElementById('live-dot').style.background = 'var(--success)';
+        document.getElementById('header-status').textContent = 'Report ready!';
+      }
+    } catch(err){}
+  };
+} else {
+  document.getElementById('header-status').textContent = 'No audit detected.';
+}
+</script>
+</body>
+</html>

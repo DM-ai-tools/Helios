@@ -171,6 +171,11 @@ app.get('/audit/:auditId/email-sequence/implementation', (req, res) => {
   res.sendFile(resolve(__dirname, '../frontend/email-sequence-builder.html'));
 });
 
+// Implementation dashboard — specific route for content-copy plugin
+app.get('/audit/:auditId/plugin/content-copy/implementation', (req, res) => {
+  res.sendFile(resolve(__dirname, '../frontend/content-copy-dummy.html'));
+});
+
 // Implementation dashboard — /audit/:auditId/plugin/:pluginId/implementation
 app.get('/audit/:auditId/plugin/:pluginId/implementation', (req, res) => {
   res.sendFile(resolve(__dirname, '../frontend/implementation.html'));

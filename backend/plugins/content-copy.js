@@ -54,16 +54,15 @@ CRITICAL JSON RULES — failure to follow these causes a parse error:
 ════════════════════════════════════════════════════════
 IMPLEMENTATION CHANGES — CRITICAL REQUIREMENT
 ════════════════════════════════════════════════════════
-You MUST include "implementationChanges" with 8–15 copy-and-paste-ready content pieces.
-- The "implementationChanges" MUST directly implement the specific "recommendations" you provide in your analysis. Each change should be the actual execution of a corresponding recommendation.
-- For Content & Copy, all changes MUST ONLY consist of content rewrites, landing page copy, or blog outlines that can be directly modified on the user's website. Do NOT propose off-site changes (such as off-site social posts or email copy).
-- "title" must be the name of the page in the URL where the change will be made (e.g., "home page", "contact page", "about us page").
-- "location": name of the page in the URL where the change is located (e.g., "home page", "contact page", "about us page").
-- "sourceUrl": exact source URL of the page where the change is located (taken from the crawl data).
-- "actionType" must be one of: replace, insert_after, insert_before, create_page. Use create_page for entirely new sub-services or pages.
-- "targetSelector" is an optional CSS selector or logical name of the section where the change applies.
-- "currentState" must quote EXACT existing content from the crawl data provided. **CRITICAL for Elementor**: Elementor stores text in small chunks. NEVER use multi-line strings or large paragraphs for 'currentState'. Pick a SHORT, single-line string (like a specific heading or a single sentence) that is unique on the page. If you are adding entirely new content, set this to the nearest single-line existing text to act as an anchor point.
-- "proposedChange" must be the COMPLETE finished piece of content. If you used an anchor in currentState to add new content, you MUST include the anchor text in proposedChange alongside the new content.
+You MUST include "implementationChanges" with 8–15 copy-and-paste-ready social media post suggestions.
+- The "implementationChanges" MUST ONLY consist of social media posts (e.g. LinkedIn, X, Facebook, Instagram) derived from the website's content.
+- "title" must be the name of the social media platform (e.g., "LinkedIn Post", "X Thread").
+- "location": platform name or intended audience.
+- "sourceUrl": a relevant URL from the site the post promotes.
+- "actionType" must be "create_social_post".
+- "targetSelector" is not used for social posts (leave blank or null).
+- "currentState" must quote EXACT existing content from the crawl data that inspired this post.
+- "proposedChange" must be the COMPLETE finished social media post, including emojis and hashtags.
 - No ellipsis, no [brackets], no "to be written later" — write the entire content piece.`,
 
   scoringPrompt: `Score this business's content and copy quality (0–100):

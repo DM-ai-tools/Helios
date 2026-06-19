@@ -778,6 +778,7 @@ function handleFullSSE(ev, sse) {
   if (ev.type === 'step' && MODE !== 'initial') {
     const id = stepMap[ev.step] || ev.step;
     stepRunning(id, ev.progress, ev.message);
+    if (ev.score !== undefined) setScore(ev.score);
   }
 
   // ── Crawl complete — update stat boxes + kick off demo for stages 3-9 ──
