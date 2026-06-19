@@ -4,11 +4,7 @@ const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 const isLocalhost = !process.env.REDIS_URL || redisUrl.includes('localhost') || redisUrl.includes('127.0.0.1');
 
 const redisClient = createClient({
-  url: redisUrl,
-  socket: isLocalhost ? undefined : {
-    tls: true,
-    rejectUnauthorized: false
-  }
+  url: redisUrl
 });
 
 redisClient.on('error', (err) => console.error('[Redis Client] Error:', err));
