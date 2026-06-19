@@ -1367,7 +1367,8 @@ function renderSeoAudit(sa) {
       servGrid.innerHTML = serv.map(function(s) {
         var subHtml = (s.subServices || []).map(function(sub) {
           var slug = sub.pageSlug || sub.subServiceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-          var implUrl = '/audit/' + (auditId || 'demo') + '/plugin/seo-audit/implementation?tab=sub-services&slug=' + encodeURIComponent(slug);
+          var parentUrlParam = s.parentUrl ? '&parentSlug=' + encodeURIComponent(s.parentUrl) : '';
+          var implUrl = '/audit/' + (auditId || 'demo') + '/plugin/seo-audit/implementation?tab=sub-services&slug=' + encodeURIComponent(slug) + parentUrlParam;
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f3f4f6;">' +
                  '<div>' +
                    '<div style="font-size:13px;font-weight:700;color:#1a1a2e">' + clean(sub.subServiceName) + '</div>' +

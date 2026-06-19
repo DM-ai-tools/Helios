@@ -55,19 +55,33 @@ export class DeploymentManager {
       subServiceSlug = targetSlug;
       console.log(`[DeploymentManager] Preparing to CREATE new page: "${pageTitle}" (${targetSlug})`);
 
-      if (payload.navigationParent) {
-        console.log(`[DeploymentManager] Requested parent lookup for: "${payload.navigationParent}"`);
+      if (payload.parentSlug) {
+        console.log(`[DeploymentManager] Requested explicit parent lookup by slug: "${payload.parentSlug}"`);
+        const searchPathBySlug = `/wp/v2/pages?slug=${encodeURIComponent(payload.parentSlug.replace(/^\/|\/$/g, ''))}&_fields=id,title,slug,link`;
+        try {
+          const slugRes = await axiosInstance.get(this.buildUrl(siteUrl, restPrefix, searchPathBySlug));
+          if (slugRes.data && slugRes.data.length > 0) {
+            parentId = slugRes.data[0].id;
+            console.log(`[DeploymentManager] Found parent page by slug: "${slugRes.data[0].title.rendered}" (ID: ${parentId})`);
+          }
+        } catch (err) {
+          console.warn(`[DeploymentManager] Failed to lookup parent page by slug: ${err.message}`);
+        }
+      }
+
+      if (!parentId && payload.navigationParent) {
+        console.log(`[DeploymentManager] Requested fallback parent lookup by search text: "${payload.navigationParent}"`);
         const searchPath = `/wp/v2/pages?search=${encodeURIComponent(payload.navigationParent)}&_fields=id,title,slug,link`;
         try {
           const parentRes = await axiosInstance.get(this.buildUrl(siteUrl, restPrefix, searchPath));
           if (parentRes.data && parentRes.data.length > 0) {
             parentId = parentRes.data[0].id;
-            console.log(`[DeploymentManager] Found parent page: "${parentRes.data[0].title.rendered}" (ID: ${parentId})`);
+            console.log(`[DeploymentManager] Found parent page by text search: "${parentRes.data[0].title.rendered}" (ID: ${parentId})`);
           } else {
             console.log(`[DeploymentManager] Parent page "${payload.navigationParent}" not found.`);
           }
         } catch (err) {
-          console.warn(`[DeploymentManager] Failed to lookup parent page: ${err.message}`);
+          console.warn(`[DeploymentManager] Failed to lookup parent page by text search: ${err.message}`);
         }
       }
     } else {

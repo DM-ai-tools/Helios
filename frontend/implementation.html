@@ -772,6 +772,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Auto-activate sub-services tab if URL param says so
   var tabParam = new URLSearchParams(window.location.search).get('tab');
   var slugParam = new URLSearchParams(window.location.search).get('slug');
+  var parentSlugParam = new URLSearchParams(window.location.search).get('parentSlug');
 
   var savedRole = localStorage.getItem('user_role') || 'Admin';
   var roleSelect = document.getElementById('role-select');
@@ -1308,6 +1309,7 @@ function toast(msg, type) {
 // ══════════════════════════════════════════════════════════════════
 var _ssData = [];     // cached sub-service list
 var _ssLoaded = false;
+var parentSlugParam = new URLSearchParams(window.location.search).get('parentSlug');
 
 async function showSubServicesTab(el, autoSlug) {
   // Highlight tab
@@ -1569,6 +1571,7 @@ async function deploySubServicePage(slug) {
           pageTitle: ss.pageTitle, 
           metaDescription: ss.metaDescription, 
           navigationParent: ss.serviceName,
+          parentSlug: parentSlugParam,
           title: ss.subServiceName,
           subServiceName: ss.subServiceName
         },

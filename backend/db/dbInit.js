@@ -20,6 +20,8 @@ export async function initDatabase() {
       ALTER TABLE implementation_changes ADD COLUMN IF NOT EXISTS source_url TEXT;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name TEXT;
+      ALTER TABLE deployments ADD COLUMN IF NOT EXISTS builder_type TEXT;
+      ALTER TABLE deployments ADD COLUMN IF NOT EXISTS deployment_method TEXT;
       
       CREATE TABLE IF NOT EXISTS sub_service_pages (
         audit_id          UUID NOT NULL REFERENCES audits(id) ON DELETE CASCADE,
