@@ -596,6 +596,22 @@ input[type="range"]::-webkit-slider-thumb {
   </div>
 </div>
 
+<!-- Floating Audit Progress Widget -->
+<div id="floating-audit" style="position:fixed; bottom:24px; right:24px; width:300px; background:var(--white); border-radius:16px; padding:20px; box-shadow:0 12px 40px rgba(0,0,0,0.12); border:1.5px solid var(--border); z-index:100; transition:all 0.3s; animation:fadeIn 0.5s; display:none;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <div style="font-size:13px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:8px;">
+      <div id="float-dot" style="width:8px; height:8px; background:var(--orange); border-radius:50%; animation:blink 1.2s infinite;"></div>
+      Generating Report...
+    </div>
+    <div id="float-pct" style="font-size:14px; font-weight:800; color:var(--orange);">0%</div>
+  </div>
+  <div style="height:6px; background:#f3f4f6; border-radius:99px; overflow:hidden; margin-bottom:10px;">
+    <div id="float-fill" style="height:100%; width:0%; background:linear-gradient(90deg, var(--orange), #fb923c); transition:width 1s;"></div>
+  </div>
+  <div id="float-status" style="font-size:11px; color:var(--text-gray); font-weight:500;">Initialising AI pipeline...</div>
+  <a href="#" id="float-btn" class="btn-next" style="display:none; width:100%; justify-content:center; margin-top:16px; padding:12px; font-size:13px;">View Full Report &rarr;</a>
+</div>
+
 <script>
 // ============================================
 // CALCULATOR STATE & DATA
@@ -922,11 +938,20 @@ function setProgress(pct, msg) {
   if (next > displayedPct) {
     displayedPct = next;
     document.getElementById('prog-fill').style.width = next + '%';
+    const floatFill = document.getElementById('float-fill');
+    if (floatFill) floatFill.style.width = next + '%';
+    const floatPct = document.getElementById('float-pct');
+    if (floatPct) floatPct.textContent = next + '%';
   }
-  if (msg) document.getElementById('header-status').textContent = msg;
+  if (msg) {
+    document.getElementById('header-status').textContent = msg;
+    const floatStatus = document.getElementById('float-status');
+    if (floatStatus) floatStatus.textContent = msg;
+  }
 }
 
 if (auditId) {
+  document.getElementById('floating-audit').style.display = 'block';
   const sse = new EventSource('/api/audit/' + auditId + '/status');
   tickTimer = setInterval(() => { if(displayedPct < tickCeiling) setProgress(displayedPct + 0.4); }, 600);
 
@@ -944,10 +969,23 @@ if (auditId) {
         document.getElementById('prog-fill').style.width = '100%';
         document.getElementById('prog-fill').classList.add('done');
         document.getElementById('completion-banner').style.display = 'block';
-        document.getElementById('btn-view-report').href = ev.reportUrl || ('report.html?auditId=' + auditId);
+        
+        const reportUrl = ev.reportUrl || ('report.html?auditId=' + auditId);
+        document.getElementById('btn-view-report').href = reportUrl;
+        
         document.getElementById('live-badge').classList.add('done');
         document.getElementById('live-dot').style.background = 'var(--success)';
         document.getElementById('header-status').textContent = 'Report ready!';
+        
+        // Update floating widget
+        document.getElementById('float-pct').textContent = '100%';
+        document.getElementById('float-fill').style.width = '100%';
+        document.getElementById('float-fill').style.background = 'var(--success)';
+        document.getElementById('float-dot').style.background = 'var(--success)';
+        document.getElementById('float-status').textContent = 'Audit Complete!';
+        const floatBtn = document.getElementById('float-btn');
+        floatBtn.href = reportUrl;
+        floatBtn.style.display = 'flex';
       }
     } catch(err){}
   };
