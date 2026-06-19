@@ -144,6 +144,15 @@ export class DeploymentManager {
       }
     }
 
+    let resolvedActionType = payload.actionType || 'replace';
+    
+    // If we are deploying an entire new page, force the action to create_page
+    // so we overwrite any existing Elementor or native content.
+    if (payload.assetType === 'new_page') {
+      builderType = 'wordpress';
+      resolvedActionType = 'create_page';
+    }
+
     console.log(`[DeploymentManager] Detected builder type: ${builderType}`);
 
     // ── 3. Route to Adapter ──
@@ -151,7 +160,7 @@ export class DeploymentManager {
     const adapterParams = {
       payload,
       targetObj,
-      actionType: payload.actionType || 'replace',
+      actionType: resolvedActionType,
       endpoint,
       method,
       targetSlug,
@@ -215,14 +224,15 @@ export class DeploymentManager {
       }
     }
 
-    if (objType === 'pages' && payload.navigationParent && parentId !== undefined && updatedObject) {
+    if (objType === 'pages' && payload.navigationParent && updatedObject) {
       await autoAddMenuItem(
         updatedObject.id,
         payload.pageTitle || payload.title || 'Untitled Page',
         parentId,
         axiosConfig,
         siteUrl,
-        restPrefix
+        restPrefix,
+        payload.navigationParent
       );
     }
 

@@ -986,6 +986,15 @@ if (auditId) {
         const floatBtn = document.getElementById('float-btn');
         floatBtn.href = reportUrl;
         floatBtn.style.display = 'flex';
+        
+        // Prefetch the report page in the background
+        if (!document.getElementById('prefetch-report')) {
+          const prefetchLink = document.createElement('link');
+          prefetchLink.id = 'prefetch-report';
+          prefetchLink.rel = 'prefetch';
+          prefetchLink.href = reportUrl;
+          document.head.appendChild(prefetchLink);
+        }
       }
     } catch(err){}
   };

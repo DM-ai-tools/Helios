@@ -114,11 +114,38 @@
         </a>
 
         <!-- Desktop Navigation Links -->
-        <div class="hidden md:flex items-center gap-8">
-          <a href="/" class="text-sm font-semibold text-brand-black hover:text-brand-primary transition-colors">Home</a>
-          <a href="/about" class="text-sm font-semibold text-brand-black hover:text-brand-primary transition-colors">About</a>
-          <a href="/services" class="text-sm font-semibold text-brand-primary border-b-2 border-brand-primary pb-1">Services</a>
-          <a href="/contact" class="text-sm font-semibold text-brand-black hover:text-brand-primary transition-colors">Contact</a>
+        <div class="hidden md:flex items-center gap-8 relative">
+          <a href="<%= siteUrl.replace(/\/$/, '') %>/" class="text-sm font-semibold text-brand-black hover:text-brand-primary transition-colors">Home</a>
+          <a href="<%= siteUrl.replace(/\/$/, '') %>/about" class="text-sm font-semibold text-brand-black hover:text-brand-primary transition-colors">About</a>
+          
+          <!-- Services Dropdown -->
+          <div class="group relative">
+            <a href="<%= siteUrl.replace(/\/$/, '') %>/services" class="text-sm font-semibold text-brand-primary border-b-2 border-brand-primary pb-1 inline-flex items-center gap-1">
+              Services
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </a>
+            <!-- Dropdown Menu -->
+            <div class="absolute left-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <div class="p-3 space-y-1">
+                <% if (typeof allServices !== 'undefined' && allServices.length > 0) { %>
+                  <% allServices.forEach(function(service) { %>
+                    <div class="mb-2">
+                      <div class="px-3 py-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider"><%= service.serviceName %></div>
+                      <% (service.subServices || []).forEach(function(sub) { %>
+                        <a href="<%= siteUrl.replace(/\/$/, '') %>/<%= sub.pageSlug || sub.subServiceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') %>" class="block px-3 py-2 text-sm text-brand-black hover:bg-orange-50 hover:text-brand-primary rounded-lg transition-colors">
+                          <%= sub.subServiceName %>
+                        </a>
+                      <% }); %>
+                    </div>
+                  <% }); %>
+                <% } else { %>
+                  <a href="<%= siteUrl.replace(/\/$/, '') %>/services" class="block px-3 py-2 text-sm text-brand-black hover:bg-orange-50 hover:text-brand-primary rounded-lg transition-colors">All Services</a>
+                <% } %>
+              </div>
+            </div>
+          </div>
+          
+          <a href="<%= siteUrl.replace(/\/$/, '') %>/contact" class="text-sm font-semibold text-brand-black hover:text-brand-primary transition-colors">Contact</a>
           <a href="#booking" class="px-5 py-2.5 text-sm font-heading font-bold text-white bg-brand-primary rounded-xl hover:bg-brand-primaryDark transition-all shadow-md orange-glow">
             Free Consultation
           </a>
@@ -134,10 +161,30 @@
       <!-- Mobile Menu Links -->
       <div id="mobileMenu" class="md:hidden hidden border-t border-gray-200 py-3 pb-6">
         <div class="flex flex-col gap-2">
-          <a href="/" class="px-4 py-3 text-sm font-semibold text-brand-black hover:bg-neutral-50 rounded-lg">Home</a>
-          <a href="/about" class="px-4 py-3 text-sm font-semibold text-brand-black hover:bg-neutral-50 rounded-lg">About</a>
-          <a href="/services" class="px-4 py-3 text-sm font-semibold text-brand-primary bg-orange-50 rounded-lg">Services</a>
-          <a href="/contact" class="px-4 py-3 text-sm font-semibold text-brand-black hover:bg-neutral-50 rounded-lg">Contact</a>
+          <a href="<%= siteUrl.replace(/\/$/, '') %>/" class="px-4 py-3 text-sm font-semibold text-brand-black hover:bg-neutral-50 rounded-lg">Home</a>
+          <a href="<%= siteUrl.replace(/\/$/, '') %>/about" class="px-4 py-3 text-sm font-semibold text-brand-black hover:bg-neutral-50 rounded-lg">About</a>
+          
+          <div class="px-4 py-3 rounded-lg bg-orange-50/30">
+            <a href="<%= siteUrl.replace(/\/$/, '') %>/services" class="text-sm font-semibold text-brand-primary block mb-3">Services</a>
+            <div class="pl-4 space-y-3 border-l-2 border-orange-200 ml-2">
+              <% if (typeof allServices !== 'undefined' && allServices.length > 0) { %>
+                <% allServices.forEach(function(service) { %>
+                  <div>
+                    <div class="text-[10px] font-bold text-neutral-400 uppercase mb-2"><%= service.serviceName %></div>
+                    <div class="space-y-2">
+                      <% (service.subServices || []).forEach(function(sub) { %>
+                        <a href="<%= siteUrl.replace(/\/$/, '') %>/<%= sub.pageSlug || sub.subServiceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') %>" class="block text-sm text-brand-black hover:text-brand-primary">
+                          <%= sub.subServiceName %>
+                        </a>
+                      <% }); %>
+                    </div>
+                  </div>
+                <% }); %>
+              <% } %>
+            </div>
+          </div>
+          
+          <a href="<%= siteUrl.replace(/\/$/, '') %>/contact" class="px-4 py-3 text-sm font-semibold text-brand-black hover:bg-neutral-50 rounded-lg">Contact</a>
           <div class="px-4 pt-3">
             <a href="#booking" class="block w-full text-center px-5 py-3.5 text-sm font-heading font-bold text-white bg-brand-primary rounded-xl hover:bg-brand-primaryDark transition-all shadow-md">
               Free Consultation
@@ -776,10 +823,10 @@
         <div class="lg:col-span-3 space-y-4">
           <h4 class="text-xs font-bold uppercase tracking-wider text-white">Company Links</h4>
           <ul class="space-y-2.5 text-xs">
-            <li><a href="/" class="hover:text-white transition-colors">Home</a></li>
-            <li><a href="/about" class="hover:text-white transition-colors">About Us</a></li>
-            <li><a href="/services" class="hover:text-white transition-colors">Services Overview</a></li>
-            <li><a href="/contact" class="hover:text-white transition-colors">Contact Details</a></li>
+            <li><a href="<%= siteUrl.replace(/\/$/, '') %>/" class="hover:text-white transition-colors">Home</a></li>
+            <li><a href="<%= siteUrl.replace(/\/$/, '') %>/about" class="hover:text-white transition-colors">About Us</a></li>
+            <li><a href="<%= siteUrl.replace(/\/$/, '') %>/services" class="hover:text-white transition-colors">Services Overview</a></li>
+            <li><a href="<%= siteUrl.replace(/\/$/, '') %>/contact" class="hover:text-white transition-colors">Contact Details</a></li>
           </ul>
         </div>
 
@@ -787,10 +834,22 @@
         <div class="lg:col-span-4 space-y-4">
           <h4 class="text-xs font-bold uppercase tracking-wider text-white">Service Verticals</h4>
           <ul class="space-y-2.5 text-xs">
-            <li><a href="/services/seo" class="hover:text-white transition-colors">Search Engine Optimisation</a></li>
-            <li><a href="/services/google-ads" class="hover:text-white transition-colors">Google Ads Pay-Per-Click</a></li>
-            <li><a href="/services/social-media" class="hover:text-white transition-colors">Social Media Advertising</a></li>
-            <li><a href="/services/web-design" class="hover:text-white transition-colors">Landing Page Optimization</a></li>
+            <% if (typeof allServices !== 'undefined' && allServices.length > 0) { %>
+              <% let subCount = 0; %>
+              <% allServices.forEach(function(service) { %>
+                <% (service.subServices || []).forEach(function(sub) { %>
+                  <% if (subCount < 5) { %>
+                    <li><a href="<%= siteUrl.replace(/\/$/, '') %>/<%= sub.pageSlug || sub.subServiceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') %>" class="hover:text-white transition-colors"><%= sub.subServiceName %></a></li>
+                    <% subCount++; %>
+                  <% } %>
+                <% }); %>
+              <% }); %>
+            <% } else { %>
+              <li><a href="<%= siteUrl.replace(/\/$/, '') %>/services/seo" class="hover:text-white transition-colors">Search Engine Optimisation</a></li>
+              <li><a href="<%= siteUrl.replace(/\/$/, '') %>/services/google-ads" class="hover:text-white transition-colors">Google Ads Pay-Per-Click</a></li>
+              <li><a href="<%= siteUrl.replace(/\/$/, '') %>/services/social-media" class="hover:text-white transition-colors">Social Media Advertising</a></li>
+              <li><a href="<%= siteUrl.replace(/\/$/, '') %>/services/web-design" class="hover:text-white transition-colors">Landing Page Optimization</a></li>
+            <% } %>
           </ul>
         </div>
       </div>

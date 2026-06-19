@@ -86,7 +86,8 @@ export const pageWorker = new Worker('generate-page-content', async (job) => {
     navigationLinks,
     footerLinks,
     extractedBrandColors,
-    extractedFonts
+    extractedFonts,
+    allServices
   } = job.data;
 
   const statusKey = `sub_service_page_job:${auditId}:${slug}`;
@@ -317,7 +318,8 @@ Generate a single copywriting JSON object for ${subServiceName} landing page now
       testimonials: copyData.testimonials,
       faqs: copyData.faqs,
       cta: copyData.cta,
-      footerSeoContent: copyData.footerSeoContent || copyData.cta.footerSeoBlock || ''
+      footerSeoContent: copyData.footerSeoContent || copyData.cta.footerSeoBlock || '',
+      allServices: allServices || []
     });
 
     // Save outputs to PostgreSQL and Redis

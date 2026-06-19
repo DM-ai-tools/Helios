@@ -803,6 +803,7 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/generate-page', async
     let siteUrl = 'yourbusiness.com.au';
     let industry = 'Digital Marketing';
     let audit = null;
+    let allServices = [];
 
     if (!isDemo) {
       audit = await getAuditById(auditId);
@@ -815,7 +816,8 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/generate-page', async
       if (seoPlugin?.claude_output) {
         let output = seoPlugin.claude_output;
         if (typeof output === 'string') { try { output = JSON.parse(output); } catch (_) {} }
-        for (const service of (output?.servicesAnalysis || [])) {
+        allServices = output?.servicesAnalysis || [];
+        for (const service of allServices) {
           for (const sub of (service.subServices || [])) {
             const s = sub.pageSlug || sub.subServiceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
             if (s === slug) {
@@ -828,6 +830,21 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/generate-page', async
       }
     } else {
       // Demo fallback data
+      allServices = [
+        {
+          serviceName: 'SEO',
+          subServices: [
+            { subServiceName: 'AI-Powered SEO', pageSlug: 'ai-powered-seo' },
+            { subServiceName: 'Local SEO', pageSlug: 'local-seo' }
+          ]
+        },
+        {
+          serviceName: 'Google Ads',
+          subServices: [
+            { subServiceName: 'PPC Management', pageSlug: 'ppc-management' }
+          ]
+        }
+      ];
       const demoMap = {
         'ai-powered-seo': { subServiceName: 'AI-Powered SEO', serviceName: 'SEO', briefDescription: 'Harness AI to dominate search rankings.', keywords: ['ai seo', 'generative engine optimisation', 'ai driven seo'], pageSlug: 'ai-powered-seo' },
         'local-seo': { subServiceName: 'Local SEO', serviceName: 'SEO', briefDescription: 'Dominate local search results.', keywords: ['local seo', 'seo melbourne', 'local search marketing'], pageSlug: 'local-seo' },
@@ -1036,7 +1053,8 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/generate-page', async
       navigationLinks,
       footerLinks,
       extractedBrandColors,
-      extractedFonts
+      extractedFonts,
+      allServices
     });
 
     console.log(`[GeneratePage] Enqueued page generation job. Polling for results...`);

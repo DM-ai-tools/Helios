@@ -313,12 +313,12 @@ export async function autoInterlinkParentPage(subServiceName, subServiceSlug, ne
   }
 }
 
-export async function autoAddMenuItem(pageId, pageTitle, parentPageId, axiosConfig, siteUrl, restPrefix) {
+export async function autoAddMenuItem(pageId, pageTitle, parentPageId, axiosConfig, siteUrl, restPrefix, navigationParentName) {
   const buildUrl = (path) => {
     return siteUrl + (restPrefix === '/wp-json' ? `/wp-json${path}` : `/?rest_route=${path}`);
   };
 
-  console.log(`[WordPress Menu] Auto-adding/updating menu item for Page ID ${pageId} ("${pageTitle}") under Parent Page ID ${parentPageId}`);
+  console.log(`[WordPress Menu] Auto-adding/updating menu item for Page ID ${pageId} ("${pageTitle}") under Parent Page ID ${parentPageId} or Name "${navigationParentName}"`);
   try {
     const menusRes = await axios.get(buildUrl('/wp/v2/menus'), axiosConfig);
     const menus = menusRes.data || [];
@@ -333,9 +333,21 @@ export async function autoAddMenuItem(pageId, pageTitle, parentPageId, axiosConf
     const itemsRes = await axios.get(buildUrl(`/wp/v2/menu-items?menus=${menuId}&per_page=100`), axiosConfig);
     const menuItems = itemsRes.data || [];
 
-    const parentMenuItem = menuItems.find(item => Number(item.object_id) === Number(parentPageId));
+    let parentMenuItem;
+    if (parentPageId) {
+      parentMenuItem = menuItems.find(item => Number(item.object_id) === Number(parentPageId));
+    }
+
+    if (!parentMenuItem && navigationParentName) {
+      const searchName = navigationParentName.toLowerCase().replace(/pay-per-click|optimization|advertising/g, '').trim();
+      parentMenuItem = menuItems.find(item => {
+        const itemTitle = (item.title?.rendered || item.title || '').toLowerCase().trim();
+        return itemTitle && (itemTitle.includes(searchName) || searchName.includes(itemTitle));
+      });
+    }
+
     if (!parentMenuItem) {
-      console.log(`[WordPress Menu] Parent Page ID ${parentPageId} is not in the menu. Skipping nesting.`);
+      console.log(`[WordPress Menu] Parent Page ID ${parentPageId} or name "${navigationParentName}" is not in the menu. Skipping nesting.`);
       return;
     }
     const parentMenuItemId = parentMenuItem.id;

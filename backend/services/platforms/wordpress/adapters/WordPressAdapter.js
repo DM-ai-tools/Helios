@@ -79,6 +79,12 @@ export class WordPressAdapter {
       if (payload.navigationParent) {
         requestData.template = 'elementor_canvas';
       }
+      if (actionType === 'create_page') {
+        requestData.meta = {
+          ...(requestData.meta || {}),
+          _elementor_edit_mode: 'default'
+        };
+      }
     }
 
     const deployRes = await this.axios({
