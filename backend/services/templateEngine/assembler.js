@@ -179,7 +179,7 @@ function syncCheerioRepeatingElements($, $parent, children, targetCount) {
 function injectContentIntoCheerioNode($, $section, contentObj, sectionType) {
   // Broad heading/paragraph selectors to cover both vanilla HTML and Elementor markup
   const HEADING_SEL = 'h1, h2, h3, h4, .elementor-heading-title';
-  const PARA_SEL    = 'p, .elementor-text-editor';
+  const PARA_SEL    = 'p, .elementor-text-editor, .elementor-icon-box-description, .elementor-icon-list-text';
 
   const updateHeadings = (obj) => {
     const h1     = obj.h1Title    ?? obj.headline   ?? null;
@@ -210,14 +210,45 @@ function injectContentIntoCheerioNode($, $section, contentObj, sectionType) {
       itemElements.forEach(($item, idx) => {
         const data = contentObj[idx];
         if (!data) return;
+        if (sectionType === 'comparisonTable') {
+          const feature = data.feature;
+          const traditional = data.traditional;
+          const ai = data.ai;
+
+          if (feature != null) $item.find('h3, h4, h5, strong, .elementor-heading-title').first().text(feature);
+          
+          const $pTags = $item.find(PARA_SEL).filter(function () {
+            if ($(this).hasClass('elementor-heading-title')) return false;
+            // Only skip if the element has very little text AND is entirely a strong tag
+            // Otherwise, we want to replace the whole text editor.
+            return true; 
+          });
+
+          if ($pTags.length >= 2) {
+             $($pTags[0]).text(traditional);
+             $($pTags[1]).text(ai);
+             for (let i = 2; i < $pTags.length; i++) {
+               $($pTags[i]).remove();
+             }
+          } else if ($pTags.length === 1) {
+             $($pTags[0]).text(traditional);
+             $item.append(`<p>${ai}</p>`);
+          } else {
+             $item.append(`<p>${traditional}</p><p>${ai}</p>`);
+          }
+          return;
+        }
+
         const title = data.title ?? data.scenarioTitle ?? data.feature ?? data.question ?? data.quote ?? null;
         const desc  = data.description ?? data.answer ?? data.author ?? data.traditional ?? data.ai ?? null;
 
         if (title != null) $item.find('h3, h4, h5, strong, .elementor-heading-title').first().text(title);
         if (desc != null) {
           const $pTags = $item.find(PARA_SEL).filter(function () {
-            return $(this).find('strong, h3, h4, h5').length === 0;
+            if ($(this).hasClass('elementor-heading-title')) return false;
+            return true;
           });
+          
           if ($pTags.length > 0) {
             $($pTags[0]).text(desc);
             for (let i = 1; i < $pTags.length; i++) {
