@@ -4,6 +4,8 @@
 // ============================================================
 
 import { Router } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import { tracer } from '../utils/tracer.js';
 import {
   getImplementationChanges,
   updateImplementationChange,
@@ -20,11 +22,15 @@ import {
   upsertIntegration,
   saveSubServicePage,
   getSubServicePage,
-  approveSubServicePage
+  approveSubServicePage,
+  savePageTemplate,
+  getPageTemplate,
+  hasPageTemplate
 } from '../db/queries.js';
 import { requireAdmin } from './integrations.js';
 import redisClient from '../services/redisClient.js';
 import * as cheerio from 'cheerio';
+import { DeploymentManager } from '../services/platforms/wordpress/DeploymentManager.js';
 
 const IMPL_TTL = 60 * 60 * 24 * 7; // 7 days
 
@@ -136,6 +142,106 @@ async function extractBrandingInfo(siteUrl) {
 }
 
 const router = Router();
+
+// ─── Template Helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Uses Claude Haiku to determine which crawled page URL is the service category page.
+ * Receives a list of { url, title } page objects and the serviceName to match.
+ */
+async function resolveServicePageUrlWithClaude(serviceName, siteUrl, crawledPages) {
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+  if (!ANTHROPIC_API_KEY) return null;
+
+  const normalizedTarget = siteUrl.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+  const pageList = crawledPages
+    .filter(p => p.url && p.url.replace(/^https?:\/\/(www\.)?/, '').startsWith(normalizedTarget))
+    .slice(0, 40)
+    .map(p => `- URL: ${p.url}\n  Title: ${p.title || '(no title)'}`)
+    .join('\n');
+
+  console.log(`[TemplateHelper] crawledPages count: ${crawledPages.length}. pageList length: ${pageList.length}`);
+  if (!pageList) {
+    console.log(`[TemplateHelper] Empty pageList, bypassing Claude.`);
+    return null;
+  }
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5-20250929',
+        max_tokens: 256,
+        messages: [{
+          role: 'user',
+          content: `You are helping identify which page URL represents the service category page for "${serviceName}" on a website.
+
+Here are the crawled pages:
+${pageList}
+
+RULES:
+1. You MUST prioritise short, primary parent URLs (like /services/google-ads or /google-ads) over long, specific sub-service URLs (like /google-search-ads-management-australia...).
+2. Return ONLY the single URL that best represents the "${serviceName}" main service category. 
+3. If none closely matches, return the word NULL. Return nothing else.`
+        }]
+      }),
+      signal: AbortSignal.timeout(15000)
+    });
+    if (!resp.ok) {
+      const errText = await resp.text();
+      console.warn(`[TemplateHelper] Claude API returned ${resp.status}: ${errText}`);
+      return null;
+    }
+    const data = await resp.json();
+    const answer = (data?.content?.[0]?.text || '').trim();
+    console.log(`[TemplateHelper] Claude URL resolution output for "${serviceName}": ${answer}`);
+    if (answer === 'NULL' || !answer.startsWith('http')) return null;
+    return answer;
+  } catch (e) {
+    console.warn('[TemplateHelper] Claude URL resolution failed:', e.message);
+    return null;
+  }
+}
+
+/**
+ * Strips tracking scripts, analytics, chat widgets, and cookie banners from HTML.
+ * Returns cleaned HTML string safe to store as a design template.
+ */
+function stripTrackingScripts(html) {
+  const $ = cheerio.load(html);
+
+  // Remove tracking / analytics script tags by src pattern
+  $('script[src]').each((_, el) => {
+    const src = $(el).attr('src') || '';
+    if (/google-analytics|googletagmanager|gtag|hotjar|clarity|fbevents|intercom|drift|crisp|tawk|zendesk|hubspot|segment\.io|matomo|heap/i.test(src)) {
+      $(el).remove();
+    }
+  });
+
+  // Remove inline scripts containing tracking identifiers
+  $('script:not([src])').each((_, el) => {
+    const content = $(el).html() || '';
+    if (/gtag\(|ga\(|fbq\(|_hsq|Intercom|drift\.load|crisp\.push|tawkTo|zE\(/i.test(content)) {
+      $(el).remove();
+    }
+  });
+
+  // Remove common cookie/chat/notification UI elements
+  $('[id*="cookie"], [class*="cookie"], [id*="gdpr"], [class*="gdpr"]').remove();
+  $('[id*="chat-widget"], [class*="chat-widget"], [id*="livechat"], [class*="livechat"]').remove();
+  $('[id*="drift"], [id*="intercom"], [id*="crisp"], [id*="tawk"]').remove();
+  $('[id*="notification-bar"], [class*="notification-bar"]').remove();
+
+  // Remove <noscript> tags (often contain tracking pixels)
+  $('noscript').remove();
+
+  return $.html();
+}
 
 // Helper to generate mock changes for demo mode
 function getMockChanges(auditId, pluginId) {
@@ -776,6 +882,8 @@ router.get('/:auditId([^/]+)/seo-audit/sub-services', async (req, res) => {
           generatedHtml: savedState?.renderedHtml || null,
           pageTitle: savedState?.pageTitle || null,
           metaDescription: savedState?.metaDescription || null,
+          generatedElementorData: savedState?.generatedElementorData || null,
+          builderType: savedState?.builderType || 'standard_wp'
         });
       }
     }
@@ -997,7 +1105,7 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/generate-page', async
       }
     }
 
-    let existingContent = userContext || existingHtml || '';
+    let existingContent = userContext || '';
     if (!existingContent || existingContent === 'Not available') {
       const contextParts = [];
       if (crawled.perplexityBusiness?.description || crawled.businessSummary?.description) {
@@ -1028,20 +1136,142 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/generate-page', async
     }
 
     // ==========================================
+    // ON-DEMAND DESIGN TEMPLATE CAPTURE
+    // Check if we already have the service category's design template stored.
+    // If not, fetch the live service page HTML and store the cleaned version.
+    // ==========================================
+    let designTemplateHtml = null;
+    if (!isDemo) {
+      try {
+        const existing = await getPageTemplate(auditId, serviceName);
+        if (existing?.cleanedHtml) {
+          designTemplateHtml = existing.cleanedHtml;
+          console.log(`[GeneratePage] Reusing stored design template for "${serviceName}" (captured from ${existing.sourceUrl})`);
+        } else {
+          console.log(`[GeneratePage] No template for "${serviceName}" — resolving URL with Claude…`);
+          const crawledPages = crawled.pages || [];
+
+          // Ask Claude to identify the best URL for the PARENT service
+          let servicePageUrl = await resolveServicePageUrlWithClaude(serviceName, normalizedSiteUrl, crawledPages);
+
+          // Fallback: construct a URL from the service name slug
+          if (!servicePageUrl) {
+            const serviceSlug = serviceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/, '');
+            servicePageUrl = `${normalizedSiteUrl}/${serviceSlug}`;
+            console.log(`[GeneratePage] Claude URL resolution returned null — using fallback URL: ${servicePageUrl}`);
+          }
+
+          // Fetch the live service page HTML
+          const controller = new AbortController();
+          const tid = setTimeout(() => controller.abort(), 12000);
+          const pageResp = await fetch(servicePageUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+            signal: controller.signal
+          }).catch(e => { clearTimeout(tid); console.warn('[GeneratePage] Template fetch failed:', e.message); return null; });
+          clearTimeout(tid);
+
+          if (pageResp && pageResp.ok) {
+            const rawHtml = await pageResp.text();
+            const cleanedHtml = stripTrackingScripts(rawHtml);
+            
+            // Try to fetch Elementor JSON via WordPress API
+            let masterElementorData = null;
+            try {
+              const wpBusinessId = audit?.business_id || req.headers['x-business-id'] || 'default-business';
+              const integration = await getIntegrationByPlatform(wpBusinessId, 'wordpress');
+              if (integration && integration.status !== 'error') {
+                const dm = new DeploymentManager();
+                masterElementorData = await dm.fetchTemplateFromWordPress(servicePageUrl, integration);
+              }
+            } catch (elemErr) {
+              console.warn(`[GeneratePage] Could not fetch elementor data: ${elemErr.message}`);
+            }
+
+            await savePageTemplate(auditId, serviceName, {
+              sourceUrl: servicePageUrl,
+              cleanedHtml,
+              masterElementorData,
+              builderType: masterElementorData ? 'elementor' : 'standard_wp',
+              fetchStatus: 'captured'
+            });
+            designTemplateHtml = cleanedHtml;
+            console.log(`[GeneratePage] ✓ Captured & stored design template for "${serviceName}" from ${servicePageUrl}`);
+          } else {
+            console.warn(`[GeneratePage] Could not fetch "${servicePageUrl}". Trying fallback templates...`);
+            let fallbackTemplate = null;
+            
+            // 1. Try "SEO Services" template which we know we usually capture first
+            const seoTemplate = await getPageTemplate(auditId, 'SEO Services');
+            if (seoTemplate && seoTemplate.cleanedHtml) {
+              fallbackTemplate = seoTemplate.cleanedHtml;
+              console.log(`[GeneratePage] Using "SEO Services" design template as fallback.`);
+            } else {
+              // 2. Try just "seo"
+              const seoTemplate2 = await getPageTemplate(auditId, 'seo');
+              if (seoTemplate2 && seoTemplate2.cleanedHtml) {
+                fallbackTemplate = seoTemplate2.cleanedHtml;
+                console.log(`[GeneratePage] Using "seo" design template as fallback.`);
+              }
+            }
+
+            if (fallbackTemplate) {
+              designTemplateHtml = fallbackTemplate;
+              await savePageTemplate(auditId, serviceName, {
+                sourceUrl: servicePageUrl,
+                cleanedHtml: fallbackTemplate,
+                fetchStatus: 'fallback'
+              }).catch(() => {});
+            } else {
+              // Try ANY template from this audit as a universal fallback
+              console.warn(`[GeneratePage] No named fallbacks found — searching for any available template...`);
+              try {
+                const { pool } = await import('../db/db.js');
+                const { rows } = await pool.query(
+                  `SELECT service_name, cleaned_html, master_elementor_data, builder_type FROM page_templates WHERE audit_id = $1 AND cleaned_html IS NOT NULL AND cleaned_html != '' LIMIT 1`,
+                  [auditId]
+                );
+                if (rows[0] && rows[0].cleaned_html) {
+                  designTemplateHtml = rows[0].cleaned_html;
+                  console.log(`[GeneratePage] Using "${rows[0].service_name}" design template as universal fallback.`);
+                  await savePageTemplate(auditId, serviceName, {
+                    sourceUrl: servicePageUrl,
+                    cleanedHtml: rows[0].cleaned_html,
+                    masterElementorData: rows[0].master_elementor_data ? (typeof rows[0].master_elementor_data === 'string' ? JSON.parse(rows[0].master_elementor_data) : rows[0].master_elementor_data) : null,
+                    builderType: rows[0].builder_type || 'standard_wp',
+                    fetchStatus: 'fallback'
+                  }).catch(() => {});
+                } else {
+                  console.warn(`[GeneratePage] No templates found at all in DB for this audit.`);
+                }
+              } catch (dbErr) {
+                console.warn(`[GeneratePage] Universal fallback query failed: ${dbErr.message}`);
+              }
+            }
+          }
+        }
+      } catch (templateErr) {
+        console.warn('[GeneratePage] Template capture step failed (non-fatal):', templateErr.message);
+        // Non-fatal: pageWorker will fall back to EJS template
+      }
+    }
+
+    // ==========================================
     // ENQUEUE JOB TO BullMQ AND AWAIT COMPLETION
     // ==========================================
     const statusKey = `sub_service_page_job:${auditId}:${slug}`;
     // Clear any previous job status
     await redisClient.del(statusKey);
 
-    const { addPageGenerationJob } = await import('../services/pageQueue.js');
-    await addPageGenerationJob({
+    const generationId = uuidv4();
+    const jobData = {
+      generationId,
       auditId,
       slug,
       userContext: existingContent,
       existingHtml,
       subServiceName,
       serviceName,
+      designTemplateHtml,
       briefDescription,
       keywords,
       siteUrl,
@@ -1055,13 +1285,24 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/generate-page', async
       extractedBrandColors,
       extractedFonts,
       allServices
+    };
+
+    tracer.logInputData(generationId, {
+      parentService: serviceName,
+      subService: subServiceName,
+      keywords,
+      businessName: brandName,
+      templateId: designTemplateHtml ? 'available' : 'missing'
     });
+
+    const { addPageGenerationJob } = await import('../services/pageQueue.js');
+    await addPageGenerationJob(jobData);
 
     console.log(`[GeneratePage] Enqueued page generation job. Polling for results...`);
     const start = Date.now();
     let finalResult = null;
 
-    while (Date.now() - start < 180000) { // 3 minutes timeout
+    while (Date.now() - start < 300000) { // 5 minutes timeout
       await new Promise(r => setTimeout(r, 1000));
       const jobStatusStr = await redisClient.get(statusKey).catch(() => null);
       if (jobStatusStr) {
@@ -1077,11 +1318,12 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/generate-page', async
     }
 
     if (!finalResult) {
-      throw new Error('Page generation timed out after 3 minutes');
+      throw new Error('Page generation timed out after 5 minutes');
     }
 
     res.json({
       success: true,
+      generationId,
       html: finalResult.html,
       pageTitle: finalResult.pageTitle,
       metaDescription: finalResult.metaDescription
@@ -1130,6 +1372,35 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/approve', async (req,
     res.json({ success: true, slug, status, state: updatedState });
   } catch (err) {
     console.error('[SubServices] approve error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── GET /api/implementation/:auditId/seo-audit/page-template/:serviceName ──
+// Returns metadata about the stored design template for a service category.
+// Frontend uses this to show "Template captured from [url]" badge.
+router.get('/:auditId([^/]+)/seo-audit/page-template/:serviceName', async (req, res) => {
+  const { auditId } = req.params;
+  const serviceName = decodeURIComponent(req.params.serviceName);
+  const isDemo = auditId === 'demo' || auditId.startsWith('demo-');
+
+  if (isDemo) {
+    return res.json({ hasTemplate: false, isDemo: true });
+  }
+
+  try {
+    const template = await getPageTemplate(auditId, serviceName);
+    if (!template || !template.cleanedHtml) {
+      return res.json({ hasTemplate: false });
+    }
+    res.json({
+      hasTemplate: true,
+      sourceUrl: template.sourceUrl,
+      capturedAt: template.capturedAt,
+      fetchStatus: template.fetchStatus
+    });
+  } catch (err) {
+    console.error('[PageTemplate] GET error:', err);
     res.status(500).json({ error: err.message });
   }
 });

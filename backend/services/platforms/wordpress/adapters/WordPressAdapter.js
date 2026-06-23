@@ -80,10 +80,24 @@ export class WordPressAdapter {
         requestData.template = 'elementor_canvas';
       }
       if (actionType === 'create_page') {
-        requestData.meta = {
-          ...(requestData.meta || {}),
-          _elementor_edit_mode: 'default'
-        };
+        if (payload.builderType === 'elementor' && payload.generatedElementorData) {
+          requestData.meta = {
+            ...(requestData.meta || {}),
+            _elementor_edit_mode: 'builder',
+            _elementor_template_type: 'wp-page',
+            _wp_page_template: 'elementor_header_footer'
+          };
+          // The Elementor data can either be sent in the meta object if the REST API supports it
+          // OR it might need to be sent differently depending on the specific endpoint being used.
+          // Since the prompt states: "update all required Elementor metadata before publishing"
+          // We will include it in the meta object.
+          requestData.meta._elementor_data = JSON.stringify(payload.generatedElementorData);
+        } else {
+          requestData.meta = {
+            ...(requestData.meta || {}),
+            _elementor_edit_mode: 'default'
+          };
+        }
       }
     }
 

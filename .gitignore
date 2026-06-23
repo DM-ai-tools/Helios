@@ -67,3 +67,6 @@ Thumbs.db
 wp_diagnostic.js
 check-*.js
 audit_*.json
+temp_template.html
+verification_output.html
+drop_table.js

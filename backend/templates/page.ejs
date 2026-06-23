@@ -520,7 +520,7 @@
           Strategy Analysis
         </span>
         <h2 class="text-2.5xl sm:text-3.5xl font-black text-brand-black leading-tight tracking-tight">
-          How Our Advanced Methods Outperform Traditional Manual Agencies
+          <%= (comparisonTable && comparisonTable.sectionTitle) || ('How Our ' + subServiceName + ' Outperforms Traditional Methods') %>
         </h2>
         <p class="text-base text-brand-textMuted leading-relaxed mt-4">
           Compare the operational differences and commercial returns of automated entity optimization versus legacy optimization tactics.
@@ -570,7 +570,7 @@
           Core Deliverables
         </span>
         <h2 class="text-2.5xl sm:text-3.5xl font-black text-brand-black leading-tight tracking-tight">
-          Engineered Capabilities That Guarantee Search Visibility
+          <%= (differentiators && differentiators.sectionTitle) || (subServiceName + ' Capabilities That Drive Real Results') %>
         </h2>
         <p class="text-base text-brand-textMuted leading-relaxed mt-4">
           We combine data intelligence, citation consistency, and technical schema optimization to drive ranking performance.
@@ -579,7 +579,7 @@
 
       <!-- 3-column Grid (exactly 6 items) -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <% (differentiators || differentiatorsList || outcomes || []).slice(0, 6).forEach(function(item, idx) { %>
+        <% (differentiatorsList || differentiators || outcomes || []).slice(0, 6).forEach(function(item, idx) { %>
           <div class="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-md transition-all">
             <div class="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center text-2xl mb-6">
               <%= item.emoji || '📈' %>

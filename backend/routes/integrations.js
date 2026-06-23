@@ -9,10 +9,22 @@ import {
 
 const router = Router();
 
+// Resolve the effective role for the request.
+// Primary source of truth is the authenticated JWT (req.user.role, set by
+// requireAuthAPI). The legacy `x-user-role` header is honoured ONLY as a
+// fallback when no authenticated session is present (e.g. internal/dev calls),
+// preserving backward compatibility for existing integration/deployment routes.
+function resolveRole(req) {
+  if (req.user && req.user.role) {
+    // JWT roles are lowercase ('admin'); legacy header roles are capitalised ('Admin').
+    return req.user.role === 'admin' ? 'Admin' : 'User';
+  }
+  return req.headers['x-user-role'] || 'Viewer';
+}
+
 // Middleware to check for Admin permission (modifying integrations/deployments)
 export function requireAdmin(req, res, next) {
-  const role = req.headers['x-user-role'] || 'Viewer';
-  if (role !== 'Admin') {
+  if (resolveRole(req) !== 'Admin') {
     return res.status(403).json({
       error: 'Permission Denied: Only Admin role is allowed to perform this action.'
     });
@@ -20,9 +32,21 @@ export function requireAdmin(req, res, next) {
   next();
 }
 
+// Strict admin guard for the admin panel API. Assumes requireAuthAPI has run
+// first (so req.user is populated from the JWT) — no header fallback here.
+export function requireAdminAPI(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Unauthorized. Please log in.' });
+  }
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Forbidden: admin access required.' });
+  }
+  next();
+}
+
 // Middleware to check for Manager or Admin permission (approvals)
 export function requireManagerOrAdmin(req, res, next) {
-  const role = req.headers['x-user-role'] || 'Viewer';
+  const role = resolveRole(req);
   if (role !== 'Admin' && role !== 'Manager') {
     return res.status(403).json({
       error: 'Permission Denied: Only Admin or Manager roles are allowed to perform this action.'

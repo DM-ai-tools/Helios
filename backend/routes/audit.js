@@ -240,7 +240,10 @@ async function runInitPipeline({ auditId, url, industry }) {
 
 
 // ─── Async Analyze Pipeline ─────────────────────────────────────
-async function runAnalyzePipeline({ auditId, crawledData, url, industry, email, selectedPlugins }) {
+// Exported so the admin panel's "rerun report" can re-trigger a fresh
+// plugin run against an audit's already-crawled data without duplicating the
+// pipeline logic.
+export async function runAnalyzePipeline({ auditId, crawledData, url, industry, email, selectedPlugins }) {
   const startTime = Date.now();
 
   try {
@@ -503,7 +506,7 @@ Rewrite the email accordingly. Ensure the tone fits a professional B2B/B2C email
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 2000,
       system: systemPrompt,
       messages: [

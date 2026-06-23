@@ -7,9 +7,12 @@ const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-clicktrends-key-for-dev';
 const COOKIE_NAME = 'ct_auth_token';
 
-// Helper to generate JWT and set cookie
-function setAuthCookie(res, userId, email) {
-  const token = jwt.sign({ id: userId, email }, JWT_SECRET, { expiresIn: '7d' });
+// Helper to generate JWT and set cookie.
+// `role` is embedded so requireAdmin / HTML role-gating can trust the session
+// instead of a spoofable header. `extraClaims` carries optional fields such as
+// `impersonatedBy` for the admin impersonation feature.
+function setAuthCookie(res, userId, email, role = 'user', extraClaims = {}) {
+  const token = jwt.sign({ id: userId, email, role, ...extraClaims }, JWT_SECRET, { expiresIn: '7d' });
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -75,7 +78,7 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const query = `SELECT id, email, password_hash FROM users WHERE email = $1`;
+    const query = `SELECT id, email, password_hash, role, status FROM users WHERE email = $1`;
     const { rows } = await pool.query(query, [email.toLowerCase()]);
     const user = rows[0];
 
@@ -88,7 +91,15 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    setAuthCookie(res, user.id, user.email);
+    if (user.status === 'suspended') {
+      return res.status(403).json({ error: 'This account has been suspended. Please contact an administrator.' });
+    }
+
+    // Record last login (best-effort — never blocks the login).
+    pool.query(`UPDATE users SET last_login_at = NOW() WHERE id = $1`, [user.id])
+      .catch(err => console.error('[Auth] last_login update failed:', err.message));
+
+    setAuthCookie(res, user.id, user.email, user.role || 'user');
     res.json({ success: true, message: 'Login successful' });
 
   } catch (err) {
@@ -103,6 +114,33 @@ router.post('/login', async (req, res) => {
 router.post('/logout', (req, res) => {
   res.clearCookie(COOKIE_NAME);
   res.json({ success: true });
+});
+
+/**
+ * POST /api/auth/stop-impersonation
+ * Reverts an impersonation session back to the original admin. Only works when
+ * the current session token carries an `impersonatedBy` claim (issued by the
+ * admin impersonate route), and reverts only to that embedded admin.
+ */
+router.post('/stop-impersonation', async (req, res) => {
+  const token = req.cookies[COOKIE_NAME];
+  if (!token) return res.status(401).json({ error: 'Not authenticated.' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (!decoded.impersonatedBy) {
+      return res.status(400).json({ error: 'Not in an impersonation session.' });
+    }
+    const adminId = decoded.impersonatedBy.id;
+    const { rows } = await pool.query(`SELECT id, email, role FROM users WHERE id = $1 AND deleted_at IS NULL;`, [adminId]);
+    const admin = rows[0];
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ error: 'Original admin no longer valid.' });
+    }
+    setAuthCookie(res, admin.id, admin.email, admin.role);
+    res.json({ success: true, message: 'Returned to admin account.' });
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid session.' });
+  }
 });
 
 /**

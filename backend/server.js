@@ -37,6 +37,9 @@ import { generateReportPDF } from './services/puppeteerService.js';
 import fs from 'fs';
 import cookieParser from 'cookie-parser';
 import authRouter from './routes/auth.js';
+import adminRouter from './routes/admin.js';
+import { requireAdminAPI } from './routes/integrations.js';
+import { hydrateProcessEnv } from './services/configService.js';
 import { requireAuthAPI, requireAuthHTML } from './middleware/auth.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -46,7 +49,7 @@ const PORT = process.env.PORT || 3000;
 // ─── Middleware ───────────────────────────────────────────────
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
-  methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -66,8 +69,28 @@ app.use('/logos', express.static(resolve(__dirname, '../frontend/logos')));
 
 app.use('/api/auth', authRouter);
 
+// ─── Admin Panel (HTML) ───────────────────────────────────────
+// Role-gated before the static handler so non-admins are redirected (never a
+// blank page) and admin.html is never served to a non-admin.
+app.get('/admin', requireAuthHTML, (req, res) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.redirect('/?error=admin_only');
+  }
+  res.sendFile(resolve(__dirname, '../frontend/admin.html'));
+});
+
 // ─── Protected Frontend HTML ──────────────────────────────────
 app.use(requireAuthHTML);
+
+// Prevent the static handler from serving admin.html to non-admins via its
+// direct path — route it through the same role gate as /admin.
+app.get('/admin.html', (req, res) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.redirect('/?error=admin_only');
+  }
+  res.sendFile(resolve(__dirname, '../frontend/admin.html'));
+});
+
 app.use(express.static(resolve(__dirname, '../frontend')));
 
 // ─── Protected API Routes ─────────────────────────────────────
@@ -77,6 +100,7 @@ app.use('/api/audit', requireAuthAPI, statusRouter);
 app.use('/api/implementation', requireAuthAPI, implementationRouter);  // implementation approval workflow
 app.use('/api/integrations', requireAuthAPI, integrationsRouter);
 app.use('/api/deployment', requireAuthAPI, deploymentRouter);
+app.use('/api/admin', requireAuthAPI, requireAdminAPI, adminRouter);  // admin panel — every route admin-gated
 
 // Integrations Settings Page
 app.get('/settings/integrations', requireAuthHTML, (req, res) => {
@@ -189,6 +213,7 @@ app.get('*', (req, res) => {
 // ─── Initialize DB and Start Server ───────────────────────────
 (async () => {
   await initDatabase();
+  await hydrateProcessEnv();  // apply persisted admin_config overrides into process.env
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`
 ╔═══════════════════════════════════════════╗

@@ -22,7 +22,47 @@ function getBusinessId(req) {
   return req.headers['x-business-id'] || req.query.businessId || (req.body && req.body.businessId) || 'default-business';
 }
 
+import axios from 'axios';
 import { addDeploymentJob } from '../services/deploymentQueue.js';
+
+// ─── GET /api/deployment/check-page ───────────────────────────────
+router.get('/check-page', requireAdmin, async (req, res) => {
+  const { platform, slug } = req.query;
+  const businessId = getBusinessId(req);
+  if (!platform || !slug) return res.status(400).json({ error: 'Missing platform or slug' });
+  
+  try {
+    let integration = await getIntegrationByPlatform(businessId, platform.toLowerCase());
+    if (!integration) return res.json({ exists: false });
+
+    if (platform.toLowerCase() === 'wordpress') {
+      let siteUrl = process.env.WORDPRESS_SITE_URL || integration.account_name;
+      siteUrl = siteUrl.replace(/\/$/, '').replace(/\/wp-admin$/, '');
+      const username = process.env.WORDPRESS_USERNAME || integration.account_id;
+      const password = process.env.WORDPRESS_PASSWORD || integration.access_token;
+      
+      if (!siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
+        siteUrl = `https://${siteUrl}`;
+      }
+      const restPrefix = siteUrl.includes('?') ? '' : '/wp-json';
+      const endpoint = siteUrl + (restPrefix === '/wp-json' ? `/wp-json/wp/v2/pages?slug=${encodeURIComponent(slug)}&_fields=id,title` : `/?rest_route=/wp/v2/pages&slug=${encodeURIComponent(slug)}&_fields=id,title`);
+
+      const authHeader = 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
+      const wpRes = await axios.get(endpoint, {
+        headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
+        timeout: 10000
+      });
+      
+      if (wpRes.data && wpRes.data.length > 0) {
+        return res.json({ exists: true, title: wpRes.data[0].title.rendered });
+      }
+    }
+    return res.json({ exists: false });
+  } catch (err) {
+    console.warn('[Deployment Check] Check page error:', err.message);
+    res.json({ exists: false, error: err.message });
+  }
+});
 
 // ─── POST /api/deployment/queue ───────────────────────────────
 router.post('/queue', requireAdmin, async (req, res) => {

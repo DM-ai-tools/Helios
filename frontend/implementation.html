@@ -1374,6 +1374,12 @@ function renderSubServicesPanel(highlightSlug) {
         (ss.briefDescription ? '<p class="ss-desc">' + escHtml(ss.briefDescription) + '</p>' : '') +
         (kwHtml ? '<div class="ss-keywords">' + kwHtml + '</div>' : '') +
 
+        // Design template status badge (fetched asynchronously after render)
+        '<div id="tpl-badge-' + ss.pageSlug + '" style="margin-bottom:10px;">' +
+          '<span style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Design Template: </span>' +
+          '<span id="tpl-status-' + ss.pageSlug + '" style="font-size:11px;font-weight:600;color:#9ca3af;">Checking\u2026</span>' +
+        '</div>' +
+
         // Preview area
         '<div class="preview-wrap" id="preview-wrap-' + ss.pageSlug + '">' +
           (hasPreview
@@ -1415,6 +1421,9 @@ function renderSubServicesPanel(highlightSlug) {
 
   panel.innerHTML = html;
 
+  // Asynchronously check the design template status for each unique service category
+  checkTemplateStatusForAll();
+
   // If a slug was deep-linked, scroll to it and auto-generate if no preview
   if (highlightSlug) {
     setTimeout(function() {
@@ -1426,6 +1435,45 @@ function renderSubServicesPanel(highlightSlug) {
   }
 }
 
+// Checks design template status for each unique service category and updates badges
+async function checkTemplateStatusForAll() {
+  var seen = {};
+  _ssData.forEach(function(ss) {
+    if (!seen[ss.serviceName]) seen[ss.serviceName] = [];
+    seen[ss.serviceName].push(ss.pageSlug);
+  });
+  for (var svcName in seen) {
+    (async function(serviceName, slugs) {
+      try {
+        var res = await fetch('/api/implementation/' + auditId + '/seo-audit/page-template/' + encodeURIComponent(serviceName));
+        if (!res.ok) return;
+        var data = await res.json();
+        var badgeHtml, color;
+        if (data.hasTemplate && data.fetchStatus !== 'failed') {
+          var srcShort = data.sourceUrl ? data.sourceUrl.replace(/https?:\/\//, '').slice(0, 50) : 'stored';
+          badgeHtml = '\u2705 Captured from <a href="' + (data.sourceUrl || '#') + '" target="_blank" style="color:var(--orange);text-decoration:none;font-weight:700;">' + srcShort + '</a>';
+          color = '#059669';
+        } else if (data.hasTemplate && data.fetchStatus === 'failed') {
+          badgeHtml = '\u26a0\ufe0f Fetch failed \u2014 will use brand template fallback';
+          color = '#d97706';
+        } else {
+          badgeHtml = '\ud83d\udd0d Will be fetched from live site on first generation';
+          color = '#9ca3af';
+        }
+        slugs.forEach(function(slug) {
+          var el = document.getElementById('tpl-status-' + slug);
+          if (el) { el.innerHTML = badgeHtml; el.style.color = color; }
+        });
+      } catch (e) {
+        seen[serviceName].forEach(function(slug) {
+          var el = document.getElementById('tpl-status-' + slug);
+          if (el) el.textContent = '\u2014';
+        });
+      }
+    })(svcName, seen[svcName]);
+  }
+}
+
 async function generatePreview(slug) {
   var ss = _ssData.find(function(s) { return s.pageSlug === slug; });
   if (!ss) return;
@@ -1434,16 +1482,21 @@ async function generatePreview(slug) {
   var previewEl = document.getElementById('preview-' + slug);
   var ctx = (document.getElementById('ctx-' + slug) || {}).value || '';
 
-  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></div>Generating…'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></div>Fetching design template → Generating content…'; }
 
   try {
     var res = await fetch('/api/implementation/' + auditId + '/seo-audit/sub-services/' + slug + '/generate-page', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache', // TRACE POINT 5: Disable cache
+        'Pragma': 'no-cache'
+      },
       body: JSON.stringify({ userContext: ctx, existingHtml: ss.generatedHtml || '' }),
     });
     var data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Generation failed');
+    console.log('[TRACE ' + data.generationId + '] POINT 9: Frontend received generated HTML without cache.');
 
     // Update local cache
     ss.generatedHtml  = data.html;
@@ -1475,6 +1528,8 @@ async function generatePreview(slug) {
     }
 
     toast('Preview generated!', 'success');
+    // Refresh template status badge — it may now show as captured
+    checkTemplateStatusForAll();
   } catch (err) {
     toast('Error: ' + err.message, 'error');
   } finally {
@@ -1554,8 +1609,27 @@ async function deploySubServicePage(slug) {
   var btn = document.getElementById('btn-deploy-' + slug);
   if (btn) { btn.disabled = true; btn.textContent = 'Deploying…'; }
 
+  var activeBusinessId = getActiveBusinessId();
+
+  // ── Pre-flight Check: Does the page already exist? ──
   try {
-    var activeBusinessId = getActiveBusinessId();
+    var checkRes = await fetch('/api/deployment/check-page?platform=' + targetPlatform + '&slug=' + slug, {
+      headers: { 'X-User-Role': role, 'X-Business-Id': activeBusinessId }
+    });
+    if (checkRes.ok) {
+      var checkData = await checkRes.json();
+      if (checkData.exists) {
+        if (!confirm('A page for this sub-service already exists on ' + targetPlatform + ' ("' + checkData.title + '").\n\nAre you sure you want to REPLACE the existing page?')) {
+          if (btn) { btn.disabled = false; btn.textContent = 'Deploy Page →'; }
+          return;
+        }
+      }
+    }
+  } catch(e) {
+    console.warn('Pre-flight page check failed:', e);
+  }
+
+  try {
     var res = await fetch('/api/deployment/queue', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-User-Role': role, 'X-Business-Id': activeBusinessId },
@@ -1573,7 +1647,9 @@ async function deploySubServicePage(slug) {
           navigationParent: ss.serviceName,
           parentSlug: parentSlugParam,
           title: ss.subServiceName,
-          subServiceName: ss.subServiceName
+          subServiceName: ss.subServiceName,
+          generatedElementorData: ss.generatedElementorData,
+          builderType: ss.builderType
         },
       }),
     });
@@ -1600,6 +1676,7 @@ function downloadPageHtml(slug) {
   toast('Downloaded ' + slug + '.html', 'success');
 }
 </script>
+  <script src="/js/admin-link.js" defer></script>
 </body>
 </html>
 

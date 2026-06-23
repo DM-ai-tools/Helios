@@ -27,6 +27,13 @@ export const requireAuthAPI = (req, res, next) => {
  * Redirects to /login.html if no valid token is found.
  */
 export const requireAuthHTML = (req, res, next) => {
+  // API routes carry their own JSON auth guard (requireAuthAPI) and must NOT be
+  // HTML-redirected — otherwise an unauthenticated/expired API call returns a
+  // 302 to login.html instead of a 401 JSON the client can act on.
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+
   // Exclude public paths
   const publicPaths = ['/login.html', '/register.html'];
   if (publicPaths.includes(req.path)) {

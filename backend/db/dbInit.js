@@ -39,9 +39,27 @@ export async function initDatabase() {
       );
     `);
 
+    // ── Admin Panel migration (idempotent) ──────────────────────
+    // Applied on every boot so the admin schema stays in sync without a
+    // separate migrate step. The canonical SQL also lives at
+    // db/migrations/001_admin_panel.sql for the standalone runner.
+    await runAdminPanelMigration();
+
     console.log('[PostgreSQL] Database tables initialized successfully.');
   } catch (err) {
     console.error('[PostgreSQL] Database initialization failed:', err.message);
     // Do not crash the server in case PG is not accessible in some environments, but log warning
+  }
+}
+
+// Reads and applies db/migrations/001_admin_panel.sql. Idempotent.
+async function runAdminPanelMigration() {
+  try {
+    const migrationPath = resolve(__dirname, 'migrations', '001_admin_panel.sql');
+    const sql = fs.readFileSync(migrationPath, 'utf8');
+    await pool.query(sql);
+    console.log('[PostgreSQL] Admin-panel migration applied.');
+  } catch (err) {
+    console.error('[PostgreSQL] Admin-panel migration failed:', err.message);
   }
 }

@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel — ClickTrends AI Audit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy-dark: #111827; --navy-light: #1f2937; --navy-card: #ffffff;
+      --orange: #f97316; --orange-dark: #ea6c0a; --border: #e5e7eb;
+      --bg: #faf9f6; --success: #10b981; --error: #f43f5e; --warning: #f59e0b;
+      --text-main: #111827; --text-muted: #6b7280;
+      /* Liquid glass */
+      --glass-bg: rgba(255,255,255,0.55);
+      --glass-bg-strong: rgba(255,255,255,0.7);
+      --glass-border: rgba(255,255,255,0.18);
+      --glass-shadow: 0 8px 32px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background:
+        radial-gradient(1200px 600px at 100% -10%, rgba(249,115,22,0.10), transparent 60%),
+        radial-gradient(900px 500px at -10% 110%, rgba(17,24,39,0.06), transparent 55%),
+        var(--bg);
+      color: var(--text-main); min-height: 100vh;
+    }
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px) saturate(180%) brightness(1.1);
+      -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.1);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      position: sticky; top: 0; z-index: 60;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 22px; background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+    }
+    .topbar .logo { font-size: 18px; font-weight: 800; letter-spacing: -0.04em; color: var(--navy-dark); text-decoration: none; }
+    .topbar .logo span { color: var(--orange); }
+    .topbar .badge-admin { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--orange); background: rgba(249,115,22,.1); padding: 3px 8px; border-radius: 99px; margin-left: 10px; }
+    .topbar-right { display: flex; align-items: center; gap: 14px; font-size: 13px; color: var(--text-muted); }
+    .topbar-right a { color: var(--text-muted); text-decoration: none; font-weight: 600; }
+    .topbar-right a:hover { color: var(--orange); }
+
+    /* ── Impersonation banner ── */
+    #imp-banner { display: none; align-items: center; justify-content: center; gap: 14px; padding: 9px 16px; background: linear-gradient(135deg, var(--warning), #d97706); color: #fff; font-size: 13px; font-weight: 600; }
+    #imp-banner button { background: rgba(0,0,0,.2); color: #fff; border: none; padding: 5px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px; }
+
+    /* ── Layout ── */
+    .layout { display: flex; gap: 22px; padding: 22px; align-items: flex-start; max-width: 1500px; margin: 0 auto; }
+    .sidebar { width: 210px; flex-shrink: 0; border-radius: 18px; padding: 14px; position: sticky; top: 78px; }
+    .sidebar nav { display: flex; flex-direction: column; gap: 4px; }
+    .side-link { display: flex; align-items: center; gap: 10px; padding: 11px 13px; border-radius: 11px; font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer; border: none; background: transparent; text-align: left; width: 100%; transition: all .18s ease; }
+    .side-link:hover { background: rgba(255,255,255,0.5); color: var(--text-main); }
+    .side-link.active { background: var(--orange); color: #fff; box-shadow: 0 6px 18px rgba(249,115,22,.35); }
+    .side-link .ico { font-size: 16px; width: 18px; text-align: center; }
+    .main { flex: 1; min-width: 0; }
+    .section { display: none; }
+    .section.active { display: block; animation: fade .35s ease; }
+    @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    h1.page-title { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
+    p.page-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+
+    /* ── Cards / panels ── */
+    .panel { border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; margin-bottom: 22px; }
+    .stat { border-radius: 16px; padding: 18px 20px; }
+    .stat .label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+    .stat .value { font-size: 30px; font-weight: 800; margin-top: 6px; letter-spacing: -0.02em; }
+    .stat .meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .stat.alert .value { color: var(--error); }
+    .stat.alert.zero .value { color: var(--success); }
+
+    /* ── Buttons ── */
+    .btn { border: none; border-radius: 10px; padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all .18s ease; display: inline-flex; align-items: center; gap: 7px; }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+    .btn-primary { background: var(--orange); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--orange-dark); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(249,115,22,.3); }
+    .btn-ghost { background: rgba(255,255,255,.6); color: var(--text-main); border: 1px solid var(--border); }
+    .btn-ghost:hover:not(:disabled) { background: #fff; }
+    .btn-danger { background: rgba(244,63,94,.1); color: #be123c; border: 1px solid rgba(244,63,94,.2); }
+    .btn-danger:hover:not(:disabled) { background: var(--error); color: #fff; }
+    .btn-sm { padding: 6px 11px; font-size: 12px; }
+
+    /* ── Controls ── */
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+    .input, select.input { padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 13px; font-family: inherit; background: rgba(255,255,255,.7); outline: none; transition: all .18s ease; }
+    .input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(249,115,22,.12); }
+    .search { flex: 1; min-width: 200px; }
+
+    /* ── Tables ── */
+    .table-wrap { border-radius: 14px; overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: rgba(249,250,251,.8); padding: 11px 14px; text-align: left; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; color: #9ca3af; border-bottom: 1px solid var(--border); white-space: nowrap; cursor: default; }
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { color: var(--orange); }
+    td { padding: 12px 14px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: rgba(249,115,22,.03); }
+    td.editable { cursor: text; border-radius: 6px; }
+    td.editable:hover { background: rgba(249,115,22,.07); outline: 1px dashed rgba(249,115,22,.4); }
+    td.editing { background: #fff; outline: 2px solid var(--orange); padding: 4px; }
+    td.editing input, td.editing select { width: 100%; border: none; outline: none; font: inherit; padding: 8px; background: transparent; }
+
+    .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 99px; text-transform: capitalize; }
+    .pill-active, .pill-complete, .pill-completed { background: rgba(16,185,129,.12); color: #059669; }
+    .pill-suspended, .pill-failed, .pill-rejected { background: rgba(244,63,94,.12); color: #be123c; }
+    .pill-pending, .pill-running, .pill-queued { background: rgba(245,158,11,.14); color: #b45309; }
+    .pill-admin { background: rgba(249,115,22,.12); color: var(--orange-dark); }
+    .pill-user, .pill-muted { background: rgba(107,114,128,.12); color: var(--text-muted); }
+
+    .empty { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+    .empty .ico { font-size: 38px; opacity: .5; margin-bottom: 8px; }
+    .loading { text-align: center; padding: 40px; color: var(--text-muted); font-size: 14px; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(249,115,22,.3); border-top-color: var(--orange); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -3px; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* row action menu */
+    .row-actions { position: relative; }
+    .menu-btn { background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 4px 9px; cursor: pointer; font-weight: 800; color: var(--text-muted); }
+    .menu { position: absolute; right: 0; top: 110%; z-index: 30; min-width: 190px; border-radius: 12px; padding: 6px; display: none; }
+    .menu.open { display: block; }
+    .menu button { display: block; width: 100%; text-align: left; background: transparent; border: none; padding: 9px 11px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text-main); cursor: pointer; }
+    .menu button:hover { background: rgba(249,115,22,.1); }
+    .menu button.danger { color: #be123c; }
+
+    /* checkbox col */
+    .chk { width: 16px; height: 16px; accent-color: var(--orange); cursor: pointer; }
+
+    /* bulk bar */
+    #users-bulk { display: none; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px; margin-bottom: 12px; background: rgba(249,115,22,.08); border: 1px solid rgba(249,115,22,.2); font-size: 13px; font-weight: 600; }
+
+    /* plugins grid */
+    .plug-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+    .plug-card { border-radius: 16px; padding: 18px; position: relative; transition: transform .2s ease; }
+    .plug-card.dragging { opacity: .5; }
+    .plug-card.drag-over { outline: 2px dashed var(--orange); }
+    .plug-card .grip { position: absolute; top: 14px; right: 14px; color: #cbd5e1; cursor: grab; font-size: 16px; }
+    .plug-icon { font-size: 30px; margin-bottom: 8px; }
+    .plug-name { font-size: 16px; font-weight: 800; }
+    .plug-cat { font-size: 11px; font-weight: 700; color: var(--orange-dark); text-transform: uppercase; letter-spacing: .05em; }
+    .plug-desc { font-size: 13px; color: var(--text-muted); margin: 8px 0 12px; line-height: 1.5; }
+    .plug-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 14px; margin-bottom: 12px; }
+    .plug-actions { display: flex; gap: 8px; align-items: center; }
+    .toggle { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+    .toggle input { display: none; }
+    .toggle span { position: absolute; inset: 0; background: #cbd5e1; border-radius: 99px; transition: .2s; }
+    .toggle span::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+    .toggle input:checked + span { background: var(--success); }
+    .toggle input:checked + span::before { transform: translateX(18px); }
+    .badge-nonexec { font-size: 10px; font-weight: 700; color: #b45309; background: rgba(245,158,11,.14); padding: 2px 7px; border-radius: 99px; }
+
+    /* config */
+    .cfg-group { margin-bottom: 18px; }
+    .cfg-group h3 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 10px; }
+    .cfg-row { display: grid; grid-template-columns: 230px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #f3f4f6; }
+    .cfg-key { font-family: ui-monospace, monospace; font-size: 12.5px; font-weight: 700; }
+    .cfg-key .desc { display: block; font-family: 'Inter'; font-size: 11px; font-weight: 500; color: var(--text-muted); margin-top: 3px; }
+    .cfg-val { display: flex; gap: 8px; align-items: center; }
+    .cfg-val input { flex: 1; }
+    .cfg-actions { display: flex; gap: 6px; }
+    .dirty { color: var(--orange-dark); font-size: 11px; font-weight: 700; }
+    .restart-note { font-size: 11px; color: #b45309; }
+
+    /* detail panel / drawer */
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.4); backdrop-filter: blur(4px); z-index: 200; display: none; }
+    .drawer-overlay.open { display: block; }
+    .drawer { position: fixed; right: 0; top: 0; height: 100%; width: min(620px, 96vw); background: #fff; z-index: 201; transform: translateX(100%); transition: transform .28s ease; overflow-y: auto; box-shadow: -10px 0 40px rgba(0,0,0,.15); }
+    .drawer.open { transform: none; }
+    .drawer-head { position: sticky; top: 0; background: #fff; padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; z-index: 2; }
+    .drawer-body { padding: 22px; }
+    .drawer h2 { font-size: 18px; font-weight: 800; }
+    .x-btn { background: transparent; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted); line-height: 1; }
+    .kv { display: grid; grid-template-columns: 150px 1fr; gap: 6px 14px; font-size: 13px; margin-bottom: 16px; }
+    .kv dt { color: var(--text-muted); font-weight: 600; }
+    .kv dd { font-weight: 600; word-break: break-word; }
+    .sub-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+    .sub-card pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; background: #f9fafb; padding: 10px; border-radius: 8px; max-height: 240px; overflow: auto; }
+
+    /* modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); backdrop-filter: blur(5px); z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #fff; border-radius: 18px; padding: 24px; width: min(480px, 96vw); box-shadow: 0 24px 60px rgba(0,0,0,.25); animation: pop .25s cubic-bezier(.34,1.56,.64,1); max-height: 90vh; overflow-y: auto; }
+    @keyframes pop { from { transform: scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
+    .modal h2 { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+    .modal p { color: var(--text-muted); font-size: 14px; line-height: 1.55; margin-bottom: 16px; }
+    .modal .field { margin-bottom: 14px; }
+    .modal label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    .modal input, .modal select, .modal textarea { width: 100%; }
+    .modal textarea { min-height: 80px; resize: vertical; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+    .warn-box { background: rgba(244,63,94,.06); border: 1px solid rgba(244,63,94,.2); border-radius: 10px; padding: 12px; font-size: 13px; color: #be123c; margin-bottom: 14px; }
+
+    /* toast */
+    #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--navy-dark); color: #fff; padding: 13px 22px; border-radius: 12px; font-size: 14px; font-weight: 600; z-index: 400; opacity: 0; transition: all .3s ease; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.success { background: var(--success); } #toast.error { background: var(--error); } #toast.info { background: var(--navy-dark); }
+
+    .feed-item { display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
+    .feed-item:last-child { border: none; }
+    .feed-ico { width: 30px; height: 30px; border-radius: 9px; background: rgba(249,115,22,.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .feed-main { flex: 1; min-width: 0; }
+    .feed-when { color: var(--text-muted); font-size: 11px; white-space: nowrap; }
+    code.inline { font-family: ui-monospace, monospace; background: #f3f4f6; padding: 1px 6px; border-radius: 5px; font-size: 12px; }
+    .meta-toggle { cursor: pointer; color: var(--orange-dark); font-weight: 700; }
+    tr.meta-row td { background: #f9fafb; }
+    tr.meta-row pre { font-size: 11.5px; white-space: pre-wrap; word-break: break-word; margin: 0; }
+
+    @media (max-width: 860px) {
+      .layout { flex-direction: column; }
+      .sidebar { width: 100%; position: static; }
+      .sidebar nav { flex-direction: row; flex-wrap: wrap; }
+      .side-link { width: auto; }
+      .cfg-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="imp-banner">
+    <span id="imp-text"></span>
+    <button onclick="stopImpersonation()">Exit impersonation</button>
+  </div>
+
+  <header class="topbar">
+    <div>
+      <a href="/" class="logo">Click<span>Trends</span></a>
+      <span class="badge-admin">Admin</span>
+    </div>
+    <div class="topbar-right">
+      <span id="admin-email"></span>
+      <a href="/">← Back to app</a>
+      <a href="#" onclick="logout(); return false;">Log out</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar glass">
+      <nav>
+        <button class="side-link active" data-section="dashboard"><span class="ico">📊</span> Dashboard</button>
+        <button class="side-link" data-section="users"><span class="ico">👥</span> Users</button>
+        <button class="side-link" data-section="reports"><span class="ico">📄</span> Reports</button>
+        <button class="side-link" data-section="plugins"><span class="ico">🔌</span> Plugins</button>
+        <button class="side-link" data-section="config"><span class="ico">⚙️</span> Configuration</button>
+        <button class="side-link" data-section="trail"><span class="ico">🧾</span> Audit Trail</button>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <!-- DASHBOARD -->
+      <section class="section active" id="sec-dashboard">
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-sub">Platform overview across all users, reports and deployments.</p>
+        <div class="stat-grid" id="stat-grid"><div class="loading"><span class="spinner"></span>Loading stats…</div></div>
+        <div class="panel glass">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h3 style="font-weight:800;font-size:15px;">Recent activity</h3>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-ghost btn-sm" onclick="go('plugins')">＋ Add Plugin</button>
+              <button class="btn btn-ghost btn-sm" onclick="go('users')">Invite User</button>
+              <button class="btn btn-primary btn-sm" onclick="go('reports')">View Reports</button>
+            </div>
+          </div>
+          <div id="activity-feed"><div class="loading"><span class="spinner"></span>Loading…</div></div>
+        </div>
+      </section>
+
+      <!-- USERS -->
+      <section class="section" id="sec-users">
+        <h1 class="page-title">Users</h1>
+        <p class="page-sub">Search, edit, impersonate and manage every account. Click a cell to edit inline.</p>
+        <div class="toolbar">
+          <input class="input search" id="users-search" placeholder="Search name or email…" />
+          <select class="input" id="users-role"><option value="">All roles</option><option value="admin">Admin</option><option value="user">User</option></select>
+          <select class="input" id="users-status"><option value="">All statuses</option><option value="active">Active</option><option value="suspended">Suspended</option></select>
+          <button class="btn btn-ghost btn-sm" onclick="loadUsers()">↻ Refresh</button>
+        </div>
+        <div id="users-bulk">
+          <span><b id="bulk-count">0</b> selected</span>
+          <button class="btn btn-ghost btn-sm" onclick="bulkUsers('suspend')">Suspend</button>
+          <button class="btn btn-ghost btn-sm" onclick="bulkUsers('role')">Change role…</button>
+          <button class="btn btn-danger btn-sm" onclick="bulkUsers('delete')">Delete</button>
+        </div>
+        <div class="panel glass" style="padding:0;">
+          <div class="table-wrap"><table id="users-table"><thead></thead><tbody></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- REPORTS -->
+      <section class="section" id="sec-reports">
+        <h1 class="page-title">Reports</h1>
+        <p class="page-sub">Every audit across all users. Click a row to open the full report.</p>
+        <div class="toolbar">
+          <input class="input search" id="reports-search" placeholder="Search URL or user…" />
+          <select class="input" id="reports-status"><option value="">All statuses</option><option value="complete">Complete</option><option value="running">Running</option><option value="pending">Pending</option><option value="failed">Failed</option></select>
+          <select class="input" id="reports-plugin"><option value="">All plugins</option></select>
+          <input class="input" type="date" id="reports-from" title="From date" />
+          <input class="input" type="date" id="reports-to" title="To date" />
+          <button class="btn btn-ghost btn-sm" onclick="loadReports()">↻ Refresh</button>
+        </div>
+        <div class="panel glass" style="padding:0;">
+          <div class="table-wrap"><table id="reports-table"><thead></thead><tbody></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- PLUGINS -->
+      <section class="section" id="sec-plugins">
+        <h1 class="page-title">Plugins</h1>
+        <p class="page-sub">Manage the plugin registry. Drag cards to reorder how they appear to users.</p>
+        <div class="toolbar">
+          <button class="btn btn-primary btn-sm" onclick="openAddPlugin()">＋ Add Plugin</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadPlugins()">↻ Refresh</button>
+        </div>
+        <div id="plug-grid" class="plug-grid"><div class="loading"><span class="spinner"></span>Loading plugins…</div></div>
+      </section>
+
+      <!-- CONFIG -->
+      <section class="section" id="sec-config">
+        <h1 class="page-title">Configuration</h1>
+        <p class="page-sub">Environment variables in use. Secrets are masked — reveal/save requires your password.</p>
+        <div class="toolbar">
+          <button class="btn btn-primary btn-sm" id="cfg-save" onclick="saveConfig()" disabled>Save changes</button>
+          <button class="btn btn-ghost btn-sm" onclick="openAddVar()">＋ Add variable</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadConfig()">↻ Refresh</button>
+          <span class="dirty" id="cfg-dirty"></span>
+        </div>
+        <div class="panel glass" id="cfg-body"><div class="loading"><span class="spinner"></span>Loading config…</div></div>
+      </section>
+
+      <!-- AUDIT TRAIL -->
+      <section class="section" id="sec-trail">
+        <h1 class="page-title">Audit Trail</h1>
+        <p class="page-sub">Every admin and user action. Click a row to expand its metadata.</p>
+        <div class="toolbar">
+          <input class="input search" id="trail-search" placeholder="Search description…" />
+          <input class="input" id="trail-user" placeholder="User…" style="max-width:150px;" />
+          <select class="input" id="trail-event"><option value="">All events</option></select>
+          <input class="input" id="trail-audit" placeholder="Audit ID…" style="max-width:160px;" />
+          <input class="input" type="date" id="trail-from" />
+          <input class="input" type="date" id="trail-to" />
+          <button class="btn btn-ghost btn-sm" onclick="loadTrail(0)">↻</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportTrailCsv()">⭳ CSV</button>
+        </div>
+        <div class="panel glass" style="padding:0;">
+          <div class="table-wrap"><table id="trail-table"><thead></thead><tbody></tbody></table></div>
+        </div>
+        <div class="toolbar" style="justify-content:space-between;margin-top:12px;">
+          <span id="trail-info" style="font-size:13px;color:var(--text-muted);"></span>
+          <span>
+            <button class="btn btn-ghost btn-sm" id="trail-prev" onclick="trailPage(-1)">← Prev</button>
+            <button class="btn btn-ghost btn-sm" id="trail-next" onclick="trailPage(1)">Next →</button>
+          </span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Drawer (report / user detail) -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+  <div class="drawer" id="drawer">
+    <div class="drawer-head"><h2 id="drawer-title">Detail</h2><button class="x-btn" onclick="closeDrawer()">×</button></div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </div>
+
+  <!-- Generic modal -->
+  <div class="modal-overlay" id="modal-overlay"><div class="modal" id="modal"></div></div>
+
+  <div id="toast"></div>
+
+  <script>
+  // ───────────────────────── Core helpers ─────────────────────────
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmtDate = (d) => d ? new Date(d).toLocaleString() : '—';
+  const ago = (d) => { if (!d) return ''; const s = (Date.now() - new Date(d)) / 1000; if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s/60)+'m ago'; if (s < 86400) return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; };
+
+  let toastTimer;
+  function toast(msg, type = 'info') {
+    const t = $('#toast'); t.textContent = msg; t.className = 'show ' + type;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.className = '', 3200);
+  }
+  function debounce(fn, ms = 400) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+  async function api(path, opts = {}) {
+    const res = await fetch('/api/admin' + path, {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin', ...opts,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+    let data = {};
+    try { data = await res.json(); } catch (_) {}
+    if (res.status === 401) { window.location.href = '/login.html'; throw new Error('Unauthorized'); }
+    if (!res.ok) throw new Error(data.error || ('Request failed (' + res.status + ')'));
+    return data;
+  }
+
+  async function logout() { try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch (_) {} window.location.href = '/login.html'; }
+
+  // ─── Modal (promise-based) ───
+  function modal(html) {
+    $('#modal').innerHTML = html;
+    $('#modal-overlay').classList.add('open');
+  }
+  function closeModal() { $('#modal-overlay').classList.remove('open'); }
+  $('#modal-overlay').addEventListener('click', e => { if (e.target.id === 'modal-overlay') closeModal(); });
+
+  function confirmModal({ title, message, confirmText = 'Confirm', danger = false, warn = '' }) {
+    return new Promise(resolve => {
+      modal(`<h2>${esc(title)}</h2><p>${message}</p>${warn ? `<div class="warn-box">${warn}</div>` : ''}
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="m-cancel">Cancel</button>
+          <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" id="m-ok">${esc(confirmText)}</button>
+        </div>`);
+      $('#m-cancel').onclick = () => { closeModal(); resolve(false); };
+      $('#m-ok').onclick = () => { closeModal(); resolve(true); };
+    });
+  }
+  function passwordModal(title = 'Confirm your password') {
+    return new Promise(resolve => {
+      modal(`<h2>${esc(title)}</h2><p>For security, re-enter your password to continue.</p>
+        <div class="field"><input class="input" type="password" id="m-pw" placeholder="Password" autocomplete="current-password" /></div>
+        <div class="modal-actions"><button class="btn btn-ghost" id="m-cancel">Cancel</button><button class="btn btn-primary" id="m-ok">Confirm</button></div>`);
+      setTimeout(() => $('#m-pw')?.focus(), 50);
+      $('#m-cancel').onclick = () => { closeModal(); resolve(null); };
+      $('#m-ok').onclick = () => { const v = $('#m-pw').value; closeModal(); resolve(v); };
+      $('#m-pw').onkeydown = (e) => { if (e.key === 'Enter') $('#m-ok').click(); };
+    });
+  }
+
+  // Prevent double-submit: disable a button, run fn, restore.
+  async function withBusy(btn, fn) {
+    if (!btn) return fn();
+    if (btn.disabled) return;
+    const html = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+    try { return await fn(); } finally { btn.disabled = false; btn.innerHTML = html; }
+  }
+
+  // ───────────────────────── Navigation ─────────────────────────
+  function go(section) {
+    document.querySelectorAll('.side-link').forEach(b => b.classList.toggle('active', b.dataset.section === section));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === 'sec-' + section));
+    history.replaceState(null, '', '?section=' + section);
+    LOADERS[section]?.();
+  }
+  document.querySelectorAll('.side-link').forEach(b => b.onclick = () => go(b.dataset.section));
+  const LOADERS = { dashboard: loadDashboard, users: loadUsers, reports: loadReports, plugins: loadPlugins, config: loadConfig, trail: () => loadTrail(0) };
+
+  // ───────────────────────── Bootstrap ─────────────────────────
+  (async () => {
+    try {
+      const me = await (await fetch('/api/auth/me', { credentials: 'same-origin' })).json();
+      if (!me.authenticated) { window.location.href = '/login.html'; return; }
+      $('#admin-email').textContent = me.user.email || '';
+      if (me.user.impersonatedBy) {
+        $('#imp-text').textContent = `You are viewing as ${me.user.email} (impersonated by ${me.user.impersonatedBy.email}).`;
+        $('#imp-banner').style.display = 'flex';
+      }
+    } catch (_) {}
+    const initial = new URLSearchParams(location.search).get('section') || 'dashboard';
+    go(initial);
+  })();
+
+  async function stopImpersonation() {
+    try { await fetch('/api/auth/stop-impersonation', { method: 'POST', credentials: 'same-origin' }); toast('Returned to admin.', 'success'); setTimeout(() => location.reload(), 600); }
+    catch (e) { toast('Could not exit impersonation.', 'error'); }
+  }
+
+  // ───────────────────────── DASHBOARD ─────────────────────────
+  async function loadDashboard() {
+    try {
+      const { stats, activity } = await api('/stats');
+      const f = stats.failedLast24h || 0;
+      $('#stat-grid').innerHTML = [
+        statCard('Total users', stats.users.total, `${stats.users.active} active · ${stats.users.new_week} new this week`),
+        statCard('Reports run', stats.reports.total, `${stats.reports.week} this week`),
+        statCard('Plugins', stats.plugins.total, `${stats.plugins.enabled} enabled`),
+        statCard('Deployments', stats.deployments.total, `${stats.deployments.week} this week`),
+        `<div class="stat glass alert ${f === 0 ? 'zero' : ''}"><div class="label">Failures (24h)</div><div class="value">${f}</div><div class="meta">${f === 0 ? 'All systems healthy' : 'Needs attention'}</div></div>`,
+      ].join('');
+      $('#activity-feed').innerHTML = activity.length ? activity.map(feedRow).join('') : emptyState('🌱', 'No activity yet.');
+    } catch (e) { $('#stat-grid').innerHTML = emptyState('⚠️', e.message); }
+  }
+  const statCard = (label, value, meta) => `<div class="stat glass"><div class="label">${esc(label)}</div><div class="value">${value ?? 0}</div><div class="meta">${esc(meta)}</div></div>`;
+  const feedRow = (a) => `<div class="feed-item"><div class="feed-ico">${eventIcon(a.event_type)}</div><div class="feed-main"><div>${esc(a.action_details)}</div><div class="feed-when">${esc(a.performed_by || 'system')} · ${ago(a.timestamp)}</div></div></div>`;
+  function eventIcon(t = '') { if (t.includes('delete')) return '🗑️'; if (t.includes('deploy')) return '🚀'; if (t.includes('impersonate')) return '🕵️'; if (t.includes('config')) return '⚙️'; if (t.includes('plugin')) return '🔌'; if (t.includes('user')) return '👤'; if (t.includes('approve')) return '✅'; return '•'; }
+  const emptyState = (ico, msg) => `<div class="empty"><div class="ico">${ico}</div>${esc(msg)}</div>`;
+
+  // ───────────────────────── USERS ─────────────────────────
+  let usersData = [], usersSort = { sort: 'created_at', dir: 'desc' }, selectedUsers = new Set();
+  const reloadUsers = debounce(loadUsers, 400);
+  $('#users-search').oninput = reloadUsers;
+  $('#users-role').onchange = loadUsers;
+  $('#users-status').onchange = loadUsers;
+
+  async function loadUsers() {
+    const tb = $('#users-table tbody'); $('#users-table thead').innerHTML = userHead();
+    tb.innerHTML = `<tr><td colspan="9"><div class="loading"><span class="spinner"></span>Loading users…</div></td></tr>`;
+    try {
+      const q = new URLSearchParams({ search: $('#users-search').value, role: $('#users-role').value, status: $('#users-status').value, ...usersSort });
+      const { users } = await api('/users?' + q);
+      usersData = users; selectedUsers.clear(); updateBulkBar();
+      if (!users.length) { tb.innerHTML = `<tr><td colspan="9">${emptyState('👤', 'No users match.')}</td></tr>`; return; }
+      tb.innerHTML = users.map(userRow).join('');
+    } catch (e) { tb.innerHTML = `<tr><td colspan="9">${emptyState('⚠️', e.message)}</td></tr>`; }
+  }
+  function userHead() {
+    const col = (key, label) => `<th class="sortable" onclick="sortUsers('${key}')">${label}${usersSort.sort === key ? (usersSort.dir === 'asc' ? ' ▲' : ' ▼') : ''}</th>`;
+    return `<tr><th><input type="checkbox" class="chk" onchange="toggleAllUsers(this)"></th>${col('full_name','Name')}${col('email','Email')}${col('role','Role')}${col('status','Status')}${col('plan','Plan')}${col('created_at','Created')}${col('last_login_at','Last login')}<th>Reports / Deploys</th><th></th></tr>`;
+  }
+  function userRow(u) {
+    return `<tr data-id="${u.id}">
+      <td><input type="checkbox" class="chk" onchange="toggleUser('${u.id}', this)"></td>
+      <td class="editable" data-field="full_name">${esc(u.full_name || '—')}</td>
+      <td class="editable" data-field="email">${esc(u.email)}</td>
+      <td class="editable" data-field="role" data-type="select" data-options="admin,user"><span class="pill pill-${u.role}">${esc(u.role)}</span></td>
+      <td class="editable" data-field="status" data-type="select" data-options="active,suspended"><span class="pill pill-${u.status}">${esc(u.status)}</span></td>
+      <td class="editable" data-field="plan">${esc(u.plan || 'free')}</td>
+      <td>${fmtDate(u.created_at).split(',')[0]}</td>
+      <td>${u.last_login_at ? ago(u.last_login_at) : 'never'}</td>
+      <td>${u.report_count} / ${u.deployment_count}</td>
+      <td class="row-actions">
+        <button class="menu-btn" onclick="toggleMenu(event, '${u.id}')">⋯</button>
+        <div class="menu" id="menu-${u.id}">
+          <button onclick="viewUser('${u.id}')">View profile</button>
+          <button onclick="resetPw('${u.id}','${esc(u.email)}')">Reset password</button>
+          <button onclick="impersonate('${u.id}','${esc(u.email)}')">Impersonate</button>
+          <button onclick="toggleSuspend('${u.id}','${u.status}')">${u.status === 'suspended' ? 'Unsuspend' : 'Suspend'}</button>
+          <button class="danger" onclick="deleteUser('${u.id}','${esc(u.email)}')">Delete account</button>
+        </div>
+      </td></tr>`;
+  }
+  function sortUsers(key) { usersSort.dir = usersSort.sort === key && usersSort.dir === 'asc' ? 'desc' : 'asc'; usersSort.sort = key; loadUsers(); }
+
+  // inline edit
+  document.addEventListener('click', (e) => {
+    const td = e.target.closest('td.editable');
+    document.querySelectorAll('.menu.open').forEach(m => { if (!e.target.closest('.row-actions')) m.classList.remove('open'); });
+    if (!td || td.classList.contains('editing')) return;
+    const tr = td.closest('tr'); const id = tr.dataset.id; const field = td.dataset.field;
+    const current = (usersData.find(u => u.id === id) || {})[field] ?? '';
+    td.classList.add('editing');
+    if (td.dataset.type === 'select') {
+      const opts = td.dataset.options.split(',').map(o => `<option ${o === current ? 'selected' : ''}>${o}</option>`).join('');
+      td.innerHTML = `<select>${opts}</select>`;
+      const sel = td.querySelector('select'); sel.focus();
+      sel.onchange = () => commitEdit(td, id, field, sel.value);
+      sel.onblur = () => loadUsers();
+    } else {
+      td.innerHTML = `<input value="${esc(current)}" />`;
+      const inp = td.querySelector('input'); inp.focus(); inp.select();
+      inp.onkeydown = (ev) => { if (ev.key === 'Enter') commitEdit(td, id, field, inp.value); if (ev.key === 'Escape') loadUsers(); };
+      inp.onblur = () => commitEdit(td, id, field, inp.value);
+    }
+  });
+  let committing = false;
+  async function commitEdit(td, id, field, value) {
+    if (committing) return; committing = true;
+    const prev = (usersData.find(u => u.id === id) || {})[field];
+    if (String(prev ?? '') === String(value)) { committing = false; return loadUsers(); }
+    try { await api('/users/' + id, { method: 'PATCH', body: { [field]: value } }); toast('Saved.', 'success'); await loadUsers(); }
+    catch (e) { toast(e.message, 'error'); await loadUsers(); }
+    finally { committing = false; }
+  }
+
+  function toggleMenu(e, id) { e.stopPropagation(); const m = $('#menu-' + id); const open = m.classList.contains('open'); document.querySelectorAll('.menu.open').forEach(x => x.classList.remove('open')); if (!open) m.classList.add('open'); }
+  function toggleUser(id, cb) { cb.checked ? selectedUsers.add(id) : selectedUsers.delete(id); updateBulkBar(); }
+  function toggleAllUsers(cb) { document.querySelectorAll('#users-table tbody .chk').forEach(c => { c.checked = cb.checked; const id = c.closest('tr').dataset.id; cb.checked ? selectedUsers.add(id) : selectedUsers.delete(id); }); updateBulkBar(); }
+  function updateBulkBar() { $('#bulk-count').textContent = selectedUsers.size; $('#users-bulk').style.display = selectedUsers.size ? 'flex' : 'none'; }
+
+  async function viewUser(id) {
+    openDrawer('User profile', '<div class="loading"><span class="spinner"></span>Loading…</div>');
+    try {
+      const { user } = await api('/users/' + id);
+      $('#drawer-body').innerHTML = `
+        <dl class="kv">
+          <dt>Name</dt><dd>${esc(user.full_name || '—')}</dd>
+          <dt>Email</dt><dd>${esc(user.email)}</dd>
+          <dt>Role</dt><dd><span class="pill pill-${user.role}">${esc(user.role)}</span></dd>
+          <dt>Status</dt><dd><span class="pill pill-${user.status}">${esc(user.status)}</span></dd>
+          <dt>Plan</dt><dd>${esc(user.plan || 'free')}</dd>
+          <dt>Created</dt><dd>${fmtDate(user.created_at)}</dd>
+          <dt>Last login</dt><dd>${fmtDate(user.last_login_at)}</dd>
+          <dt>Reports</dt><dd>${user.report_count}</dd>
+        </dl>
+        <h3 style="font-weight:800;font-size:14px;margin-bottom:10px;">Reports (${user.audits.length})</h3>
+        ${user.audits.length ? user.audits.map(a => `<div class="sub-card" style="display:flex;justify-content:space-between;gap:10px;">
+          <div><div style="font-weight:700;word-break:break-all;">${esc(a.url)}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(a.created_at)}</div></div>
+          <div style="text-align:right;"><span class="pill pill-${a.status}">${esc(a.status)}</span><div style="font-size:12px;margin-top:4px;">${a.overall_score ?? '—'}</div></div>
+        </div>`).join('') : emptyState('📄', 'No reports.')}`;
+    } catch (e) { $('#drawer-body').innerHTML = emptyState('⚠️', e.message); }
+  }
+
+  async function resetPw(id, email) {
+    if (!await confirmModal({ title: 'Reset password', message: `Generate a new temporary password for <b>${esc(email)}</b>?`, confirmText: 'Reset' })) return;
+    try { const r = await api('/users/' + id + '/reset-password', { method: 'POST' });
+      modal(`<h2>Temporary password</h2><p>Share this with <b>${esc(email)}</b>. It is shown only once.</p>
+        <div class="field"><input class="input" readonly value="${esc(r.tempPassword)}" onclick="this.select()" /></div>
+        <div class="modal-actions"><button class="btn btn-primary" onclick="closeModal()">Done</button></div>`);
+    } catch (e) { toast(e.message, 'error'); }
+  }
+  async function impersonate(id, email) {
+    if (!await confirmModal({ title: 'Impersonate user', message: `Log in as <b>${esc(email)}</b>? You'll see the app as them, with a banner to exit.`, confirmText: 'Impersonate' })) return;
+    try { const r = await api('/users/' + id + '/impersonate', { method: 'POST' }); window.location.href = r.redirect || '/'; }
+    catch (e) { toast(e.message, 'error'); }
+  }
+  async function toggleSuspend(id, status) {
+    const next = status === 'suspended' ? 'active' : 'suspended';
+    try { await api('/users/' + id, { method: 'PATCH', body: { status: next } }); toast('User ' + next + '.', 'success'); loadUsers(); }
+    catch (e) { toast(e.message, 'error'); }
+  }
+  async function deleteUser(id, email) {
+    let impact = { audits: 0, deployments: 0 };
+    try { impact = (await api('/users/' + id + '/deletion-impact')).impact; } catch (_) {}
+    if (!await confirmModal({ title: 'Delete account', danger: true, confirmText: 'Soft delete',
+      message: `Delete <b>${esc(email)}</b>?`,
+      warn: `This will remove the account and orphan <b>${impact.audits}</b> report(s) and <b>${impact.deployments}</b> deployment(s). Soft delete hides the user but keeps data recoverable.` })) return;
+    try { await api('/users/' + id, { method: 'DELETE' }); toast('User deleted.', 'success'); loadUsers(); }
+    catch (e) { toast(e.message, 'error'); }
+  }
+  async function bulkUsers(action) {
+    const ids = [...selectedUsers]; if (!ids.length) return;
+    let role = null;
+    if (action === 'role') { role = prompt('New role for ' + ids.length + ' user(s): admin or user'); if (!role || !['admin','user'].includes(role)) return toast('Invalid role.', 'error'); }
+    const verb = action === 'delete' ? 'Delete' : action === 'suspend' ? 'Suspend' : 'Change role of';
+    if (!await confirmModal({ title: verb + ' users', danger: action === 'delete', confirmText: verb + ' ' + ids.length, message: `${verb} <b>${ids.length}</b> selected user(s)?` })) return;
+    let ok = 0, fail = 0;
+    for (const id of ids) {
+      try {
+        if (action === 'delete') await api('/users/' + id, { method: 'DELETE' });
+        else if (action === 'suspend') await api('/users/' + id, { method: 'PATCH', body: { status: 'suspended' } });
+        else await api('/users/' + id, { method: 'PATCH', body: { role } });
+        ok++;
+      } catch (_) { fail++; }
+    }
+    toast(`${ok} updated${fail ? ', ' + fail + ' failed' : ''}.`, fail ? 'error' : 'success');
+    loadUsers();
+  }
+
+  // ───────────────────────── REPORTS ─────────────────────────
+  const reloadReports = debounce(loadReports, 400);
+  $('#reports-search').oninput = reloadReports;
+  ['reports-status','reports-plugin','reports-from','reports-to'].forEach(id => $('#' + id).onchange = loadReports);
+
+  async function loadReports() {
+    const tb = $('#reports-table tbody');
+    $('#reports-table thead').innerHTML = `<tr><th>URL</th><th>User</th><th>Plugins</th><th>Status</th><th>Score</th><th>Changes (✓/✗/•)</th><th>Created</th><th></th></tr>`;
+    tb.innerHTML = `<tr><td colspan="8"><div class="loading"><span class="spinner"></span>Loading…</div></td></tr>`;
+    try {
+      const q = new URLSearchParams({ search: $('#reports-search').value, status: $('#reports-status').value, pluginId: $('#reports-plugin').value, from: $('#reports-from').value, to: $('#reports-to').value });
+      const { reports } = await api('/reports?' + q);
+      if (!reports.length) { tb.innerHTML = `<tr><td colspan="8">${emptyState('📄','No reports match.')}</td></tr>`; return; }
+      tb.innerHTML = reports.map(r => `<tr>
+        <td style="max-width:240px;"><a href="#" onclick="viewReport('${r.id}');return false;" style="color:var(--orange-dark);font-weight:700;word-break:break-all;">${esc(r.url)}</a></td>
+        <td>${esc(r.user_email || '—')}</td>
+        <td>${(r.plugins || []).map(p => `<code class="inline">${esc(p)}</code>`).join(' ') || '—'}</td>
+        <td><span class="pill pill-${r.status}">${esc(r.status)}</span></td>
+        <td>${r.overall_score ?? '—'}</td>
+        <td>${r.approved_count}/${r.rejected_count}/${r.pending_count}</td>
+        <td>${fmtDate(r.created_at).split(',')[0]}</td>
+        <td class="row-actions">
+          <button class="menu-btn" onclick="toggleMenu(event,'r-${r.id}')">⋯</button>
+          <div class="menu" id="menu-r-${r.id}">
+            <button onclick="viewReport('${r.id}')">View report</button>
+            <button onclick="rerunReport('${r.id}')">Re-run</button>
+            <button onclick="reassignReport('${r.id}')">Reassign</button>
+            <button onclick="downloadReport('${r.id}')">Download JSON</button>
+            <button onclick="window.open('/api/audits/${r.id}/download-pdf','_blank')">Download PDF</button>
+            <button class="danger" onclick="deleteReport('${r.id}','${esc(r.url)}')">Delete</button>
+          </div>
+        </td></tr>`).join('');
+    } catch (e) { tb.innerHTML = `<tr><td colspan="8">${emptyState('⚠️', e.message)}</td></tr>`; }
+  }
+  async function viewReport(id) {
+    document.querySelectorAll('.menu.open').forEach(m => m.classList.remove('open'));
+    openDrawer('Report detail', '<div class="loading"><span class="spinner"></span>Loading…</div>');
+    try {
+      const { report } = await api('/reports/' + id);
+      $('#drawer-body').innerHTML = `
+        <dl class="kv">
+          <dt>URL</dt><dd style="word-break:break-all;">${esc(report.url)}</dd>
+          <dt>User</dt><dd>${esc(report.user_email || '—')}</dd>
+          <dt>Status</dt><dd><span class="pill pill-${report.status}">${esc(report.status)}</span></dd>
+          <dt>Score</dt><dd>${report.overall_score ?? '—'}</dd>
+          <dt>Created</dt><dd>${fmtDate(report.created_at)}</dd>
+        </dl>
+        <h3 style="font-weight:800;font-size:14px;margin:10px 0;">Plugins (${report.plugins.length})</h3>
+        ${report.plugins.map(p => `<div class="sub-card"><div style="display:flex;justify-content:space-between;"><b>${esc(p.plugin_id)}</b><span class="pill pill-${p.status}">${esc(p.status)}</span></div>${p.summary ? `<div style="font-size:13px;color:var(--text-muted);margin-top:6px;">${esc(p.summary)}</div>` : ''}</div>`).join('') || emptyState('🔌','No plugins.')}
+        <h3 style="font-weight:800;font-size:14px;margin:14px 0 10px;">Changes (${report.changes.length})</h3>
+        ${report.changes.map(c => `<div class="sub-card"><div style="display:flex;justify-content:space-between;gap:8px;"><b>${esc(c.title)}</b><span class="pill pill-${c.status}">${esc(c.status)}</span></div></div>`).join('') || emptyState('✏️','No changes.')}
+        <h3 style="font-weight:800;font-size:14px;margin:14px 0 10px;">Deployments (${report.deployments.length})</h3>
+        ${report.deployments.map(d => `<div class="sub-card" style="display:flex;justify-content:space-between;"><span>${esc(d.platform)} · ${esc(d.asset_type || '')}</span><span class="pill pill-${d.status}">${esc(d.status)}</span></div>`).join('') || emptyState('🚀','No deployments.')}`;
+    } catch (e) { $('#drawer-body').innerHTML = emptyState('⚠️', e.message); }
+  }
+  async function rerunReport(id) {
+    document.querySelectorAll('.menu.open').forEach(m => m.classList.remove('open'));
+    if (!await confirmModal({ title: 'Re-run report', message: 'Trigger a fresh analysis using the stored crawl data?', confirmText: 'Re-run' })) return;
+    try { await api('/reports/' + id + '/rerun', { method: 'POST' }); toast('Re-run started.', 'success'); loadReports(); }
+    catch (e) { toast(e.message, 'error'); }
+  }
+  async function reassignReport(id) {
+    const email = prompt('Reassign to which user? Enter their exact email:'); if (!email) return;
+    const match = usersData.find(u => u.email.toLowerCase() === email.toLowerCase());
+    let userId = match?.id;
+    if (!userId) { try { const { users } = await api('/users?search=' + encodeURIComponent(email)); userId = users.find(u => u.email.toLowerCase() === email.toLowerCase())?.id; } catch (_) {} }
+    if (!userId) return toast('No user found with that email.', 'error');
+    try { await api('/reports/' + id + '/reassign', { method: 'POST', body: { userId } }); toast('Reassigned.', 'success'); loadReports(); }
+    catch (e) { toast(e.message, 'error'); }
+  }
+  function downloadReport(id) { window.open('/api/admin/reports/' + id + '/download', '_blank'); }
+  async function deleteReport(id, url) {
+    document.querySelectorAll('.menu.open').forEach(m => m.classList.remove('open'));
+    if (!await confirmModal({ title: 'Delete report', danger: true, confirmText: 'Delete', message: `Delete the report for <b>${esc(url)}</b>?`, warn: 'This permanently removes the audit, its plugin results, and all implementation changes.' })) return;
+    try { await api('/reports/' + id, { method: 'DELETE' }); toast('Report deleted.', 'success'); loadReports(); }
+    catch (e) { toast(e.message, 'error'); }
+  }
+
+  // ───────────────────────── PLUGINS ─────────────────────────
+  let pluginsData = [];
+  async function loadPlugins() {
+    const grid = $('#plug-grid'); grid.innerHTML = `<div class="loading"><span class="spinner"></span>Loading plugins…</div>`;
+    try {
+      const { plugins } = await api('/plugins'); pluginsData = plugins;
+      // populate report plugin filter too
+      $('#reports-plugin').innerHTML = '<option value="">All plugins</option>' + plugins.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+      if (!plugins.length) { grid.innerHTML = emptyState('🔌','No plugins registered.'); return; }
+      grid.innerHTML = plugins.map(pluginCard).join('');
+      enableDrag();
+    } catch (e) { grid.innerHTML = emptyState('⚠️', e.message); }
+  }
+  function pluginCard(p) {
+    return `<div class="plug-card glass" draggable="true" data-id="${esc(p.id)}">
+      <span class="grip" title="Drag to reorder">⠿</span>
+      <div class="plug-icon">${esc(p.icon || '🔌')}</div>
+      <div class="plug-cat">${esc(p.category || 'Other')}</div>
+      <div class="plug-name">${esc(p.name)} ${p.is_executable ? '' : '<span class="badge-nonexec" title="No backend module — not executable">registry only</span>'}</div>
+      <div class="plug-desc">${esc(p.description || 'No description.')}</div>
+      <div class="plug-meta"><span>▶ ${p.run_count} runs</span><span>🕑 ${p.last_run_at ? ago(p.last_run_at) : 'never'}</span></div>
+      <div class="plug-actions">
+        <label class="toggle"><input type="checkbox" ${p.is_active ? 'checked' : ''} onchange="togglePlugin('${esc(p.id)}', this.checked)"><span></span></label>
+        <button class="btn btn-ghost btn-sm" onclick="editPlugin('${esc(p.id)}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePlugin('${esc(p.id)}')">Delete</button>
+      </div></div>`;
+  }
+  async function togglePlugin(id, isActive) {
+    try { await api('/plugins/' + id + '/toggle', { method: 'POST', body: { isActive } }); toast('Plugin ' + (isActive ? 'enabled' : 'disabled') + '.', 'success'); }
+    catch (e) { toast(e.message, 'error'); loadPlugins(); }
+  }
+  function editPlugin(id) {
+    const p = pluginsData.find(x => x.id === id); if (!p) return;
+    modal(`<h2>Edit plugin</h2>
+      <div class="field"><label>Display name</label><input class="input" id="pl-name" value="${esc(p.name)}"></div>
+      <div class="field"><label>Category</label><input class="input" id="pl-cat" value="${esc(p.category || '')}"></div>
+      <div class="field"><label>Icon / emoji</label><input class="input" id="pl-icon" value="${esc(p.icon || '')}"></div>
+      <div class="field"><label>Description</label><textarea class="input" id="pl-desc">${esc(p.description || '')}</textarea></div>
+      <div class="field"><label>Default prompt template</label><textarea class="input" id="pl-prompt">${esc(p.prompt_template || '')}</textarea></div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="pl-save">Save</button></div>`);
+    $('#pl-save').onclick = (e) => withBusy(e.target, async () => {
+      try { await api('/plugins/' + id, { method: 'PATCH', body: { name: $('#pl-name').value, category: $('#pl-cat').value, icon: $('#pl-icon').value, description: $('#pl-desc').value, promptTemplate: $('#pl-prompt').value } }); closeModal(); toast('Plugin saved.', 'success'); loadPlugins(); }
+      catch (err) { toast(err.message, 'error'); } });
+  }
+  function openAddPlugin() {
+    modal(`<h2>Add plugin</h2><p>Creates a registry entry. It won't run until a developer adds its backend module.</p>
+      <div class="field"><label>Plugin ID (slug, unique)</label><input class="input" id="pl-id" placeholder="my-plugin"></div>
+      <div class="field"><label>Display name</label><input class="input" id="pl-name" placeholder="My Plugin"></div>
+      <div class="field"><label>Category</label><input class="input" id="pl-cat" placeholder="Content"></div>
+      <div class="field"><label>Icon / emoji</label><input class="input" id="pl-icon" placeholder="🔌"></div>
+      <div class="field"><label>Description</label><textarea class="input" id="pl-desc"></textarea></div>
+      <div class="field"><label>Default prompt template</label><textarea class="input" id="pl-prompt"></textarea></div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="pl-add">Create</button></div>`);
+    $('#pl-add').onclick = (e) => withBusy(e.target, async () => {
+      const id = $('#pl-id').value.trim();
+      if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) return toast('ID must be a lowercase slug.', 'error');
+      if (!$('#pl-name').value.trim()) return toast('Name is required.', 'error');
+      try { const r = await api('/plugins', { method: 'POST', body: { id, name: $('#pl-name').value, category: $('#pl-cat').value, icon: $('#pl-icon').value, description: $('#pl-desc').value, promptTemplate: $('#pl-prompt').value } });
+        closeModal(); toast('Plugin created.', 'success'); if (r.warning) setTimeout(() => toast(r.warning, 'info'), 800); loadPlugins(); }
+      catch (err) { toast(err.message, 'error'); } });
+  }
+  async function deletePlugin(id) {
+    let usage = 0;
+    try { usage = (await api('/plugins/' + id)).usageCount; } catch (_) {}
+    if (!await confirmModal({ title: 'Delete plugin', danger: true, confirmText: 'Delete', message: `Delete plugin <b>${esc(id)}</b>?`, warn: `This plugin has been used by <b>${usage}</b> report(s). Deleting only removes the registry entry; historical results remain.` })) return;
+    try { await api('/plugins/' + id, { method: 'DELETE' }); toast('Plugin deleted.', 'success'); loadPlugins(); }
+    catch (e) { toast(e.message, 'error'); }
+  }
+  // drag-and-drop reorder
+  let dragId = null;
+  function enableDrag() {
+    document.querySelectorAll('.plug-card').forEach(card => {
+      card.ondragstart = () => { dragId = card.dataset.id; card.classList.add('dragging'); };
+      card.ondragend = () => { card.classList.remove('dragging'); document.querySelectorAll('.drag-over').forEach(c => c.classList.remove('drag-over')); };
+      card.ondragover = (e) => { e.preventDefault(); card.classList.add('drag-over'); };
+      card.ondragleave = () => card.classList.remove('drag-over');
+      card.ondrop = (e) => { e.preventDefault(); card.classList.remove('drag-over'); reorderTo(dragId, card.dataset.id); };
+    });
+  }
+  async function reorderTo(fromId, toId) {
+    if (!fromId || fromId === toId) return;
+    const ids = pluginsData.map(p => p.id);
+    const from = ids.indexOf(fromId), to = ids.indexOf(toId);
+    ids.splice(to, 0, ids.splice(from, 1)[0]);
+    const order = ids.map((id, i) => ({ id, display_order: i + 1 }));
+    try { const { plugins } = await api('/plugins/reorder', { method: 'PATCH', body: { order } }); pluginsData = plugins; $('#plug-grid').innerHTML = plugins.map(pluginCard).join(''); enableDrag(); toast('Order saved.', 'success'); }
+    catch (e) { toast(e.message, 'error'); loadPlugins(); }
+  }
+
+  // ───────────────────────── CONFIG ─────────────────────────
+  let configData = {}, configDirty = {};
+  async function loadConfig() {
+    const body = $('#cfg-body'); body.innerHTML = `<div class="loading"><span class="spinner"></span>Loading config…</div>`;
+    configDirty = {}; updateDirty();
+    try {
+      const { config } = await api('/config'); configData = config;
+      body.innerHTML = Object.entries(config).map(([cat, items]) => `
+        <div class="cfg-group"><h3>${esc(cat)}</h3>
+          ${items.map(cfgRow).join('')}
+        </div>`).join('') || emptyState('⚙️','No config found.');
+    } catch (e) { body.innerHTML = emptyState('⚠️', e.message); }
+  }
+  function cfgRow(it) {
+    const id = 'cfg_' + it.key;
+    return `<div class="cfg-row" data-key="${esc(it.key)}">
+      <div class="cfg-key">${esc(it.key)}${it.restartRequired ? ' <span class="restart-note">⟳ restart</span>' : ''}<span class="desc">${esc(it.description || '')}</span></div>
+      <div class="cfg-val">
+        <input class="input" id="${id}" value="${esc(it.display)}" data-secret="${it.isSecret}" ${it.isSecret ? 'data-masked="1"' : ''} oninput="markDirty('${esc(it.key)}')">
+        ${it.isSecret ? `<button class="btn btn-ghost btn-sm" onclick="revealSecret('${esc(it.key)}', this)">👁 Reveal</button>` : ''}
+      </div>
+      <div class="cfg-actions">${testableKey(it.key) ? `<button class="btn btn-ghost btn-sm" onclick="testCfg('${esc(it.key)}', this)">Test</button>` : ''}</div>
+    </div>`;
+  }
+  function testableKey(k) { return /^(WORDPRESS_|ANTHROPIC_API_KEY|OPENROUTER_API_KEY|OPENAI_API_KEY|OPEN_AI_APIKEY|RESEND_API_KEY|REDIS_URL|DATABASE_URL|IMPLEMENTATION_BOT_URL)/.test(k); }
+  function markDirty(key) { const inp = $('#cfg_' + key); if (inp.dataset.masked === '1') { delete inp.dataset.masked; } configDirty[key] = inp.value; updateDirty(); }
+  function updateDirty() { const n = Object.keys(configDirty).length; $('#cfg-save').disabled = !n; $('#cfg-dirty').textContent = n ? `${n} unsaved change${n>1?'s':''}` : ''; }
+  async function revealSecret(key, btn) {
+    const pw = await passwordModal('Reveal ' + key); if (pw === null) return;
+    await withBusy(btn, async () => {
+      try { const r = await api('/config/reveal/' + key, { method: 'POST', body: { confirmPassword: pw } }); const inp = $('#cfg_' + key); inp.value = r.value; delete inp.dataset.masked; toast('Revealed.', 'info'); }
+      catch (e) { toast(e.message, 'error'); } });
+  }
+  async function testCfg(key, btn) {
+    await withBusy(btn, async () => {
+      try { const inp = $('#cfg_' + key); const body = (inp && inp.dataset.masked !== '1') ? { value: inp.value } : {};
+        const r = await api('/config/test/' + key, { method: 'POST', body }); toast((r.ok ? '✓ ' : '✗ ') + r.detail, r.ok ? 'success' : 'error'); }
+      catch (e) { toast(e.message, 'error'); } });
+  }
+  async function saveConfig() {
+    const changes = Object.entries(configDirty).map(([key, value]) => ({ key, value }));
+    if (!changes.length) return;
+    const pw = await passwordModal('Confirm to save ' + changes.length + ' change(s)'); if (pw === null) return;
+    await withBusy($('#cfg-save'), async () => {
+      try { const r = await api('/config', { method: 'PATCH', body: { changes, confirmPassword: pw } });
+        toast('Config saved.', 'success');
+        if (r.restartRequired?.length) setTimeout(() => toast('Restart required for: ' + r.restartRequired.join(', '), 'info'), 900);
+        configDirty = {}; loadConfig(); }
+      catch (e) { toast(e.message, 'error'); } });
+  }
+  function openAddVar() {
+    modal(`<h2>Add variable</h2>
+      <div class="field"><label>Name (UPPER_SNAKE_CASE)</label><input class="input" id="nv-key" placeholder="MY_NEW_KEY"></div>
+      <div class="field"><label>Value</label><input class="input" id="nv-val"></div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="nv-add">Add</button></div>`);
+    $('#nv-add').onclick = async () => {
+      const key = $('#nv-key').value.trim(); const value = $('#nv-val').value;
+      if (!/^[A-Z][A-Z0-9_]*$/.test(key)) return toast('Name must be UPPER_SNAKE_CASE.', 'error');
+      const pw = await passwordModal('Confirm to add ' + key); if (pw === null) return;
+      try { const r = await api('/config', { method: 'PATCH', body: { changes: [{ key, value }], confirmPassword: pw } }); closeModal(); toast('Variable added.', 'success'); loadConfig(); }
+      catch (e) { toast(e.message, 'error'); }
+    };
+  }
+
+  // ───────────────────────── AUDIT TRAIL ─────────────────────────
+  let trailOffset = 0, trailTotal = 0; const TRAIL_LIMIT = 50;
+  const reloadTrail = debounce(() => loadTrail(0), 400);
+  ['trail-search','trail-user','trail-audit'].forEach(id => $('#' + id).oninput = reloadTrail);
+  ['trail-event','trail-from','trail-to'].forEach(id => $('#' + id).onchange = () => loadTrail(0));
+
+  function trailQuery() {
+    return new URLSearchParams({ search: $('#trail-search').value, user: $('#trail-user').value, eventType: $('#trail-event').value, auditId: $('#trail-audit').value, from: $('#trail-from').value, to: $('#trail-to').value });
+  }
+  async function loadTrail(offset) {
+    trailOffset = offset;
+    const tb = $('#trail-table tbody');
+    $('#trail-table thead').innerHTML = `<tr><th>Time</th><th>User</th><th>Event</th><th>Audit</th><th>Plugin</th><th>Description</th><th>IP</th></tr>`;
+    tb.innerHTML = `<tr><td colspan="7"><div class="loading"><span class="spinner"></span>Loading…</div></td></tr>`;
+    try {
+      const q = trailQuery(); q.set('limit', TRAIL_LIMIT); q.set('offset', offset);
+      const { entries, total, eventTypes } = await api('/audit-trail?' + q);
+      trailTotal = total;
+      const sel = $('#trail-event'); if (sel.options.length <= 1 && eventTypes) sel.innerHTML = '<option value="">All events</option>' + eventTypes.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+      if (!entries.length) { tb.innerHTML = `<tr><td colspan="7">${emptyState('🧾','No entries match.')}</td></tr>`; }
+      else tb.innerHTML = entries.map(trailRow).join('');
+      $('#trail-info').textContent = total ? `Showing ${offset + 1}–${Math.min(offset + TRAIL_LIMIT, total)} of ${total}` : '';
+      $('#trail-prev').disabled = offset <= 0; $('#trail-next').disabled = offset + TRAIL_LIMIT >= total;
+    } catch (e) { tb.innerHTML = `<tr><td colspan="7">${emptyState('⚠️', e.message)}</td></tr>`; }
+  }
+  function trailRow(e) {
+    const meta = e.metadata ? JSON.stringify(e.metadata, null, 2) : '';
+    const ip = (e.metadata && e.metadata.ip) || '—';
+    return `<tr class="trail-main" onclick="toggleMeta(this)" style="cursor:pointer;">
+      <td style="white-space:nowrap;">${fmtDate(e.timestamp)}</td><td>${esc(e.performed_by || '—')}</td>
+      <td><code class="inline">${esc(e.event_type)}</code></td><td>${e.audit_id ? `<code class="inline">${esc(String(e.audit_id).slice(0,8))}</code>` : '—'}</td>
+      <td>${esc(e.plugin_id || '—')}</td><td>${esc(e.action_details)}</td><td>${esc(ip)}</td>
+    </tr><tr class="meta-row" style="display:none;"><td colspan="7"><pre>${esc(meta || 'No metadata')}</pre></td></tr>`;
+  }
+  function toggleMeta(tr) { const next = tr.nextElementSibling; if (next && next.classList.contains('meta-row')) next.style.display = next.style.display === 'none' ? 'table-row' : 'none'; }
+  function trailPage(dir) { const next = trailOffset + dir * TRAIL_LIMIT; if (next < 0 || next >= trailTotal) return; loadTrail(next); }
+  async function exportTrailCsv() {
+    try {
+      const q = trailQuery(); q.set('limit', '500'); q.set('offset', '0');
+      const { entries } = await api('/audit-trail?' + q);
+      const cols = ['timestamp','performed_by','event_type','audit_id','plugin_id','change_id','action_details'];
+      const csv = [cols.join(',')].concat(entries.map(e => cols.map(c => `"${String(e[c] ?? '').replace(/"/g,'""')}"`).join(','))).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' }); const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = 'audit-trail.csv'; a.click();
+      toast('Exported ' + entries.length + ' rows.', 'success');
+    } catch (e) { toast(e.message, 'error'); }
+  }
+
+  // ─── Drawer ───
+  function openDrawer(title, html) { $('#drawer-title').textContent = title; $('#drawer-body').innerHTML = html; $('#drawer').classList.add('open'); $('#drawer-overlay').classList.add('open'); }
+  function closeDrawer() { $('#drawer').classList.remove('open'); $('#drawer-overlay').classList.remove('open'); }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDrawer(); closeModal(); } });
+  </script>
+</body>
+</html>

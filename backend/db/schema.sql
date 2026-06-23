@@ -14,6 +14,12 @@ CREATE TABLE IF NOT EXISTS users (
   email        TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   full_name    TEXT,
+  role         TEXT DEFAULT 'user',      -- 'admin' | 'user' (added by 001_admin_panel.sql)
+  status       TEXT DEFAULT 'active',    -- 'active' | 'suspended'
+  plan         TEXT DEFAULT 'free',
+  last_login_at TIMESTAMPTZ,
+  metadata     JSONB,
+  deleted_at   TIMESTAMPTZ,              -- soft delete
   created_at   TIMESTAMPTZ DEFAULT NOW(),
   updated_at   TIMESTAMPTZ DEFAULT NOW()
 );
@@ -28,7 +34,26 @@ CREATE TABLE IF NOT EXISTS plugins (
   description               TEXT,
   estimated_runtime_seconds INT DEFAULT 30,
   is_active                 BOOLEAN DEFAULT TRUE,
+  category                  TEXT,            -- (added by 001_admin_panel.sql)
+  icon                      TEXT,            -- emoji / icon
+  prompt_template           TEXT,            -- admin-editable default prompt override
+  display_order             INT DEFAULT 0,   -- order shown to users
+  is_executable             BOOLEAN DEFAULT FALSE, -- TRUE only when a backend/plugins/<id>.js module exists
+  updated_at                TIMESTAMPTZ DEFAULT NOW(),
   created_at                TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ─────────────────────────────────────────────
+-- ADMIN CONFIG (persisted env-var overrides — see 001_admin_panel.sql)
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS admin_config (
+  key         TEXT PRIMARY KEY,
+  value       TEXT,
+  category    TEXT,
+  description TEXT,
+  is_secret   BOOLEAN DEFAULT FALSE,
+  updated_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_by  TEXT
 );
 
 -- Seed plugin registry
@@ -228,9 +253,35 @@ CREATE TABLE IF NOT EXISTS sub_service_pages (
   status            TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   content_json      JSONB,
   rendered_html     TEXT,
+  template_id       TEXT,
+  page_id           TEXT,
+  generated_elementor_data JSONB,
+  builder_type      TEXT,
   created_at        TIMESTAMPTZ DEFAULT NOW(),
   updated_at        TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY (audit_id, slug)
 );
 
+/* PAGE DESIGN TEMPLATES (one per audit + service category) */
+-- Stores the cleaned live HTML of the client's existing service category page.
+-- Used as the design template for new sub-service pages — Claude only generates
+-- content JSON; the design is never regenerated.
+CREATE TABLE IF NOT EXISTS page_templates (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  audit_id        UUID NOT NULL REFERENCES audits(id) ON DELETE CASCADE,
+  service_name    TEXT NOT NULL,           -- e.g. "SEO", "Google Ads", "Social Media"
+  template_id     TEXT UNIQUE,             -- e.g. "master-service-template"
+  builder_type    TEXT CHECK (builder_type IN ('elementor', 'standard_wp')),
+  source_url      TEXT,                    -- The live URL that was fetched
+  cleaned_html    TEXT NOT NULL,           -- Tracking-stripped page source HTML
+  section_configuration JSONB,             -- Extracted sections map
+  master_elementor_data JSONB,             -- Master Elementor data
+  elementor_page_settings JSONB,           -- Elementor page settings
+  fetch_status    TEXT DEFAULT 'captured'
+                  CHECK (fetch_status IN ('captured', 'failed', 'fallback')),
+  captured_at     TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (audit_id, service_name)
+);
 
+CREATE INDEX IF NOT EXISTS idx_page_templates_audit ON page_templates(audit_id);

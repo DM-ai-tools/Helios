@@ -12,6 +12,72 @@ export class DeploymentManager {
     return siteUrl + (restPrefix === '/wp-json' ? `/wp-json${path}` : `/?rest_route=${path}`);
   }
 
+  async fetchTemplateFromWordPress(liveUrl, integration) {
+    let siteUrl = process.env.WORDPRESS_SITE_URL || integration.account_name;
+    siteUrl = siteUrl.replace(/\/$/, '').replace(/\/wp-admin$/, '');
+    const username = process.env.WORDPRESS_USERNAME || integration.account_id;
+    const password = process.env.WORDPRESS_PASSWORD || integration.access_token;
+
+    if (!siteUrl || !username || !password) {
+      console.warn('[DeploymentManager] Missing WP credentials to fetch template.');
+      return null;
+    }
+    if (!siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
+      siteUrl = `https://${siteUrl}`;
+    }
+
+    const authHeader = 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
+    const axiosInstance = axios.create({
+      headers: { 'Authorization': authHeader, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      timeout: 30000,
+    });
+    const restPrefix = siteUrl.includes('?') ? '' : '/wp-json';
+
+    let targetObj = null;
+
+    try {
+      // 1. Try HTML scrape
+      const htmlRes = await axiosInstance.get(liveUrl, { headers: { Authorization: undefined }, timeout: 10000 }).catch(() => null);
+      if (htmlRes && htmlRes.data && typeof htmlRes.data === 'string') {
+        const match = htmlRes.data.match(/\bpage-id-(\d+)\b/);
+        if (match && match[1]) {
+          const scrapedId = match[1];
+          const fullPage = await axiosInstance.get(this.buildUrl(siteUrl, restPrefix, `/wp/v2/pages/${scrapedId}?context=edit&_fields=id,slug,link,title,meta`)).catch(() => null);
+          if (fullPage && fullPage.data) targetObj = fullPage.data;
+        }
+      }
+
+      // 2. Fallback to slug
+      if (!targetObj) {
+        let urlPath = '';
+        try { urlPath = new URL(liveUrl).pathname; } catch (_) { urlPath = liveUrl; }
+        const possibleSlug = urlPath.replace(/\/$/, '').split('/').pop() || '';
+        if (possibleSlug && possibleSlug !== 'home') {
+          const pagesBySlug = await axiosInstance.get(this.buildUrl(siteUrl, restPrefix, `/wp/v2/pages?slug=${encodeURIComponent(possibleSlug)}&context=edit&_fields=id,slug,link,title,meta`)).catch(() => ({ data: [] }));
+          if (pagesBySlug.data && pagesBySlug.data.length > 0) targetObj = pagesBySlug.data[0];
+        }
+      }
+    } catch (e) {
+      console.warn(`[DeploymentManager] Template fetch error: ${e.message}`);
+    }
+
+    if (targetObj && targetObj.meta && targetObj.meta._elementor_data) {
+      console.log(`[DeploymentManager] Successfully fetched elementor data for page ${targetObj.id}`);
+      let edata = targetObj.meta._elementor_data;
+      if (typeof edata === 'string') {
+        try {
+          edata = JSON.parse(edata);
+        } catch (err) {
+          console.warn(`[DeploymentManager] Failed to parse _elementor_data string: ${err.message}`);
+        }
+      }
+      return edata;
+    }
+    
+    console.log(`[DeploymentManager] Target object found but no elementor data present.`);
+    return null;
+  }
+
   async deploy(payload, integration) {
     let siteUrl = process.env.WORDPRESS_SITE_URL || integration.account_name;
     siteUrl = siteUrl.replace(/\/$/, '').replace(/\/wp-admin$/, '');
@@ -51,8 +117,8 @@ export class DeploymentManager {
     // ── 1. Discover target and parent context ──
     if (payload.actionType === 'create_page') {
       const pageTitle = payload.pageTitle || payload.title || 'Untitled Page';
-      targetSlug = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      subServiceSlug = targetSlug;
+      targetSlug = payload.slug || pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      subServiceSlug = payload.slug || targetSlug;
       console.log(`[DeploymentManager] Preparing to CREATE new page: "${pageTitle}" (${targetSlug})`);
 
       if (payload.parentSlug) {
@@ -197,7 +263,11 @@ export class DeploymentManager {
     // If we are deploying an entire new page, force the action to create_page
     // so we overwrite any existing Elementor or native content.
     if (payload.assetType === 'new_page') {
-      builderType = 'wordpress';
+      if (payload.builderType === 'elementor') {
+        builderType = 'elementor';
+      } else {
+        builderType = 'wordpress';
+      }
       resolvedActionType = 'create_page';
     }
 
@@ -275,7 +345,7 @@ export class DeploymentManager {
     if (objType === 'pages' && payload.navigationParent && updatedObject) {
       await autoAddMenuItem(
         updatedObject.id,
-        payload.pageTitle || payload.title || 'Untitled Page',
+        payload.subServiceName || payload.title || payload.pageTitle || 'Untitled Page',
         parentId,
         axiosConfig,
         siteUrl,
