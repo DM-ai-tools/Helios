@@ -1341,10 +1341,10 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/generate-page', async
 // Save the approval state and optionally queue for deployment.
 router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/approve', async (req, res) => {
   const { auditId, slug } = req.params;
-  const { html, pageTitle, metaDescription, navigationParent, status } = req.body;
+  const { html, pageTitle, metaDescription, navigationParent, status, draftUrl } = req.body;
   const isDemo = auditId === 'demo' || auditId.startsWith('demo-');
 
-  const allowedStatuses = ['approved', 'rejected', 'pending'];
+  const allowedStatuses = ['approved', 'rejected', 'pending', 'draft', 'deployed'];
   if (!allowedStatuses.includes(status)) {
     return res.status(400).json({ error: `Invalid status. Must be one of: ${allowedStatuses.join(', ')}` });
   }
@@ -1360,6 +1360,7 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/approve', async (req,
       pageTitle: pageTitle || existing.pageTitle || null,
       metaDescription: metaDescription || existing.metaDescription || null,
       navigationParent: navigationParent || existing.navigationParent || null,
+      draftUrl: draftUrl || existing.draftUrl || null,
       slug,
       updatedAt: new Date().toISOString(),
     };
@@ -1368,7 +1369,8 @@ router.post('/:auditId([^/]+)/seo-audit/sub-services/:slug/approve', async (req,
       await approveSubServicePage(auditId, slug, status, {
         pageTitle: pageTitle || existing.pageTitle || undefined,
         metaDescription: metaDescription || existing.metaDescription || undefined,
-        renderedHtml: html || existing.html || undefined
+        renderedHtml: html || existing.html || undefined,
+        draftUrl: draftUrl || existing.draftUrl || undefined
       });
     }
 

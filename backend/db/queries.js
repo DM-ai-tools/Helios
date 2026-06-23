@@ -1140,6 +1140,7 @@ export async function getSubServicePage(auditId, slug) {
         renderedHtml: row.rendered_html,
         templateId: row.template_id,
         pageId: row.page_id,
+        draftUrl: row.draft_url,
         generatedElementorData: typeof row.generated_elementor_data === 'string' ? JSON.parse(row.generated_elementor_data) : row.generated_elementor_data,
         builderType: row.builder_type,
         createdAt: row.created_at,
@@ -1163,6 +1164,7 @@ export async function getSubServicePage(auditId, slug) {
         renderedHtml: cached.generatedHtml || cached.html,
         templateId: cached.templateId,
         pageId: cached.pageId,
+        draftUrl: cached.draftUrl,
         generatedElementorData: cached.generatedElementorData,
         builderType: cached.builderType,
         updatedAt: cached.updatedAt
@@ -1175,7 +1177,7 @@ export async function getSubServicePage(auditId, slug) {
   }
 }
 
-export async function approveSubServicePage(auditId, slug, status, { pageTitle, metaDescription, renderedHtml }) {
+export async function approveSubServicePage(auditId, slug, status, { pageTitle, metaDescription, renderedHtml, draftUrl }) {
   const updates = ['status = $3', 'updated_at = NOW()'];
   const params = [auditId, slug, status];
   let paramCount = 4;
@@ -1193,6 +1195,11 @@ export async function approveSubServicePage(auditId, slug, status, { pageTitle, 
   if (renderedHtml !== undefined) {
     updates.push(`rendered_html = $${paramCount}`);
     params.push(renderedHtml);
+    paramCount++;
+  }
+  if (draftUrl !== undefined) {
+    updates.push(`draft_url = $${paramCount}`);
+    params.push(draftUrl);
     paramCount++;
   }
   
@@ -1214,6 +1221,7 @@ export async function approveSubServicePage(auditId, slug, status, { pageTitle, 
       pageTitle: pageTitle || existing.pageTitle || null,
       metaDescription: metaDescription || existing.metaDescription || null,
       generatedHtml: renderedHtml || existing.generatedHtml || existing.html || null,
+      draftUrl: draftUrl !== undefined ? draftUrl : existing.draftUrl,
       slug,
       updatedAt: new Date().toISOString()
     };

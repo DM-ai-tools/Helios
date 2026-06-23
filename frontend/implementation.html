@@ -1393,11 +1393,16 @@ function renderSubServicesPanel(highlightSlug) {
               '<button class="btn btn-reject btn-sm" onclick="approveSubService(\'' + ss.pageSlug + '\',\'rejected\')" id="btn-reject-' + ss.pageSlug + '">' +
                 '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Reject' +
               '</button>' +
-              (ss.status === 'approved'
-                ? '<button class="btn btn-deploy btn-sm" onclick="deploySubServicePage(\'' + ss.pageSlug + '\')">Deploy Page →</button>'
+              (['approved', 'draft', 'deployed'].indexOf(ss.status) > -1
+                ? '<button class="btn btn-deploy btn-sm" id="btn-deploy-' + ss.pageSlug + '" onclick="deploySubServicePage(\'' + ss.pageSlug + '\', false)">Deploy Page →</button>' +
+                  '<button class="btn btn-secondary btn-sm" id="btn-draft-' + ss.pageSlug + '" style="margin-left:8px;" onclick="deploySubServicePage(\'' + ss.pageSlug + '\', true)">Deploy as Draft</button>'
                 : '') +
               '<button class="btn btn-sm" style="background:#f3f4f6;color:var(--text-muted);border:1px solid var(--border);" onclick="downloadPageHtml(\'' + ss.pageSlug + '\')">Download HTML</button>'
             : '') +
+        '</div>' +
+        '<div id="link-container-' + ss.pageSlug + '" style="margin-top:8px;font-size:12px;">' +
+          (ss.status === 'draft' && ss.draftUrl ? '✅ Draft created! <a href="' + ss.draftUrl + '" target="_blank" style="color:var(--primary); font-weight:bold; text-decoration:underline;">Click here to edit visually in Elementor</a>' : '') +
+          (ss.status === 'deployed' ? '✅ Page published successfully!' : '') +
         '</div>' +
       '</div>' +
     '</div>';
@@ -1692,8 +1697,22 @@ async function pollJobStatus(jobId, slug, isDraft) {
             if (linkContainer) {
               linkContainer.innerHTML = '✅ Draft created! <a href="' + elementorUrl + '" target="_blank" style="color:var(--primary); font-weight:bold; text-decoration:underline;">Click here to edit visually in Elementor</a>';
             }
-          } else if (linkContainer) {
-             linkContainer.innerHTML = '✅ Page published successfully!';
+            fetch('/api/implementation/' + getActiveAuditId() + '/seo-audit/sub-services/' + slug + '/approve', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: 'draft', draftUrl: elementorUrl })
+            }).catch(e => console.warn(e));
+            var ss = _ssData.find(function(s) { return s.pageSlug === slug; });
+            if (ss) { ss.status = 'draft'; ss.draftUrl = elementorUrl; }
+          } else {
+             if (linkContainer) linkContainer.innerHTML = '✅ Page published successfully!';
+             fetch('/api/implementation/' + getActiveAuditId() + '/seo-audit/sub-services/' + slug + '/approve', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ status: 'deployed' })
+             }).catch(e => console.warn(e));
+             var ss = _ssData.find(function(s) { return s.pageSlug === slug; });
+             if (ss) { ss.status = 'deployed'; }
           }
         } else if (data.job.status === 'failed') {
           clearInterval(interval);

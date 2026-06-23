@@ -13,6 +13,7 @@ async function migrate() {
     await pool.query(`ALTER TABLE sub_service_pages ADD COLUMN IF NOT EXISTS generated_elementor_data JSONB;`);
     await pool.query(`ALTER TABLE sub_service_pages ADD COLUMN IF NOT EXISTS builder_type TEXT;`);
     await pool.query(`ALTER TABLE sub_service_pages ADD COLUMN IF NOT EXISTS page_id TEXT;`);
+    await pool.query(`ALTER TABLE sub_service_pages ADD COLUMN IF NOT EXISTS draft_url TEXT;`);
     
     await pool.query(`ALTER TABLE page_templates ADD COLUMN IF NOT EXISTS template_id TEXT UNIQUE;`);
     await pool.query(`ALTER TABLE page_templates ADD COLUMN IF NOT EXISTS builder_type TEXT;`);
