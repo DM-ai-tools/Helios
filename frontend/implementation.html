@@ -1560,8 +1560,22 @@ async function approveSubService(slug, status) {
         deployBtn.id = 'btn-deploy-' + slug;
         deployBtn.className = 'btn btn-deploy btn-sm';
         deployBtn.textContent = 'Deploy Page →';
-        deployBtn.onclick = function() { deploySubServicePage(slug); };
+        deployBtn.onclick = function() { deploySubServicePage(slug, false); };
         actionRow.appendChild(deployBtn);
+
+        var draftBtn = document.createElement('button');
+        draftBtn.id = 'btn-draft-' + slug;
+        draftBtn.className = 'btn btn-secondary btn-sm';
+        draftBtn.style.marginLeft = '8px';
+        draftBtn.textContent = 'Deploy as Draft';
+        draftBtn.onclick = function() { deploySubServicePage(slug, true); };
+        actionRow.appendChild(draftBtn);
+
+        var linkContainer = document.createElement('div');
+        linkContainer.id = 'link-container-' + slug;
+        linkContainer.style.marginTop = '8px';
+        linkContainer.style.fontSize = '12px';
+        actionRow.appendChild(linkContainer);
       }
     }
     toast(status === 'approved' ? 'Sub-service page approved!' : 'Sub-service page rejected.', status === 'approved' ? 'success' : 'info');
@@ -1570,7 +1584,7 @@ async function approveSubService(slug, status) {
   }
 }
 
-async function deploySubServicePage(slug) {
+async function deploySubServicePage(slug, isDraft) {
   var role = localStorage.getItem('user_role') || 'Admin';
 
   var ss = _ssData.find(function(s) { return s.pageSlug === slug; });
@@ -1590,7 +1604,11 @@ async function deploySubServicePage(slug) {
   }
 
   var btn = document.getElementById('btn-deploy-' + slug);
-  if (btn) { btn.disabled = true; btn.textContent = 'Deploying…'; }
+  var draftBtn = document.getElementById('btn-draft-' + slug);
+  var activeBtn = isDraft ? draftBtn : btn;
+  if (btn) btn.disabled = true;
+  if (draftBtn) draftBtn.disabled = true;
+  if (activeBtn) activeBtn.textContent = 'Deploying…';
 
   var activeBusinessId = getActiveBusinessId();
 
@@ -1603,7 +1621,9 @@ async function deploySubServicePage(slug) {
       var checkData = await checkRes.json();
       if (checkData.exists) {
         if (!confirm('A page for this sub-service already exists on ' + targetPlatform + ' ("' + checkData.title + '").\n\nAre you sure you want to REPLACE the existing page?')) {
-          if (btn) { btn.disabled = false; btn.textContent = 'Deploy Page →'; }
+          if (btn) btn.disabled = false;
+          if (draftBtn) draftBtn.disabled = false;
+          if (activeBtn) activeBtn.textContent = isDraft ? 'Deploy as Draft' : 'Deploy Page →';
           return;
         }
       }
@@ -1632,18 +1652,58 @@ async function deploySubServicePage(slug) {
           title: ss.subServiceName,
           subServiceName: ss.subServiceName,
           generatedElementorData: ss.generatedElementorData,
-          builderType: ss.builderType
+          builderType: ss.builderType,
+          isDraft: isDraft
         },
       }),
     });
     var data = await res.json();
     if (!res.ok) throw new Error(data.error);
     toast('Page deployment queued for ' + targetPlatform.toUpperCase() + '!', 'success');
-    if (btn) { btn.textContent = 'Queued ✓'; btn.style.background = 'var(--success)'; }
+    if (activeBtn) { activeBtn.textContent = 'Queued ✓'; activeBtn.style.background = 'var(--success)'; }
+    
+    pollJobStatus(data.jobId, slug, isDraft);
+
   } catch (err) {
     toast('Deploy failed: ' + err.message, 'error');
-    if (btn) { btn.disabled = false; btn.textContent = 'Deploy Page →'; }
+    if (btn) btn.disabled = false;
+    if (draftBtn) draftBtn.disabled = false;
+    if (activeBtn) activeBtn.textContent = isDraft ? 'Deploy as Draft' : 'Deploy Page →';
   }
+}
+
+async function pollJobStatus(jobId, slug, isDraft) {
+  var linkContainer = document.getElementById('link-container-' + slug);
+  if (linkContainer) linkContainer.innerHTML = '<i>Deploying in background, please wait...</i>';
+
+  var interval = setInterval(async function() {
+    try {
+      var res = await fetch('/api/deployment/jobs/' + jobId, {
+        headers: { 'X-Business-Id': getActiveBusinessId() }
+      });
+      var data = await res.json();
+      if (data.success && data.job) {
+        if (data.job.status === 'completed') {
+          clearInterval(interval);
+          if (isDraft && data.job.response_payload && data.job.response_payload.updatedObject) {
+            var obj = data.job.response_payload.updatedObject;
+            var origin = new URL(obj.link).origin;
+            var elementorUrl = origin + '/wp-admin/post.php?post=' + obj.id + '&action=elementor';
+            if (linkContainer) {
+              linkContainer.innerHTML = '✅ Draft created! <a href="' + elementorUrl + '" target="_blank" style="color:var(--primary); font-weight:bold; text-decoration:underline;">Click here to edit visually in Elementor</a>';
+            }
+          } else if (linkContainer) {
+             linkContainer.innerHTML = '✅ Page published successfully!';
+          }
+        } else if (data.job.status === 'failed') {
+          clearInterval(interval);
+          if (linkContainer) linkContainer.innerHTML = '<span style="color:var(--danger)">Deployment failed.</span>';
+        }
+      }
+    } catch(e) {
+      console.warn('Polling error:', e);
+    }
+  }, 2000);
 }
 
 function downloadPageHtml(slug) {

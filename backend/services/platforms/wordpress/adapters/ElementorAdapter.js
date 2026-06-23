@@ -26,7 +26,7 @@ export class ElementorAdapter {
     proposedText = this.encode4ByteCharsToEntities(proposedText);
 
     const isMetadata = payload.changeType === 'metadata';
-    const requestData = { status: 'publish' };
+    const requestData = { status: payload.isDraft ? 'draft' : 'publish' };
 
     let elementorUpdated = false;
 

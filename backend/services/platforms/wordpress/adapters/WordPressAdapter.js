@@ -29,7 +29,7 @@ export class WordPressAdapter {
     proposedText = this.encode4ByteCharsToEntities(proposedText);
     
     const isMetadata = payload.changeType === 'metadata';
-    const requestData = { status: 'publish' };
+    const requestData = { status: payload.isDraft ? 'draft' : 'publish' };
 
     if (!targetObj || actionType === 'create_page') {
       requestData.title = this.encode4ByteCharsToEntities(payload.pageTitle || payload.title || 'Untitled Page');
