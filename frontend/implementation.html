@@ -1628,7 +1628,7 @@ async function deploySubServicePage(slug) {
           pageTitle: ss.pageTitle, 
           metaDescription: ss.metaDescription, 
           navigationParent: ss.serviceName,
-          parentSlug: parentSlugParam,
+          parentSlug: ss.parentSlug || '',
           title: ss.subServiceName,
           subServiceName: ss.subServiceName,
           generatedElementorData: ss.generatedElementorData,

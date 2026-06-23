@@ -872,8 +872,11 @@ router.get('/:auditId([^/]+)/seo-audit/sub-services', async (req, res) => {
         const slug = sub.pageSlug || sub.subServiceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
         // Load per-slug status from PostgreSQL database
         const savedState = isDemo ? null : await getSubServicePage(auditId, slug);
+        const parentSlug = service.parentUrl ? service.parentUrl.split('/').filter(Boolean).pop() : '';
         flatSubServices.push({
           serviceName: service.serviceName,
+          parentUrl: service.parentUrl || '',
+          parentSlug: parentSlug,
           subServiceName: sub.subServiceName,
           pageSlug: slug,
           briefDescription: sub.briefDescription || '',

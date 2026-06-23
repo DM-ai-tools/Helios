@@ -86,8 +86,8 @@ Name the winner for each dimension. Include 6-8 comparison rows.
 ========================================
 Extract the services and sub-services offered by the business from the provided website data.
 For each main service (e.g., SEO, Google Ads, Web Design, Social Media, Content Marketing):
-- Identify the parent URL or slug for this main service from the crawled data (e.g. "/seo-services"). If not found, guess the best slug. Return this as parentUrl.
-- Identify 4-8 specific sub-services the business offers or SHOULD offer.
+- Identify the exact parent URL for this main service from the CRAWLED PAGE URL MAP provided below. DO NOT guess if it exists in the map. Ensure the \`parentUrl\` perfectly matches a crawled URL (e.g., "/seo-services/"). If the parent service doesn't exist yet, guess the best slug.
+- Identify 4-8 specific sub-services the business offers or SHOULD offer under this parent service.
 - Think broadly: include both existing sub-services found on the website AND sub-services that competitors typically offer that this business is missing.
 - For each sub-service, generate a URL-friendly page slug (e.g., "ai-powered-seo").
 - Write a brief one-sentence description of the sub-service.
