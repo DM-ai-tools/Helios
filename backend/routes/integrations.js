@@ -72,7 +72,7 @@ router.get('/', async (req, res) => {
 });
 
 // ─── POST /api/integrations/connect ───────────────────────────
-router.post('/connect', requireAdmin, async (req, res) => {
+router.post('/connect', async (req, res) => {
   const businessId = getBusinessId(req);
   const { platform, accountName, accountId, accessToken, refreshToken, tokenExpiry, metadata } = req.body;
   const user = 'Admin User'; // In production, resolved from JWT session
@@ -114,7 +114,7 @@ router.post('/connect', requireAdmin, async (req, res) => {
 });
 
 // ─── DELETE /api/integrations/disconnect ──────────────────────
-router.delete('/disconnect', requireAdmin, async (req, res) => {
+router.delete('/disconnect', async (req, res) => {
   const businessId = getBusinessId(req);
   const { platform } = req.body;
   const user = 'Admin User';
@@ -150,7 +150,7 @@ router.delete('/disconnect', requireAdmin, async (req, res) => {
 });
 
 // ─── PATCH /api/integrations/:id/simulate-status ──────────────
-router.patch('/:id/simulate-status', requireAdmin, async (req, res) => {
+router.patch('/:id/simulate-status', async (req, res) => {
   const { id } = req.params;
   const { status } = req.body; // 'connected', 'error', 'reauth'
   const user = 'Admin User';

@@ -875,13 +875,9 @@
     }
 
     function applyRolePrivileges(role) {
-      const isViewer = role === 'Viewer';
+      // Intentionally left empty: all users can now access integrations
       document.querySelectorAll('.btn-connect, .btn-disconnect, .btn-reconnect, .sim-btn').forEach(btn => {
-        if (isViewer) {
-          btn.setAttribute('disabled', 'true');
-        } else {
-          btn.removeAttribute('disabled');
-        }
+        btn.removeAttribute('disabled');
       });
     }
 
@@ -993,10 +989,6 @@
     // ── MOCK OAUTH MODAL ACTIONS ─────────────────────────────
     function connectPlatform(slug) {
       const role = localStorage.getItem('user_role') || 'Admin';
-      if (role === 'Viewer') {
-        toast('Viewer role cannot connect integrations.', 'error');
-        return;
-      }
 
       activeOAuthPlatform = slug;
       const plat = PLATFORMS[slug];
@@ -1112,10 +1104,6 @@
 
     async function disconnectPlatform(platform) {
       const role = localStorage.getItem('user_role') || 'Admin';
-      if (role === 'Viewer') {
-        toast('Viewer role cannot disconnect integrations.', 'error');
-        return;
-      }
 
       const confirmText = `Are you sure you want to disconnect ${PLATFORMS[platform].name}?`;
       if (!confirm(confirmText)) return;
