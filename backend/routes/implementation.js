@@ -886,7 +886,8 @@ router.get('/:auditId([^/]+)/seo-audit/sub-services', async (req, res) => {
           pageTitle: savedState?.pageTitle || null,
           metaDescription: savedState?.metaDescription || null,
           generatedElementorData: savedState?.generatedElementorData || null,
-          builderType: savedState?.builderType || 'standard_wp'
+          builderType: savedState?.builderType || 'standard_wp',
+          draftUrl: savedState?.draftUrl || null
         });
       }
     }
