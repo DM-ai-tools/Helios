@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAdmin } from './integrations.js';
+// Removed requireAdmin from integrations.js
 import {
   createDbDeploymentJob,
   getDbDeploymentJob,
@@ -26,7 +26,7 @@ import axios from 'axios';
 import { addDeploymentJob } from '../services/deploymentQueue.js';
 
 // ─── GET /api/deployment/check-page ───────────────────────────────
-router.get('/check-page', requireAdmin, async (req, res) => {
+router.get('/check-page', async (req, res) => {
   const { platform, slug } = req.query;
   const businessId = getBusinessId(req);
   if (!platform || !slug) return res.status(400).json({ error: 'Missing platform or slug' });
@@ -65,7 +65,7 @@ router.get('/check-page', requireAdmin, async (req, res) => {
 });
 
 // ─── POST /api/deployment/queue ───────────────────────────────
-router.post('/queue', requireAdmin, async (req, res) => {
+router.post('/queue', async (req, res) => {
   const { auditId, pluginId, changeId, platform, assetType, customPayload } = req.body;
   const businessId = getBusinessId(req);
   const user = 'Admin User';
@@ -224,7 +224,7 @@ router.get('/history', async (req, res) => {
 });
 
 // ─── POST /api/deployment/rollback/:id ─────────────────────────
-router.post('/rollback/:id', requireAdmin, async (req, res) => {
+router.post('/rollback/:id', async (req, res) => {
   const { id } = req.params;
   const businessId = getBusinessId(req);
   const user = 'Admin User';

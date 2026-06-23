@@ -724,32 +724,24 @@ function changeRole(role) {
 }
 
 function applyPermissions() {
-  var role = localStorage.getItem('user_role') || 'Admin';
-  var isViewer = role === 'Viewer';
-  var isManager = role === 'Manager';
-
   // Checkboxes & inputs
   document.querySelectorAll('.card-checkbox, .edit-area, .btn-save-edit').forEach(function(el) {
-    if (isViewer) el.setAttribute('disabled', 'true');
-    else el.removeAttribute('disabled');
+    el.removeAttribute('disabled');
   });
 
   // Action buttons
   document.querySelectorAll('.card-actions button').forEach(function(btn) {
-    if (isViewer) btn.setAttribute('disabled', 'true');
-    else btn.removeAttribute('disabled');
+    btn.removeAttribute('disabled');
   });
 
   // Bulk actions
   document.querySelectorAll('.bulk-actions button:not(.btn-deploy)').forEach(function(btn) {
-    if (isViewer) btn.setAttribute('disabled', 'true');
-    else btn.removeAttribute('disabled');
+    btn.removeAttribute('disabled');
   });
 
   // Deploy button in bulk panel & single items
   document.querySelectorAll('.btn-deploy, .btn-deploy-single').forEach(function(btn) {
-    if (role !== 'Admin') btn.setAttribute('disabled', 'true');
-    else btn.removeAttribute('disabled');
+    btn.removeAttribute('disabled');
   });
 }
 
@@ -1091,10 +1083,6 @@ async function saveEdit(changeId) {
 // ── Deploy ───────────────────────────────────────────────────────
 async function deployChanges() {
   var role = localStorage.getItem('user_role') || 'Admin';
-  if (role !== 'Admin') {
-    toast('Permission Denied: Only Admin role is allowed to deploy changes.', 'error');
-    return;
-  }
 
   var approved = allChanges.filter(c => c.status === 'approved');
   if (approved.length === 0) { toast('Approve at least one change first', 'info'); return; }
@@ -1167,10 +1155,6 @@ async function deployChanges() {
 
 async function deploySingleChange(changeId, platform) {
   var role = localStorage.getItem('user_role') || 'Admin';
-  if (role !== 'Admin') {
-    toast('Permission Denied: Only Admin role is allowed to deploy changes.', 'error');
-    return;
-  }
 
   var btn = document.getElementById('deploy-' + changeId + '-' + platform);
   if (!btn) return;
@@ -1588,7 +1572,6 @@ async function approveSubService(slug, status) {
 
 async function deploySubServicePage(slug) {
   var role = localStorage.getItem('user_role') || 'Admin';
-  if (role !== 'Admin') { toast('Permission Denied: Only Admins can deploy pages.', 'error'); return; }
 
   var ss = _ssData.find(function(s) { return s.pageSlug === slug; });
   if (!ss || !ss.generatedHtml) { toast('Generate and approve the preview before deploying.', 'error'); return; }
