@@ -430,9 +430,23 @@ Generate a single copywriting JSON object for ${subServiceName} landing page now
         builderType = 'elementor';
         console.log(`[Page Worker] ✓ Elementor JSON constructed. Replacement Report:`, JSON.stringify(result.replacementReport));
         
-        // Render a dummy HTML or minimal shell for preview if needed,
-        // or just use the Elementor template wrapper. For now, empty or standard.
-        renderedHtml = `<div class="elementor-preview-shell"><h1>${copyData.hero?.h1Title || subServiceName}</h1><p>Elementor Page Generated</p></div>`;
+        // Render a clean preview shell for Elementor deployments
+        renderedHtml = `
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; background:#f9fafb; color:#374151; text-align:center; padding:20px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" style="margin-bottom:16px;">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+            <h1 style="font-size:24px; margin:0 0 8px 0;">Elementor Page Ready</h1>
+            <p style="margin:0; color:#6b7280; max-width:400px; line-height:1.5;">
+              The copywriting and Elementor data for <strong>${copyData.hero?.h1Title || subServiceName}</strong> have been successfully generated.
+            </p>
+            <p style="margin:24px 0 0 0; font-size:14px; font-weight:600; color:#10b981; padding:8px 16px; background:#d1fae5; border-radius:99px;">
+              Click "Deploy Page" to publish this directly to WordPress!
+            </p>
+          </div>
+        `;
     } else if (templateConfig && stampedHtml) {
       // ── PATH A: Content assembly into stored design template ──
       console.log(`[Page Worker] Stage 3 (PATH A): Assembling content into Template Engine...`);
@@ -457,7 +471,8 @@ Generate a single copywriting JSON object for ${subServiceName} landing page now
           }
         }
       };
-      renderedHtml = renderedHtml.replace('</head>', `\n<script type="application/ld+json">${JSON.stringify(schema, null, 2)}</script>\n</head>`);
+      // Inject base tag so relative URLs (CSS/JS) load correctly in the iframe, preventing blank white screens
+      renderedHtml = renderedHtml.replace('</head>', `\n<base href="${siteUrl}">\n<script type="application/ld+json">${JSON.stringify(schema, null, 2)}</script>\n</head>`);
       
       console.log(`[Page Worker] ✓ Content assembled into live design template (${renderedHtml.length} chars).`);
     } else if (builderType !== 'elementor') {
