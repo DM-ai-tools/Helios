@@ -5,7 +5,7 @@
   "type": "module",
   "main": "backend/server.js",
   "scripts": {
-    "start": "node backend/server.js",
+    "start": "node backend/migrate.js && node backend/server.js",
     "dev": "node --watch backend/server.js"
   },
   "dependencies": {
